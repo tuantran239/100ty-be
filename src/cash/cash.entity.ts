@@ -39,6 +39,9 @@ export class Cash extends SoftDeletableEntity {
   batHoId?: string;
 
   @Column()
+  pawnId?: string;
+
+  @Column()
   userId?: string;
 
   @Column()

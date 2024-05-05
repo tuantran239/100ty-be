@@ -80,6 +80,11 @@ export class CreateCashDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
+  pawnId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
   userId?: string;
 
   @ApiProperty()

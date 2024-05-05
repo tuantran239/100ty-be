@@ -10,12 +10,17 @@ import {
   EntityManager,
   FindManyOptions,
   FindOneOptions,
+  IsNull,
   Repository,
 } from 'typeorm';
 import { Customer } from './customer.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { convertPostgresDate } from 'src/common/utils/time';
+import { convertPostgresDate, formatDate } from 'src/common/utils/time';
+import { DatabaseService } from 'src/database/database.service';
+import { ContractResponse, ContractType } from 'src/common/interface';
+import { PaymentStatusHistory } from 'src/common/interface/history';
+import { DebitStatus } from 'src/common/interface/bat-ho';
 
 @Injectable()
 export class CustomerService extends BaseService<
@@ -25,7 +30,10 @@ export class CustomerService extends BaseService<
 > {
   protected manager: EntityManager;
   private customerRepository: Repository<Customer>;
-  constructor(private dataSource: DataSource) {
+  constructor(
+    private dataSource: DataSource,
+    private databaseService: DatabaseService,
+  ) {
     super();
     this.manager = this.dataSource.manager;
     this.customerRepository = this.dataSource.manager.getRepository(Customer);
@@ -114,7 +122,109 @@ export class CustomerService extends BaseService<
     return this.customerRepository.findOne({ where: { id } });
   }
 
-  retrieveOne(options: FindOneOptions<Customer>): Promise<Customer> {
+  async retrieveOne(options: FindOneOptions<Customer>): Promise<Customer> {
     return this.customerRepository.findOne(options);
+  }
+
+  async getTransactionHistory(id: string) {
+    const { batHoRepository } = this.databaseService.getRepositories();
+
+    const customer = await this.retrieveOne({
+      where: { id },
+    });
+
+    if (!customer) {
+      throw new Error('Không tìm thấy khách hàng');
+    }
+
+    const batHoContracts = await batHoRepository.find({
+      where: { customerId: customer.id, deleted_at: IsNull() },
+      relations: ['paymentHistories'],
+    });
+
+    const contractResponses: ContractResponse[] = [];
+
+    for (let i = 0; i < batHoContracts.length; i++) {
+      const batHo = batHoContracts[i];
+
+      const paymentHistories = batHo.paymentHistories;
+
+      let latePaymentDay = 0;
+      let latePaymentMoney = 0;
+      let badDebitMoney = 0;
+
+      const moneyPaidNumber = paymentHistories.reduce(
+        (total, paymentHistory) => {
+          if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
+            return (total += paymentHistory.payMoney);
+          }
+          return total;
+        },
+        0,
+      );
+
+      const today = formatDate(new Date());
+
+      const lastPaymentHistoryUnfinish = batHo.paymentHistories
+        .sort((p1, p2) => p1.rowId - p2.rowId)
+        .find(
+          (paymentHistory) =>
+            (paymentHistory.paymentStatus == PaymentStatusHistory.UNFINISH ||
+              paymentHistory.paymentStatus == null) &&
+            formatDate(paymentHistory.startDate) !== today &&
+            new Date(paymentHistory.startDate).getTime() <
+              new Date(convertPostgresDate(today)).getTime(),
+        );
+
+      if (lastPaymentHistoryUnfinish) {
+        latePaymentDay = Math.round(
+          (new Date(convertPostgresDate(today)).getTime() -
+            new Date(lastPaymentHistoryUnfinish.startDate).getTime()) /
+            86400000,
+        );
+
+        latePaymentMoney = batHo.paymentHistories
+          .sort((p1, p2) => p1.rowId - p2.rowId)
+          .reduce((total, paymentHistory) => {
+            if (
+              (paymentHistory.paymentStatus == PaymentStatusHistory.UNFINISH ||
+                paymentHistory.paymentStatus == null) &&
+              formatDate(paymentHistory.startDate) !== today &&
+              new Date(paymentHistory.startDate).getTime() <
+                new Date(convertPostgresDate(today)).getTime()
+            ) {
+              return paymentHistory.payNeed + total;
+            }
+            return total;
+          }, 0);
+      }
+
+      if (batHo.debitStatus == DebitStatus.BAD_DEBIT) {
+        badDebitMoney = batHo.paymentHistories.reduce(
+          (total, paymentHistory) => {
+            if (paymentHistory.paymentStatus != PaymentStatusHistory.FINISH) {
+              return total + paymentHistory.payNeed;
+            }
+            return total;
+          },
+          0,
+        );
+      }
+
+      contractResponses.push({
+        badDebitMoney,
+        moneyPaid: moneyPaidNumber,
+        latePaymentDay,
+        latePaymentMoney,
+        contractId: batHo.contractId,
+        loanDate: formatDate(batHo.loanDate),
+        debitStatus: batHo.debitStatus,
+        loanAmount: batHo.loanAmount,
+        moneyMustPay: batHo.revenueReceived,
+        contractType: ContractType.BAT_HO,
+      });
+    }
+
+    return contractResponses;
   }
 }

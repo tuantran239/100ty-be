@@ -82,4 +82,73 @@ export class UpdateStatusService {
       }
     });
   }
+
+  async updatePawnStatus(pawnId: string) {
+    await this.databaseService.runTransaction(async (repositories) => {
+      const {
+        pawnRepository,
+        customerRepository,
+        paymentHistoryRepository,
+        cashRepository,
+      } = repositories;
+
+      const pawn = await pawnRepository.findOne({
+        where: { id: pawnId },
+        relations: ['paymentHistories'],
+      });
+
+      if (pawn) {
+        const customer = await customerRepository.findOne({
+          where: { id: pawn.customerId },
+        });
+
+        const status = getBatHoStatus(pawn.paymentHistories ?? []);
+
+        if (
+          status == DebitStatus.BAD_DEBIT ||
+          status == DebitStatus.RISK_DEBIT
+        ) {
+          const debtMoney = pawn.paymentHistories.reduce(
+            (total, paymentHistory) => {
+              if (paymentHistory.paymentStatus != PaymentStatusHistory.FINISH) {
+                return total + paymentHistory.payNeed;
+              }
+              return total;
+            },
+            0,
+          );
+
+          await customerRepository.update(customer.id, {
+            debtMoney,
+            isDebt: true,
+          });
+        } else {
+          await customerRepository.update(customer.id, {
+            debtMoney: 0,
+            isDebt: false,
+          });
+        }
+
+        await pawnRepository.update({ id: pawn.id }, { debitStatus: status });
+
+        const findPaymentHistories = await paymentHistoryRepository.find({
+          where: { pawnId: pawn.id },
+        });
+
+        const cash = await cashRepository.findOne({
+          where: { pawnId, filterType: CashFilterType.RECEIPT_CONTRACT },
+        });
+
+        if (cash) {
+          cash.contractStatus = status;
+
+          cash.paymentHistories = createPaymentHistoriesCash(
+            findPaymentHistories ?? [],
+          );
+
+          await cashRepository.save(cash);
+        }
+      }
+    });
+  }
 }

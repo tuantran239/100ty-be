@@ -1,6 +1,7 @@
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
+import { Pawn } from 'src/pawn/pawn.entity';
 import { User } from 'src/user/user.entity';
 import {
   BeforeInsert,
@@ -15,6 +16,9 @@ import {
 export class TransactionHistory extends SoftDeletableEntity {
   @Column()
   batHoId: string;
+
+  @Column()
+  pawnId: string;
 
   @Column()
   userId: string;
@@ -45,6 +49,9 @@ export class TransactionHistory extends SoftDeletableEntity {
 
   @ManyToOne(() => BatHo, (batHo) => batHo.paymentHistories)
   batHo: BatHo;
+
+  @ManyToOne(() => Pawn, (pawn) => pawn.paymentHistories)
+  pawn: Pawn;
 
   @OneToOne(() => User)
   @JoinColumn()

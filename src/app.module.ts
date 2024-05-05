@@ -33,6 +33,8 @@ import { UpdateStatusModule } from './update-status/update-status.module';
 import { UploadModule } from './upload/upload.module';
 import { UserModule } from './user/user.module';
 import { GroupCashModule } from './group-cash/group-cash.module';
+import { AssetTypeModule } from './asset-type/asset-type.module';
+import { PawnModule } from './pawn/pawn.module';
 
 @Module({
   imports: [
@@ -81,6 +83,8 @@ import { GroupCashModule } from './group-cash/group-cash.module';
     StatisticsModule,
     CsvModule,
     GroupCashModule,
+    AssetTypeModule,
+    PawnModule,
   ],
   providers: [
     {

@@ -23,11 +23,15 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { User } from 'src/user/user.entity';
+import { DatabaseService } from 'src/database/database.service';
 
 @ApiTags('Customer')
 @Controller(RouterUrl.CUSTOMER.ROOT)
 export class CustomerController {
-  constructor(private customerService: CustomerService) {}
+  constructor(
+    private customerService: CustomerService,
+    private databaseService: DatabaseService,
+  ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
@@ -160,6 +164,28 @@ export class CustomerController {
       const responseData: ResponseData = {
         message: 'success',
         data: { customer },
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(RouterUrl.CUSTOMER.TRANSACTION_HISTORY)
+  async getTransactionHistory(@Res() res: Response, @Req() req: Request) {
+    try {
+      const { id } = req.params;
+
+      const list_contract =
+        await this.customerService.getTransactionHistory(id);
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data: { list_contract },
         error: null,
         statusCode: 200,
       };

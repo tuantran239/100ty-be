@@ -4,7 +4,7 @@ import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { Role } from 'src/role/entities/role.entity';
 import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
 import { User } from 'src/user/user.entity';
-import { BatHoResponse, DebitStatus } from '../interface/bat-ho';
+import { BatHoResponse, DebitStatus, PawnResponse } from '../interface/bat-ho';
 import { PaymentStatusHistory } from '../interface/history';
 import { UserResponseData } from '../interface/response';
 import { Cash } from './../../cash/cash.entity';
@@ -15,6 +15,7 @@ import {
   countTimeMustPay,
   formatDate,
 } from './time';
+import { Pawn } from 'src/pawn/pawn.entity';
 
 export const mapUserResponse = (
   user: User | null,
@@ -90,6 +91,9 @@ export const mapBatHoResponse = (
     const numberOfPayments = 1;
 
     let isFinishToday = false;
+    let latePaymentDay = 0;
+    let latePaymentMoney = 0;
+    let badDebitMoney = 0;
 
     const dates = countFromToDate(
       loanDurationDays - 1,
@@ -116,10 +120,6 @@ export const mapBatHoResponse = (
     const paymentHistory = paymentHistories.find(
       (paymentHistory) => !paymentHistory.paymentStatus,
     );
-
-    let latePaymentDay = 0;
-    let latePaymentMoney = 0;
-    let badDebitMoney = 0;
 
     const today = formatDate(new Date());
 
@@ -181,7 +181,7 @@ export const mapBatHoResponse = (
         ...batHo,
         loanDate: moment(new Date(batHo.loanDate)).format('DD/MM/YYYY') as any,
         timePayment,
-        moneyPaid: `${moneyPaidNumber.toLocaleString()}${paidDuration ? ` (${paidDuration}) kỳ` : ''}`,
+        moneyPaid: `${moneyPaidNumber.toLocaleString()}${paidDuration ? `(${paidDuration}) kỳ` : ''}`,
         oldDebit: 0,
         moneyOneDay: parseInt((revenueReceived / loanDurationDays).toString()),
         moneyMustPay: `${(revenueReceived - moneyPaidNumber).toLocaleString()}${duration - paidDuration ? ` (${duration - paidDuration}) kỳ` : ''}`,
@@ -192,6 +192,20 @@ export const mapBatHoResponse = (
         isFinishToday,
         latePaymentMoney,
         badDebitMoney,
+      },
+    };
+  }
+  return null;
+};
+
+export const mapPawnResponse = (
+  pawn: Pawn | null,
+): { pawn: PawnResponse } | null => {
+  if (pawn) {
+    return {
+      pawn: {
+        ...pawn,
+        loanDate: moment(new Date(pawn.loanDate)).format('DD/MM/YYYY') as any,
       },
     };
   }

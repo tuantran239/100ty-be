@@ -1,4 +1,5 @@
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
+import { Pawn } from 'src/pawn/pawn.entity';
 
 export enum BatHoPaymentMethod {
   DAY = 'day',
@@ -41,6 +42,19 @@ export interface BatHoResponse extends Omit<BatHo, 'beforeInsert'> {
   isFinishToday: boolean;
   latePaymentMoney: number;
   badDebitMoney: number;
+}
+
+export interface PawnResponse extends Omit<Pawn, 'beforeInsert'> {
+  // timePayment: string;
+  // moneyPaid: string;
+  // oldDebit: number;
+  // moneyOneDay: number;
+  // moneyMustPay: string;
+  // dateMustPay: string;
+  // latePaymentDay: number;
+  // isFinishToday: boolean;
+  // latePaymentMoney: number;
+  // badDebitMoney: number;
 }
 
 export interface PaymentHistoryResponse {

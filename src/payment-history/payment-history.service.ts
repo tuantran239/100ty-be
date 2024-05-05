@@ -67,26 +67,37 @@ export class PaymentHistoryService extends BaseService<
           transactionHistoryRepository,
         } = repositories;
 
-        const paymentHistory = await paymentHistoryRepository.findOne({
+        const paymentHistoryFind = await paymentHistoryRepository.findOne({
           where: { id },
-          relations: ['batHo', 'batHo.customer', 'batHo.user'],
         });
 
-        if (!paymentHistory) {
+        if (!paymentHistoryFind) {
           throw new Error('Không tìm thấy lịch đóng');
         }
 
-        if (paymentHistory.batHo?.maturityDate) {
-          throw new Error('Hợp đồng này đã đáo hạn');
-        }
+        const relations =
+          paymentHistoryFind.contractType === ContractType.BAT_HO
+            ? ['batHo', 'batHo.customer', 'batHo.user']
+            : ['pawn', 'pawn.customer', 'pawn.user'];
 
-        if (paymentHistory.isDeductionMoney) {
-          throw new Error('Không thể thay đổi ngày cắt');
+        const paymentHistory = await paymentHistoryRepository.findOne({
+          where: { id },
+          relations,
+        });
+
+        if (paymentHistoryFind.contractType === ContractType.BAT_HO) {
+          if (paymentHistory.batHo?.maturityDate) {
+            throw new Error('Hợp đồng này đã đáo hạn');
+          }
+
+          if (paymentHistory.isDeductionMoney) {
+            throw new Error('Không thể thay đổi ngày cắt');
+          }
         }
 
         const cash = await cashRepository.findOne({
           where: {
-            batHoId: paymentHistory.batHoId,
+            contractId: paymentHistory.contractId,
             filterType: CashFilterType.RECEIPT_CONTRACT,
           },
         });
@@ -115,6 +126,7 @@ export class PaymentHistoryService extends BaseService<
 
         let payloadTransactionHistory: CreateTransactionHistoryDto = {
           batHoId: paymentHistory.batHoId,
+          pawnId: paymentHistory.pawnId,
           userId: paymentHistory.userId,
           contractId: paymentHistory.contractId,
           type: '',
@@ -173,6 +185,8 @@ export class PaymentHistoryService extends BaseService<
       });
 
     await this.updateStatusService.updateBatHoStatus(paymentHistory?.batHo?.id);
+
+    await this.updateStatusService.updatePawnStatus(paymentHistory?.pawn?.id);
 
     return result;
   }

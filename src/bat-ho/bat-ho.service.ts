@@ -139,7 +139,10 @@ export class BatHoService extends BaseService<
 
         newBatHo = await batHoRepository.save(newBatHo);
 
-        const paymentHistories = await this.countBatHoPayment(newBatHo, userId);
+        const paymentHistories = await this.countBatHoPaymentHistory(
+          newBatHo,
+          userId,
+        );
 
         const newPaymentHistories = await Promise.all(
           paymentHistories.map(async (paymentHistory) => {
@@ -331,7 +334,7 @@ export class BatHoService extends BaseService<
 
           await transactionHistoryRepository.delete({ batHoId: batHo.id });
 
-          const paymentHistories = await this.countBatHoPayment(
+          const paymentHistories = await this.countBatHoPaymentHistory(
             batHo,
             batHo.userId,
           );
@@ -454,7 +457,7 @@ export class BatHoService extends BaseService<
     return this.batHoRepository.findOne(options);
   }
 
-  async countBatHoPayment(
+  async countBatHoPaymentHistory(
     batHo: BatHo,
     userId: string,
   ): Promise<CreatePaymentHistoryDto[]> {

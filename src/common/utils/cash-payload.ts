@@ -58,7 +58,7 @@ export const createCashContractPayload = (
   if (contract.contractType === ContractType.BAT_HO) {
     defaultPayload = { ...defaultPayload, batHoId: contract.id };
   } else if (contract.contractType === ContractType.CAM_DO) {
-    defaultPayload = { ...defaultPayload, batHoId: contract.id };
+    defaultPayload = { ...defaultPayload, pawnId: contract.id };
   }
 
   switch (filterCash) {

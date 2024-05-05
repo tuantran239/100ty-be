@@ -5,7 +5,12 @@ export class CreateTransactionHistoryDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  batHoId: string;
+  batHoId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  pawnId?: string;
 
   @ApiProperty()
   @IsString()

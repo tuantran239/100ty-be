@@ -16,7 +16,12 @@ export class CreatePaymentHistoryDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  batHoId: string;
+  batHoId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  pawnId?: string;
 
   @ApiProperty()
   @IsString()
@@ -32,6 +37,11 @@ export class CreatePaymentHistoryDto {
   @IsBoolean()
   @IsOptional()
   isDeductionMoney?: boolean;
+
+  @ApiProperty()
+  @IsBoolean()
+  @IsOptional()
+  isRootMoney?: boolean;
 
   @ApiProperty()
   @IsString()

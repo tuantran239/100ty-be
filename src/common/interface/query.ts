@@ -25,6 +25,12 @@ export interface BatHoQuery extends DateQuery {
   receiptToday?: boolean;
 }
 
+export interface PawnQuery extends DateQuery {
+  debitStatus?: string;
+  search?: string;
+  receiptToday?: boolean;
+}
+
 export interface CustomerQuery extends BaseQuery {
   search?: string;
   isDebt?: boolean;

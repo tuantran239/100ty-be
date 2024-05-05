@@ -825,8 +825,6 @@ export class BatHoController {
           });
 
           if (!receiptCash) {
-            console.log(batHo.id);
-
             const newCashReceipt = await cashRepository.create({
               ...createCashContractPayload(
                 batHo.user,
@@ -846,8 +844,6 @@ export class BatHoController {
               contractId: batHo.contractId,
               contractStatus: batHo.debitStatus,
             });
-
-            console.log(newCashReceipt);
 
             await cashRepository.save(newCashReceipt);
           }

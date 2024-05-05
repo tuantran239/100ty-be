@@ -18,13 +18,18 @@ const USER: BaseRouter = {
   DELETE: '/:id',
 };
 
-const CUSTOMER: BaseRouter = {
+interface CustomerRouter extends BaseRouter {
+  TRANSACTION_HISTORY: string;
+}
+
+const CUSTOMER: CustomerRouter = {
   ROOT: `${API_URL}/customers`,
   CREATE: '/',
   UPDATE: '/:id',
   LIST: '/list',
   RETRIEVE: '/:id',
   DELETE: '/:id',
+  TRANSACTION_HISTORY: '/transaction-history/:id',
 };
 
 const ROLE: BaseRouter = {
@@ -74,6 +79,22 @@ const BAT_HO: BatHoRouter = {
   CHECK_UPDATE: 'check-update',
   SETTLEMENT: '/settlement/:id',
   REVERSE_CONTRACT: '/reverse-contract/:id',
+};
+
+interface PawnRouter extends BaseRouter {
+  REMOVE: string;
+  INFO: string;
+}
+
+const PAWN: PawnRouter = {
+  ROOT: `${API_URL}/pawn`,
+  CREATE: '/',
+  UPDATE: '/:id',
+  LIST: '/list',
+  RETRIEVE: '/:id',
+  DELETE: '/:id',
+  REMOVE: '/remove/:id',
+  INFO: '/info/:id',
 };
 
 interface PaymentHistoryRouter extends BaseRouter {
@@ -159,6 +180,15 @@ const GROUP_CASH: GroupCashRouter = {
   DELETE: '/:id',
 };
 
+const ASSET_TYPE: BaseRouter = {
+  ROOT: `${API_URL}/asset-type`,
+  CREATE: '/',
+  UPDATE: '/:id',
+  LIST: '/list',
+  RETRIEVE: '/:id',
+  DELETE: '/:id',
+};
+
 const RouterUrl = {
   USER,
   AUTH,
@@ -173,6 +203,8 @@ const RouterUrl = {
   STATISTICS,
   CSV,
   GROUP_CASH,
+  ASSET_TYPE,
+  PAWN,
 };
 
 export default RouterUrl;

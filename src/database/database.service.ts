@@ -5,6 +5,7 @@ import { Customer } from 'src/customer/customer.entity';
 import { Device } from 'src/device/device.entity';
 import { GroupCash } from 'src/group-cash/entity/group-cash.entity';
 import { HostServer } from 'src/host-server/host-server.entity';
+import { Pawn } from 'src/pawn/pawn.entity';
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { Role } from 'src/role/entities/role.entity';
 import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
@@ -22,6 +23,7 @@ export interface DataSourceRepository {
   transactionHistoryRepository: Repository<TransactionHistory>;
   userRepository: Repository<User>;
   groupCashRepository: Repository<GroupCash>;
+  pawnRepository: Repository<Pawn>;
 }
 
 @Injectable()
@@ -42,6 +44,7 @@ export class DatabaseService {
         this.dataSource.manager.getRepository(TransactionHistory),
       userRepository: this.dataSource.manager.getRepository(User),
       groupCashRepository: this.dataSource.manager.getRepository(GroupCash),
+      pawnRepository: this.dataSource.manager.getRepository(Pawn),
     };
   }
 
@@ -65,6 +68,7 @@ export class DatabaseService {
         queryRunner.manager.getRepository(TransactionHistory),
       userRepository: queryRunner.manager.getRepository(User),
       groupCashRepository: queryRunner.manager.getRepository(GroupCash),
+      pawnRepository: queryRunner.manager.getRepository(Pawn),
     };
 
     try {

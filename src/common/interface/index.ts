@@ -88,3 +88,16 @@ export enum GroupCashStatus {
   ACTIVE = 'active',
   OFF = 'off',
 }
+
+export interface ContractResponse {
+  contractId: string;
+  loanDate: string;
+  debitStatus: string;
+  loanAmount: number;
+  latePaymentMoney: number;
+  badDebitMoney: number;
+  latePaymentDay: number;
+  moneyMustPay: number;
+  moneyPaid: number;
+  contractType: string;
+}
