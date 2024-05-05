@@ -1,0 +1,88 @@
+image: docker/compose:latest
+
+services:
+    - name: docker:dind
+      alias: docker
+      command: [ "--tls=false" ]
+
+variables:
+  DEV_IMAGE_APP_TAG: "$CI_REGISTRY_IMAGE:dev"
+  PROD_IMAGE_APP_TAG: "$CI_REGISTRY_IMAGE:prod"
+  DOCKER_DRIVER: overlay2
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  #GIT_SUBMODULE_STRATEGY: recursive
+
+
+.docker_job:
+  before_script:
+    - docker version
+    - docker-compose --version
+    - echo $CI_REGISTRY_PASSWORD > ~/my_password.txt
+    - cat ~/my_password.txt | docker login --username $CI_REGISTRY_USER --password-stdin $CI_REGISTRY
+
+.notify_job:
+  after_script:
+    - >
+      if [ $CI_JOB_STATUS == 'success' ]; then
+        echo "text=\[$CI_COMMIT_BRANCH] 🟢 $CI_PROJECT_PATH Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
+        curl -v -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+        -d "chat_id=-4030196653" \
+        -d "parse_mode=markdown" \
+        -d "text=\[$CI_COMMIT_BRANCH] 🟢 $CI_PROJECT_PATH Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
+      else
+        echo "text=\[$CI_COMMIT_BRANCH] 🔴 $CI_PROJECT_PATH Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
+        curl -v -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
+        -d "chat_id=-4030196653" \
+        -d "parse_mode=markdown" \
+        -d "text=\[$CI_COMMIT_BRANCH] 🔴 $CI_PROJECT_PATH Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
+      fi
+
+stages:
+  - deploy-dev
+  - deploy-prod
+
+deploy-dev:
+  stage: deploy-dev
+  extends: 
+    - .docker_job
+    - .notify_job
+  script:
+    - apk update && apk add openssh-client bash && apk add --no-cache curl
+    - eval $(ssh-agent -s)
+    - bash -c 'ssh-add <(echo "$PROD_SSH_KEY")'
+    #- git submodule update int --recursive
+    - echo "IMAGE_APP_TAG=$DEV_IMAGE_APP_TAG" >> .env
+    - echo "JWT_SECRET=$JWT_SECRET_KEY" >> .env
+    - echo "DATABASE_PASSWORD=$PGSQL_PASSWORD" >> .env
+    - docker-compose -H "ssh://$PROD_USER@$PROD_IP" -f docker-compose.dev.yml -p 100ty build
+    - docker-compose -H "ssh://$PROD_USER@$PROD_IP" -f docker-compose.dev.yml -p 100ty down
+    - docker-compose -H "ssh://$PROD_USER@$PROD_IP" -f docker-compose.dev.yml -p 100ty up -d
+    - >
+      ssh -o StrictHostKeyChecking=no $PROD_USER@$PROD_IP
+      "docker image prune -f;docker volume prune -f;docker network prune -f;docker container prune -f;"
+  only:
+    - dev
+
+deploy-prod:
+  stage: deploy-prod
+  extends: 
+    - .docker_job
+    - .notify_job
+  script:
+    - apk update && apk add openssh-client bash && apk add --no-cache curl
+    #- git submodule update int --recursive
+    - eval $(ssh-agent -s)
+    - bash -c 'ssh-add <(echo "$PROD_SSH_KEY")'
+    - echo "IMAGE_APP_TAG=$PROD_IMAGE_APP_TAG" >> .env
+    - echo "JWT_SECRET=$JWT_SECRET_KEY" >> .env
+    - echo "DATABASE_PASSWORD=$PGSQL_PASSWORD" >> .env
+    - docker-compose -H "ssh://$PROD_USER@$PROD_IP" -f docker-compose.prod.yml -p 100ty build
+    - docker-compose -H "ssh://$PROD_USER@$PROD_IP" -f docker-compose.prod.yml -p 100ty down
+    - docker-compose -H "ssh://$PROD_USER@$PROD_IP" -f docker-compose.prod.yml -p 100ty up -d
+    - >
+      ssh -o StrictHostKeyChecking=no $PROD_USER@$PROD_IP
+      "docker image prune -f;docker volume prune -f;docker network prune -f;docker container prune -f;"
+  only:
+    - main
+
