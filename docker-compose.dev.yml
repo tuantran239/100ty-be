@@ -1,0 +1,32 @@
+version: '3'
+services:
+  back-end-dev:
+    container_name: dev-100ty-backend
+    image: ${IMAGE_APP_TAG}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      ENV_ENVIROMENT: dev
+      PORT: 9000
+      CLIENT_URL: http://localhost:3000
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: PostgreSQL
+      DATABASE_PORT: 5432
+      DATABASE_NAME: 100ty-dev
+      DATABASE_USERNAME: agen138
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE_IN: 7d
+      CLOUDINARY_NAME: deosi1ics
+      CLOUDINARY_API_KEY: 998226492941515
+      CLOUDINARY_API_SECRET: guXkpRKdlQEpT0JylulbcrSDurM
+    ports:
+      - "5334:9000"
+    restart: always
+    networks:
+      - 100ty
+
+networks:
+  100ty:
+    external: true

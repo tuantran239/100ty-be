@@ -1,0 +1,8 @@
+{
+  "auth": {
+    "email_exists": "Email already exist, please try another email.",
+    "username_exists": "Username already exist, please try another username.",
+    "username_email_not_match": "Username or email not match, please try another.",
+    "password_not_match": "Password not match, please try another."
+  }
+}
