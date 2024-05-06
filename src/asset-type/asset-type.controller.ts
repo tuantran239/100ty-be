@@ -112,6 +112,7 @@ export class AssetTypeController {
 
       const data = await this.assetTypeService.listAndCount({
         where,
+        relations: ['properties'],
         take: pageSize ?? 10,
         skip: ((page ?? 1) - 1) * (pageSize ?? 10),
         order: {

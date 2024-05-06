@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { AssetProperty } from 'src/asset-type/entities/asset-property.entity';
+import { AssetType } from 'src/asset-type/entities/asset-type.entity';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import { Cash } from 'src/cash/cash.entity';
 import { Customer } from 'src/customer/customer.entity';
@@ -24,6 +26,8 @@ export interface DataSourceRepository {
   userRepository: Repository<User>;
   groupCashRepository: Repository<GroupCash>;
   pawnRepository: Repository<Pawn>;
+  assetTypeRepository: Repository<AssetType>;
+  assetPropertyRepository: Repository<AssetProperty>;
 }
 
 @Injectable()
@@ -45,6 +49,9 @@ export class DatabaseService {
       userRepository: this.dataSource.manager.getRepository(User),
       groupCashRepository: this.dataSource.manager.getRepository(GroupCash),
       pawnRepository: this.dataSource.manager.getRepository(Pawn),
+      assetTypeRepository: this.dataSource.manager.getRepository(AssetType),
+      assetPropertyRepository:
+        this.dataSource.manager.getRepository(AssetProperty),
     };
   }
 
@@ -69,6 +76,8 @@ export class DatabaseService {
       userRepository: queryRunner.manager.getRepository(User),
       groupCashRepository: queryRunner.manager.getRepository(GroupCash),
       pawnRepository: queryRunner.manager.getRepository(Pawn),
+      assetTypeRepository: queryRunner.manager.getRepository(AssetType),
+      assetPropertyRepository: queryRunner.manager.getRepository(AssetProperty),
     };
 
     try {

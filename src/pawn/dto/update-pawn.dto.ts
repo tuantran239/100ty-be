@@ -13,6 +13,11 @@ export class UpdatePawnDto {
   loanPaymentType?: string;
 
   @ApiProperty()
+  @IsString()
+  @IsOptional()
+  assetName?: string;
+
+  @ApiProperty()
   @IsNumber()
   @IsOptional()
   loanAmount?: number;
@@ -51,6 +56,10 @@ export class UpdatePawnDto {
   @IsNumber()
   @IsOptional()
   interestMoney?: number;
+
+  @ApiProperty()
+  @IsOptional()
+  files?: any;
 
   @ApiProperty()
   @IsOptional()
