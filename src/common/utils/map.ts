@@ -202,9 +202,19 @@ export const mapPawnResponse = (
   pawn: Pawn | null,
 ): { pawn: PawnResponse } | null => {
   if (pawn) {
+    const paymentHistories = pawn.paymentHistories;
+
+    const moneyPaidNumber = paymentHistories.reduce((total, paymentHistory) => {
+      if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
+        return (total += paymentHistory.payMoney);
+      }
+      return total;
+    }, 0);
+
     return {
       pawn: {
         ...pawn,
+        moneyPaid: moneyPaidNumber,
         loanDate: moment(new Date(pawn.loanDate)).format('DD/MM/YYYY') as any,
       },
     };
