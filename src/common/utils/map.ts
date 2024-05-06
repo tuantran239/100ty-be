@@ -1,21 +1,17 @@
 import * as moment from 'moment';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
+import { Pawn } from 'src/pawn/pawn.entity';
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { Role } from 'src/role/entities/role.entity';
 import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
 import { User } from 'src/user/user.entity';
-import { BatHoResponse, DebitStatus, PawnResponse } from '../interface/bat-ho';
+import { BatHoResponse, PawnResponse } from '../interface/bat-ho';
 import { PaymentStatusHistory } from '../interface/history';
 import { UserResponseData } from '../interface/response';
 import { Cash } from './../../cash/cash.entity';
+import { calculateLateAndBadPaymentIcloud } from './calculate';
 import { getFullName } from './get-full-name';
-import {
-  convertPostgresDate,
-  countFromToDate,
-  countTimeMustPay,
-  formatDate,
-} from './time';
-import { Pawn } from 'src/pawn/pawn.entity';
+import { countFromToDate, countTimeMustPay, formatDate } from './time';
 
 export const mapUserResponse = (
   user: User | null,
@@ -90,11 +86,6 @@ export const mapBatHoResponse = (
     const paymentMethod = 'day';
     const numberOfPayments = 1;
 
-    let isFinishToday = false;
-    let latePaymentDay = 0;
-    let latePaymentMoney = 0;
-    let badDebitMoney = 0;
-
     const dates = countFromToDate(
       loanDurationDays - 1,
       paymentMethod as any,
@@ -121,60 +112,11 @@ export const mapBatHoResponse = (
       (paymentHistory) => !paymentHistory.paymentStatus,
     );
 
-    const today = formatDate(new Date());
-
-    const lastPaymentHistoryUnfinish = batHo.paymentHistories
-      .sort((p1, p2) => p1.rowId - p2.rowId)
-      .find(
-        (paymentHistory) =>
-          (paymentHistory.paymentStatus == PaymentStatusHistory.UNFINISH ||
-            paymentHistory.paymentStatus == null) &&
-          formatDate(paymentHistory.startDate) !== today &&
-          new Date(paymentHistory.startDate).getTime() <
-            new Date(convertPostgresDate(today)).getTime(),
+    const { latePaymentDay, latePaymentMoney, badDebitMoney, isFinishToday } =
+      calculateLateAndBadPaymentIcloud(
+        batHo.paymentHistories ?? [],
+        batHo.debitStatus,
       );
-
-    if (lastPaymentHistoryUnfinish) {
-      latePaymentDay = Math.round(
-        (new Date(convertPostgresDate(today)).getTime() -
-          new Date(lastPaymentHistoryUnfinish.startDate).getTime()) /
-          86400000,
-      );
-
-      latePaymentMoney = batHo.paymentHistories
-        .sort((p1, p2) => p1.rowId - p2.rowId)
-        .reduce((total, paymentHistory) => {
-          if (
-            (paymentHistory.paymentStatus == PaymentStatusHistory.UNFINISH ||
-              paymentHistory.paymentStatus == null) &&
-            formatDate(paymentHistory.startDate) !== today &&
-            new Date(paymentHistory.startDate).getTime() <
-              new Date(convertPostgresDate(today)).getTime()
-          ) {
-            return paymentHistory.payNeed + total;
-          }
-          return total;
-        }, 0);
-    }
-
-    const paymentHistoryFinishToday = batHo.paymentHistories.find(
-      (paymentHistory) =>
-        paymentHistory.paymentStatus == PaymentStatusHistory.FINISH &&
-        formatDate(paymentHistory.startDate) == today,
-    );
-
-    if (paymentHistoryFinishToday) {
-      isFinishToday = true;
-    }
-
-    if (batHo.debitStatus == DebitStatus.BAD_DEBIT) {
-      badDebitMoney = batHo.paymentHistories.reduce((total, paymentHistory) => {
-        if (paymentHistory.paymentStatus != PaymentStatusHistory.FINISH) {
-          return total + paymentHistory.payNeed;
-        }
-        return total;
-      }, 0);
-    }
 
     return {
       batHo: {

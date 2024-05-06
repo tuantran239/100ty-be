@@ -3,7 +3,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ContractResponse, ContractType } from 'src/common/interface';
+import { PaymentStatusHistory } from 'src/common/interface/history';
 import { BaseService } from 'src/common/service/base.service';
+import { calculateLateAndBadPaymentIcloud } from 'src/common/utils/calculate';
+import { convertPostgresDate, formatDate } from 'src/common/utils/time';
+import { DatabaseService } from 'src/database/database.service';
 import {
   DataSource,
   DeleteResult,
@@ -16,11 +21,6 @@ import {
 import { Customer } from './customer.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { convertPostgresDate, formatDate } from 'src/common/utils/time';
-import { DatabaseService } from 'src/database/database.service';
-import { ContractResponse, ContractType } from 'src/common/interface';
-import { PaymentStatusHistory } from 'src/common/interface/history';
-import { DebitStatus } from 'src/common/interface/bat-ho';
 
 @Injectable()
 export class CustomerService extends BaseService<
@@ -149,9 +149,11 @@ export class CustomerService extends BaseService<
 
       const paymentHistories = batHo.paymentHistories;
 
-      let latePaymentDay = 0;
-      let latePaymentMoney = 0;
-      let badDebitMoney = 0;
+      const { latePaymentDay, latePaymentMoney, badDebitMoney } =
+        calculateLateAndBadPaymentIcloud(
+          batHo.paymentHistories ?? [],
+          batHo.debitStatus,
+        );
 
       const moneyPaidNumber = paymentHistories.reduce(
         (total, paymentHistory) => {
@@ -162,54 +164,6 @@ export class CustomerService extends BaseService<
         },
         0,
       );
-
-      const today = formatDate(new Date());
-
-      const lastPaymentHistoryUnfinish = batHo.paymentHistories
-        .sort((p1, p2) => p1.rowId - p2.rowId)
-        .find(
-          (paymentHistory) =>
-            (paymentHistory.paymentStatus == PaymentStatusHistory.UNFINISH ||
-              paymentHistory.paymentStatus == null) &&
-            formatDate(paymentHistory.startDate) !== today &&
-            new Date(paymentHistory.startDate).getTime() <
-              new Date(convertPostgresDate(today)).getTime(),
-        );
-
-      if (lastPaymentHistoryUnfinish) {
-        latePaymentDay = Math.round(
-          (new Date(convertPostgresDate(today)).getTime() -
-            new Date(lastPaymentHistoryUnfinish.startDate).getTime()) /
-            86400000,
-        );
-
-        latePaymentMoney = batHo.paymentHistories
-          .sort((p1, p2) => p1.rowId - p2.rowId)
-          .reduce((total, paymentHistory) => {
-            if (
-              (paymentHistory.paymentStatus == PaymentStatusHistory.UNFINISH ||
-                paymentHistory.paymentStatus == null) &&
-              formatDate(paymentHistory.startDate) !== today &&
-              new Date(paymentHistory.startDate).getTime() <
-                new Date(convertPostgresDate(today)).getTime()
-            ) {
-              return paymentHistory.payNeed + total;
-            }
-            return total;
-          }, 0);
-      }
-
-      if (batHo.debitStatus == DebitStatus.BAD_DEBIT) {
-        badDebitMoney = batHo.paymentHistories.reduce(
-          (total, paymentHistory) => {
-            if (paymentHistory.paymentStatus != PaymentStatusHistory.FINISH) {
-              return total + paymentHistory.payNeed;
-            }
-            return total;
-          },
-          0,
-        );
-      }
 
       contractResponses.push({
         badDebitMoney,
