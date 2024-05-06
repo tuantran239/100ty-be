@@ -146,6 +146,15 @@ export class PawnService extends BaseService<
           }),
         );
 
+        const revenueReceived = newPaymentHistories.reduce(
+          (total, paymentHistory) => {
+            return total + paymentHistory.payNeed;
+          },
+          0,
+        );
+
+        await pawnRepository.update({ id: newPawn.id }, { revenueReceived });
+
         const user = await userRepository.findOne({ where: { id: userId } });
 
         const newCashPaymentContract = await cashRepository.create(
@@ -314,6 +323,15 @@ export class PawnService extends BaseService<
               return newPaymentHistory;
             }),
           );
+
+          const revenueReceived = newPaymentHistories.reduce(
+            (total, paymentHistory) => {
+              return total + paymentHistory.payNeed;
+            },
+            0,
+          );
+
+          await pawnRepository.update({ id: pawn.id }, { revenueReceived });
 
           await cashRepository.update(
             { pawnId: pawn.id, filterType: CashFilterType.RECEIPT_CONTRACT },
@@ -495,7 +513,7 @@ export class PawnService extends BaseService<
       loanPaymentType === PawnLoanPaymentType.DAY &&
       paymentPeriodType === PawnPaymentPeriodType.LOAN_MIL_DAY
     ) {
-      const milPeriod = Math.round(loanAmount / 100000);
+      const milPeriod = Math.round(loanAmount / 1000000);
       money = milPeriod * interestMoney * paymentPeriod;
     }
 
