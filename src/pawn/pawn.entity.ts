@@ -1,4 +1,4 @@
-import { AssetType } from 'src/asset-type/asset-type.entity';
+import { AssetType } from 'src/asset-type/entities/asset-type.entity';
 import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Customer } from 'src/customer/customer.entity';
@@ -23,6 +23,9 @@ export class Pawn extends SoftDeletableEntity {
 
   @Column()
   loanPaymentType: string;
+
+  @Column()
+  assetName: string;
 
   @Column()
   loanAmount: number;
@@ -51,6 +54,9 @@ export class Pawn extends SoftDeletableEntity {
   @Column({ type: 'jsonb', nullable: true })
   pawnInfo?: Record<string, unknown>;
 
+  @Column({ type: 'character varying' })
+  files?: string[];
+
   @ManyToOne(() => User, (user) => user.contractsPawn)
   user: User;
 
@@ -68,6 +74,9 @@ export class Pawn extends SoftDeletableEntity {
 
   @OneToMany(() => PaymentHistory, (paymentHistory) => paymentHistory.pawn)
   paymentHistories: PaymentHistory[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  serviceFee: any;
 
   @BeforeInsert()
   private beforeInsert(): void {

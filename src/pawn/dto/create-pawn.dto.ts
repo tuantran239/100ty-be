@@ -18,9 +18,18 @@ export class CreatePawnDto {
   customer?: CreateCustomerDto;
 
   @ApiProperty()
+  @IsOptional()
+  assetTypeId?: string;
+
+  @ApiProperty()
   @IsString()
   @IsNotEmpty()
   contractId: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  assetName: string;
 
   @ApiProperty()
   @IsString()
@@ -66,6 +75,10 @@ export class CreatePawnDto {
   @IsNumber()
   @IsNotEmpty()
   interestMoney: number;
+
+  @ApiProperty()
+  @IsOptional()
+  files?: any;
 
   @ApiProperty()
   @IsOptional()

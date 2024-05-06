@@ -237,7 +237,7 @@ export class PawnController {
       }
 
       const data = await this.pawnService.listAndCount({
-        relations: ['customer', 'paymentHistories', 'user'],
+        relations: ['customer', 'paymentHistories', 'user', 'assetType'],
         where: [...where],
         take: pageSize ?? 10,
         skip: ((page ?? 1) - 1) * (pageSize ?? 10),
@@ -249,7 +249,7 @@ export class PawnController {
       for (let i = 0; i < data[0].length; i++) {
         const pawn = await this.pawnService.retrieveOne({
           where: { id: data[0][i].id },
-          relations: ['customer', 'paymentHistories', 'user'],
+          relations: ['customer', 'paymentHistories', 'user', 'assetType'],
         });
 
         if (pawn) {
@@ -290,6 +290,8 @@ export class PawnController {
           'transactionHistories',
           'transactionHistories.user',
           'user',
+          'assetType',
+          'assetType.properties',
         ],
       });
 

@@ -13,6 +13,10 @@ export class CreateAssetTypeDto {
   name: string;
 
   @ApiProperty()
+  @IsNotEmpty()
+  properties: string[];
+
+  @ApiProperty()
   @IsString()
   @IsOptional()
   status?: string;

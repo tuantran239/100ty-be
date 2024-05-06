@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BaseService } from 'src/common/service/base.service';
-import { AssetType } from './asset-type.entity';
+import { AssetType } from './entities/asset-type.entity';
 import { CreateAssetTypeDto } from './dto/crerate-asset-type.dto';
 import { UpdateAssetTypeDto } from './dto/update-asset-type.dto';
 import {
@@ -32,8 +32,34 @@ export class AssetTypeService extends BaseService<
   }
 
   async create(payload: CreateAssetTypeDto): Promise<AssetType> {
-    const newAssetType = await this.assetTypeRepository.create(payload);
-    return await this.assetTypeRepository.save(newAssetType);
+    const newAssetType = await this.databaseService.runTransaction(
+      async (repositories) => {
+        const { assetPropertyRepository, assetTypeRepository } = repositories;
+
+        const payloadAssetType = {
+          ...payload,
+          properties: undefined,
+        };
+
+        let newAssetType = await assetTypeRepository.create(payloadAssetType);
+
+        newAssetType = await assetTypeRepository.save(newAssetType);
+
+        await Promise.all(
+          payload.properties.map(async (property) => {
+            const newAssetProperty = await assetPropertyRepository.create({
+              assetTypeId: newAssetType.id,
+              propertyName: property,
+            });
+            await assetPropertyRepository.save(newAssetProperty);
+          }),
+        );
+
+        return newAssetType;
+      },
+    );
+
+    return newAssetType;
   }
 
   async update(id: string, payload: UpdateAssetTypeDto): Promise<any> {
