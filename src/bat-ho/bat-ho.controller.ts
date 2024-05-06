@@ -49,6 +49,7 @@ import { ReverseBatHoDto } from './dto/reverse-bat-ho.dto';
 import { SettlementBatHoDto } from './dto/settlement-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
 import { getBatHoStatus } from 'src/common/utils/status';
+import { calculateLateAndBadPaymentIcloud } from 'src/common/utils/calculate';
 
 export const BAT_HO_CODE_PREFIX = 'bh';
 const ENTITY_LOG = 'BatHo';
@@ -541,54 +542,11 @@ export class BatHoController {
         (batHo.revenueReceived / batHo.loanDurationDays).toString(),
       );
 
-      let latePaymentDay = 0;
-      let latePaymentMoney = 0;
-      let badDebitMoney = 0;
-
-      const today = formatDate(new Date());
-
-      const lastPaymentHistoryUnfinish = paymentHistories
-        .sort((p1, p2) => p1.rowId - p2.rowId)
-        .find(
-          (paymentHistory) =>
-            (paymentHistory.paymentStatus == PaymentStatusHistory.UNFINISH ||
-              paymentHistory.paymentStatus == null) &&
-            formatDate(paymentHistory.startDate) !== today &&
-            new Date(paymentHistory.startDate).getTime() <
-              new Date(convertPostgresDate(today)).getTime(),
+      const { latePaymentDay, latePaymentMoney, badDebitMoney } =
+        calculateLateAndBadPaymentIcloud(
+          batHo.paymentHistories ?? [],
+          batHo.debitStatus,
         );
-
-      if (lastPaymentHistoryUnfinish) {
-        latePaymentDay = Math.round(
-          (new Date(convertPostgresDate(today)).getTime() -
-            new Date(lastPaymentHistoryUnfinish.startDate).getTime()) /
-            86400000,
-        );
-
-        latePaymentMoney = paymentHistories
-          .sort((p1, p2) => p1.rowId - p2.rowId)
-          .reduce((total, paymentHistory) => {
-            if (
-              (paymentHistory.paymentStatus == PaymentStatusHistory.UNFINISH ||
-                paymentHistory.paymentStatus == null) &&
-              formatDate(paymentHistory.startDate) !== today &&
-              new Date(paymentHistory.startDate).getTime() <
-                new Date(convertPostgresDate(today)).getTime()
-            ) {
-              return paymentHistory.payNeed + total;
-            }
-            return total;
-          }, 0);
-      }
-
-      if (batHo.debitStatus == DebitStatus.BAD_DEBIT) {
-        badDebitMoney = paymentHistories.reduce((total, paymentHistory) => {
-          if (paymentHistory.paymentStatus != PaymentStatusHistory.FINISH) {
-            return total + paymentHistory.payNeed;
-          }
-          return total;
-        }, 0);
-      }
 
       const responseData: ResponseData = {
         message: 'success',
