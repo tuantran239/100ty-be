@@ -25,17 +25,17 @@ variables:
   after_script:
     - >
       if [ $CI_JOB_STATUS == 'success' ]; then
-        echo "text=\[$CI_COMMIT_BRANCH] 🟢 $CI_PROJECT_PATH Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
+        echo "text=\[$CI_COMMIT_BRANCH] 🟢 $CI_PROJECT_NAME Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
         curl -v -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
-        -d "chat_id=-4030196653" \
+        -d "chat_id=-4114180992" \
         -d "parse_mode=markdown" \
-        -d "text=\[$CI_COMMIT_BRANCH] 🟢 $CI_PROJECT_PATH Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
+        -d "text=\[$CI_COMMIT_BRANCH] 🟢 $CI_PROJECT_NAME Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
       else
-        echo "text=\[$CI_COMMIT_BRANCH] 🔴 $CI_PROJECT_PATH Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
+        echo "text=\[$CI_COMMIT_BRANCH] 🔴 $CI_PROJECT_NAME Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
         curl -v -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
-        -d "chat_id=-4030196653" \
+        -d "chat_id=-4114180992" \
         -d "parse_mode=markdown" \
-        -d "text=\[$CI_COMMIT_BRANCH] 🔴 $CI_PROJECT_PATH Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
+        -d "text=\[$CI_COMMIT_BRANCH] 🔴 $CI_PROJECT_NAME Deployment:* $CI_COMMIT_AUTHOR* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
       fi
 
 stages:
