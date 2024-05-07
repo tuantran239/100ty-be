@@ -8,6 +8,9 @@ WORKDIR /app
 COPY package*.json ./
 COPY yarn.lock ./
 
+#add timezone
+RUN apk add --no-cache tzdata
+
 # Cài đặt các gói npm bằng yarn
 RUN yarn install
 
