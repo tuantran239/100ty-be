@@ -45,10 +45,11 @@ export interface BatHoResponse extends Omit<BatHo, 'beforeInsert'> {
 }
 
 export interface PawnResponse extends Omit<Pawn, 'beforeInsert'> {
-  // timePayment: string;
   moneyPaid: number;
-  // oldDebit: number;
-  // moneyOneDay: number;
+  moneyOnePeriod: number;
+  latePaymentMoney: number;
+  badDebitMoney: number;
+  latePaymentPeriod: number;
   // moneyMustPay: string;
   // dateMustPay: string;
   // latePaymentDay: number;

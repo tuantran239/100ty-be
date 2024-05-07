@@ -9,7 +9,10 @@ import { BatHoResponse, PawnResponse } from '../interface/bat-ho';
 import { PaymentStatusHistory } from '../interface/history';
 import { UserResponseData } from '../interface/response';
 import { Cash } from './../../cash/cash.entity';
-import { calculateLateAndBadPaymentIcloud } from './calculate';
+import {
+  calculateLateAndBadPaymentIcloud,
+  calculateLateAndBadPaymentPawn,
+} from './calculate';
 import { getFullName } from './get-full-name';
 import { countFromToDate, countTimeMustPay, formatDate } from './time';
 
@@ -146,6 +149,10 @@ export const mapPawnResponse = (
   if (pawn) {
     const paymentHistories = pawn.paymentHistories;
 
+    const moneyOnePeriod =
+      paymentHistories.find((paymentHistory) => !paymentHistory.isRootMoney)
+        ?.payNeed ?? 0;
+
     const moneyPaidNumber = paymentHistories.reduce((total, paymentHistory) => {
       if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
         return (total += paymentHistory.payMoney);
@@ -153,11 +160,21 @@ export const mapPawnResponse = (
       return total;
     }, 0);
 
+    const { latePaymentMoney, latePaymentPeriod, badDebitMoney } =
+      calculateLateAndBadPaymentPawn(
+        pawn.paymentHistories ?? [],
+        pawn.debitStatus,
+      );
+
     return {
       pawn: {
         ...pawn,
         moneyPaid: moneyPaidNumber,
         loanDate: moment(new Date(pawn.loanDate)).format('DD/MM/YYYY') as any,
+        moneyOnePeriod,
+        latePaymentMoney,
+        latePaymentPeriod,
+        badDebitMoney,
       },
     };
   }

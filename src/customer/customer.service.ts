@@ -6,7 +6,10 @@ import {
 import { ContractResponse, ContractType } from 'src/common/interface';
 import { PaymentStatusHistory } from 'src/common/interface/history';
 import { BaseService } from 'src/common/service/base.service';
-import { calculateLateAndBadPaymentIcloud } from 'src/common/utils/calculate';
+import {
+  calculateLateAndBadPaymentIcloud,
+  calculateLateAndBadPaymentPawn,
+} from 'src/common/utils/calculate';
 import { convertPostgresDate, formatDate } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import {
@@ -127,7 +130,8 @@ export class CustomerService extends BaseService<
   }
 
   async getTransactionHistory(id: string) {
-    const { batHoRepository } = this.databaseService.getRepositories();
+    const { batHoRepository, pawnRepository } =
+      this.databaseService.getRepositories();
 
     const customer = await this.retrieveOne({
       where: { id },
@@ -138,6 +142,11 @@ export class CustomerService extends BaseService<
     }
 
     const batHoContracts = await batHoRepository.find({
+      where: { customerId: customer.id, deleted_at: IsNull() },
+      relations: ['paymentHistories'],
+    });
+
+    const pawnContracts = await pawnRepository.find({
       where: { customerId: customer.id, deleted_at: IsNull() },
       relations: ['paymentHistories'],
     });
@@ -175,6 +184,41 @@ export class CustomerService extends BaseService<
         debitStatus: batHo.debitStatus,
         loanAmount: batHo.loanAmount,
         moneyMustPay: batHo.revenueReceived,
+        contractType: ContractType.BAT_HO,
+      });
+    }
+
+    for (let i = 0; i < pawnContracts.length; i++) {
+      const pawn = pawnContracts[i];
+
+      const paymentHistories = pawn.paymentHistories;
+
+      const { latePaymentPeriod, latePaymentMoney, badDebitMoney } =
+        calculateLateAndBadPaymentPawn(
+          pawn.paymentHistories ?? [],
+          pawn.debitStatus,
+        );
+
+      const moneyPaidNumber = paymentHistories.reduce(
+        (total, paymentHistory) => {
+          if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
+            return (total += paymentHistory.payMoney);
+          }
+          return total;
+        },
+        0,
+      );
+
+      contractResponses.push({
+        badDebitMoney,
+        moneyPaid: moneyPaidNumber,
+        latePaymentDay: latePaymentPeriod,
+        latePaymentMoney,
+        contractId: pawn.contractId,
+        loanDate: formatDate(pawn.loanDate),
+        debitStatus: pawn.debitStatus,
+        loanAmount: pawn.loanAmount,
+        moneyMustPay: pawn.revenueReceived,
         contractType: ContractType.BAT_HO,
       });
     }
