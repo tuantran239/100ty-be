@@ -15,6 +15,16 @@ export const isLastPaymentHistoryUnFinish = (
   );
 };
 
+export const isLastPaymentHistoryPeriodUnFinish = (
+  paymentHistory: PaymentHistory,
+) => {
+  const todayTime = new Date().setHours(0, 0, 0, 0);
+  return (
+    paymentHistory.paymentStatus !== PaymentStatusHistory.FINISH &&
+    todayTime > new Date(paymentHistory.startDate).setHours(0, 0, 0, 0)
+  );
+};
+
 export const calculateLateAndBadPaymentIcloud = (
   paymentHistories: PaymentHistory[],
   debitStatus: string,
@@ -30,8 +40,8 @@ export const calculateLateAndBadPaymentIcloud = (
     (p1, p2) => p1.rowId - p2.rowId,
   );
 
-  const lastPaymentHistoryUnfinish = paymentHistories.find((paymentHistory) =>
-    isLastPaymentHistoryUnFinish(paymentHistory),
+  const lastPaymentHistoryUnfinish = sortPaymentHistories.find(
+    (paymentHistory) => isLastPaymentHistoryUnFinish(paymentHistory),
   );
 
   if (lastPaymentHistoryUnfinish) {
@@ -58,7 +68,7 @@ export const calculateLateAndBadPaymentIcloud = (
     }, 0);
   }
 
-  const paymentHistoryFinishToday = paymentHistories.find(
+  const paymentHistoryFinishToday = sortPaymentHistories.find(
     (paymentHistory) =>
       paymentHistory.paymentStatus == PaymentStatusHistory.FINISH &&
       formatDate(paymentHistory.startDate) == today,
@@ -69,4 +79,66 @@ export const calculateLateAndBadPaymentIcloud = (
   }
 
   return { latePaymentDay, latePaymentMoney, badDebitMoney, isFinishToday };
+};
+
+export const calculateLateAndBadPaymentPawn = (
+  paymentHistories: PaymentHistory[],
+  debitStatus: string,
+) => {
+  let latePaymentPeriod = 0;
+  let latePaymentMoney = 0;
+  let badDebitMoney = 0;
+  let isFinishPaymentPeriod = false;
+
+  const today = formatDate(new Date());
+
+  const sortPaymentHistories = paymentHistories.sort(
+    (p1, p2) => p1.rowId - p2.rowId,
+  );
+
+  const lastPaymentHistoryPeriodUnFinish = sortPaymentHistories.find(
+    (paymentHistory) => isLastPaymentHistoryPeriodUnFinish(paymentHistory),
+  );
+
+  if (lastPaymentHistoryPeriodUnFinish) {
+    latePaymentPeriod = sortPaymentHistories.reduce((total, paymentHistory) => {
+      if (isLastPaymentHistoryPeriodUnFinish(paymentHistory)) {
+        return total + 1;
+      }
+      return total;
+    }, 0);
+
+    latePaymentMoney = sortPaymentHistories.reduce((total, paymentHistory) => {
+      if (isLastPaymentHistoryPeriodUnFinish(paymentHistory)) {
+        return paymentHistory.payNeed + total;
+      }
+      return total;
+    }, 0);
+  }
+
+  if (debitStatus == DebitStatus.BAD_DEBIT) {
+    badDebitMoney = paymentHistories.reduce((total, paymentHistory) => {
+      if (paymentHistory.paymentStatus != PaymentStatusHistory.FINISH) {
+        return total + paymentHistory.payNeed;
+      }
+      return total;
+    }, 0);
+  }
+
+  const paymentHistoryFinishToday = paymentHistories.find(
+    (paymentHistory) =>
+      paymentHistory.paymentStatus == PaymentStatusHistory.FINISH &&
+      formatDate(paymentHistory.startDate) == today,
+  );
+
+  if (paymentHistoryFinishToday) {
+    isFinishPaymentPeriod = true;
+  }
+
+  return {
+    latePaymentPeriod,
+    latePaymentMoney,
+    badDebitMoney,
+    isFinishPaymentPeriod,
+  };
 };
