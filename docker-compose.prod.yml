@@ -21,6 +21,7 @@ services:
       CLOUDINARY_NAME: dcnsjrkks
       CLOUDINARY_API_KEY: 276681834787759
       CLOUDINARY_API_SECRET: EyOssITM4DOr0Fn96CXBhoqWk4s
+      TZ: 'Asia/Bangkok'
     ports:
       - "5336:9000"
     restart: always
