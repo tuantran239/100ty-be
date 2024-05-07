@@ -34,7 +34,7 @@ export class CreatePawnDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
-  loanPaymentType: string;
+  interestType: string;
 
   @ApiProperty()
   @IsNumber()

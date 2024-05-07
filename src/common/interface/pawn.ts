@@ -1,8 +1,8 @@
-export enum PawnLoanPaymentType {
+export enum PawnPaymentPeriodType {
   DAY = 'day',
 }
 
-export enum PawnPaymentPeriodType {
+export enum PawnInterestType {
   LOAN_MIL_DAY = 'loan/mil/day',
 }
 
