@@ -21,6 +21,7 @@ services:
       CLOUDINARY_NAME: deosi1ics
       CLOUDINARY_API_KEY: 998226492941515
       CLOUDINARY_API_SECRET: guXkpRKdlQEpT0JylulbcrSDurM
+      TZ: 'Asia/Bangkok'
     ports:
       - "5334:9000"
     restart: always
