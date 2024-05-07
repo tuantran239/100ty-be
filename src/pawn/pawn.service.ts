@@ -3,7 +3,7 @@ import { CashFilterType, ContractType } from 'src/common/interface';
 import { DebitStatus } from 'src/common/interface/bat-ho';
 import { TransactionHistoryType } from 'src/common/interface/history';
 import {
-  PawnLoanPaymentType,
+  PawnInterestType,
   PawnPaymentPeriodType,
 } from 'src/common/interface/pawn';
 import { BaseService } from 'src/common/service/base.service';
@@ -31,6 +31,8 @@ import {
 import { CreatePawnDto } from './dto/create-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { Pawn } from './pawn.entity';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { LoggerServerService } from 'src/logger/logger-server.service';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -44,6 +46,7 @@ export class PawnService extends BaseService<
     private dataSource: DataSource,
     private databaseService: DatabaseService,
     private updateStatusService: UpdateStatusService,
+    private logger: LoggerServerService,
   ) {
     super();
     this.manager = this.dataSource.manager;
@@ -273,9 +276,8 @@ export class PawnService extends BaseService<
         const isUpdateLoanDate =
           payload.loanDate && pawnLoanDate !== payload.loanDate;
 
-        const isUpdateLoanPaymentType =
-          payload.loanPaymentType &&
-          pawn.loanPaymentType !== payload.loanPaymentType;
+        const isUpdateInterestType =
+          payload.interestType && pawn.interestMoney !== payload.interestMoney;
 
         const isUpdateInterestMoney =
           payload.interestMoney && pawn.interestMoney !== payload.interestMoney;
@@ -293,14 +295,14 @@ export class PawnService extends BaseService<
         if (
           isUpdateLoanDate ||
           isUpdateInterestMoney ||
-          isUpdateLoanPaymentType ||
+          isUpdateInterestType ||
           isUpdatePaymentPeriod ||
           isUpdatePaymentPeriodType ||
           isUpdateNumOfPayment
         ) {
           pawn.loanDate = convertPostgresDate(payload.loanDate);
           pawn.interestMoney = payload.interestMoney;
-          pawn.loanPaymentType = payload.loanPaymentType;
+          pawn.interestType = payload.interestType;
           pawn.numOfPayment = payload.numOfPayment;
           pawn.paymentPeriod = payload.paymentPeriod;
           pawn.paymentPeriodType = payload.paymentPeriodType;
@@ -437,7 +439,7 @@ export class PawnService extends BaseService<
       numOfPayment,
       loanDate,
       loanAmount,
-      loanPaymentType,
+      interestType,
       id,
     } = pawn;
 
@@ -449,14 +451,14 @@ export class PawnService extends BaseService<
       loanAmount,
       interestMoney,
       paymentPeriod,
-      loanPaymentType,
+      interestType,
       paymentPeriodType,
     );
 
     while (duration > 0) {
       const dates = countFromToDate(
         paymentPeriod,
-        loanPaymentType as any,
+        paymentPeriodType as any,
         skip,
         loanDate,
       );
@@ -469,7 +471,7 @@ export class PawnService extends BaseService<
           contractId: contractId,
           startDate: convertPostgresDate(formatDate(dates[0])),
           endDate: convertPostgresDate(formatDate(dates[1])),
-          paymentMethod: loanPaymentType,
+          paymentMethod: paymentPeriodType,
           payMoney: 0,
           payNeed: loanAmount,
           paymentStatus: null,
@@ -484,7 +486,7 @@ export class PawnService extends BaseService<
           contractId: contractId,
           startDate: convertPostgresDate(formatDate(dates[0])),
           endDate: convertPostgresDate(formatDate(dates[1])),
-          paymentMethod: loanPaymentType,
+          paymentMethod: paymentPeriodType,
           payMoney: 0,
           payNeed: interestMoneyEachPeriod,
           paymentStatus: null,
@@ -504,14 +506,14 @@ export class PawnService extends BaseService<
     loanAmount: number,
     interestMoney: number,
     paymentPeriod: number,
-    loanPaymentType: string,
+    interestType: string,
     paymentPeriodType: string,
   ) => {
     let money = 0;
 
     if (
-      loanPaymentType === PawnLoanPaymentType.DAY &&
-      paymentPeriodType === PawnPaymentPeriodType.LOAN_MIL_DAY
+      paymentPeriodType === PawnPaymentPeriodType.DAY &&
+      interestType === PawnInterestType.LOAN_MIL_DAY
     ) {
       const milPeriod = Math.round(loanAmount / 1000000);
       money = milPeriod * interestMoney * paymentPeriod;
@@ -519,4 +521,24 @@ export class PawnService extends BaseService<
 
     return money;
   };
+
+  @Cron(CronExpression.EVERY_DAY_AT_1AM)
+  async handleUpdatePawnDebitStatus() {
+    this.logger.log(
+      {
+        customerMessage: `Update debit status in Pawn ( Cầm đồ ) date ${formatDate(new Date())}`,
+      },
+      null,
+    );
+
+    const pawns = await this.list({
+      where: { debitStatus: Not(DebitStatus.COMPLETED) },
+    });
+
+    Promise.allSettled(
+      pawns.map(async (pawn) => {
+        await this.updateStatusService.updatePawnStatus(pawn.id);
+      }),
+    );
+  }
 }

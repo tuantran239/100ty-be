@@ -10,7 +10,7 @@ export class UpdatePawnDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  loanPaymentType?: string;
+  interestType?: string;
 
   @ApiProperty()
   @IsString()

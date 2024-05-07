@@ -1,7 +1,7 @@
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
-import { convertPostgresDate, formatDate } from './time';
-import { PaymentStatusHistory } from '../interface/history';
 import { DebitStatus } from '../interface/bat-ho';
+import { PaymentStatusHistory } from '../interface/history';
+import { convertPostgresDate, formatDate } from './time';
 
 export const isLastPaymentHistoryUnFinish = (
   paymentHistory: PaymentHistory,
@@ -142,3 +142,9 @@ export const calculateLateAndBadPaymentPawn = (
     isFinishPaymentPeriod,
   };
 };
+
+// export const calculateInterestToTodayPawn = (pawn: Pawn) => {
+//   const { paymentPeriod, loanPaymentType } = pawn;
+
+//   const todayTime = new Date().setHours(0, 0, 0, 0);
+// };

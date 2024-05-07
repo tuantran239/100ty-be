@@ -22,7 +22,7 @@ export class Pawn extends SoftDeletableEntity {
   contractId: string;
 
   @Column()
-  loanPaymentType: string;
+  interestType: string;
 
   @Column()
   assetName: string;
