@@ -165,7 +165,7 @@ export class PawnController {
 
       if (receiptToday === true) {
         paymentHistories = {
-          startDate: Equal(convertPostgresDate(today)),
+          endDate: Equal(convertPostgresDate(today)),
           isDeductionMoney: Or(Equal(false), IsNull()),
           paymentStatus: Or(Equal(false), IsNull()),
         };
@@ -320,6 +320,7 @@ export class PawnController {
               : null,
           isDeductionMoney: paymentHistory.isDeductionMoney,
           isRootMoney: paymentHistory.isRootMoney,
+          paymentDate: formatDate(paymentHistory.endDate),
         }),
       );
 

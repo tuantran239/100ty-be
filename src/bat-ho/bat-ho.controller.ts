@@ -518,6 +518,7 @@ export class BatHoController {
               ? formatDate(paymentHistory.payDate)
               : null,
           isDeductionMoney: paymentHistory.isDeductionMoney,
+          paymentDate: formatDate(paymentHistory.startDate),
         }),
       );
 

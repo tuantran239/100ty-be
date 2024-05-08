@@ -23,7 +23,7 @@ export const isLastPaymentHistoryPeriodUnFinish = (
   const todayTime = new Date().setHours(0, 0, 0, 0);
   return (
     paymentHistory.paymentStatus !== PaymentStatusHistory.FINISH &&
-    todayTime > new Date(paymentHistory.startDate).setHours(0, 0, 0, 0)
+    todayTime > new Date(paymentHistory.endDate).setHours(0, 0, 0, 0)
   );
 };
 
