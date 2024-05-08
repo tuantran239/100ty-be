@@ -180,8 +180,12 @@ export class CustomerController {
     try {
       const { id } = req.params;
 
-      const list_contract =
-        await this.customerService.getTransactionHistory(id);
+      const { contractType } = req.query;
+
+      const list_contract = await this.customerService.getTransactionHistory(
+        id,
+        contractType as string,
+      );
 
       const responseData: ResponseData = {
         message: 'success',
