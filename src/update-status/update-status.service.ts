@@ -3,7 +3,7 @@ import { CashFilterType } from 'src/common/interface';
 import { DebitStatus } from 'src/common/interface/bat-ho';
 import { PaymentStatusHistory } from 'src/common/interface/history';
 import { createPaymentHistoriesCash } from 'src/common/utils/cash-payload';
-import { getBatHoStatus } from 'src/common/utils/status';
+import { getBatHoStatus, getPawnStatus } from 'src/common/utils/status';
 import { DatabaseService } from 'src/database/database.service';
 import { DataSource } from 'typeorm';
 
@@ -102,7 +102,7 @@ export class UpdateStatusService {
           where: { id: pawn.customerId },
         });
 
-        const status = getBatHoStatus(pawn.paymentHistories ?? []);
+        const status = getPawnStatus(pawn.paymentHistories ?? []);
 
         if (
           status == DebitStatus.BAD_DEBIT ||
