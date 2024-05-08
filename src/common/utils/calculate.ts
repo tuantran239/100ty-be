@@ -1,6 +1,8 @@
+import { Pawn } from 'src/pawn/pawn.entity';
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { DebitStatus } from '../interface/bat-ho';
 import { PaymentStatusHistory } from '../interface/history';
+import { PawnInterestType } from '../interface/pawn';
 import { convertPostgresDate, formatDate } from './time';
 
 export const isLastPaymentHistoryUnFinish = (
@@ -143,8 +145,49 @@ export const calculateLateAndBadPaymentPawn = (
   };
 };
 
-// export const calculateInterestToTodayPawn = (pawn: Pawn) => {
-//   const { paymentPeriod, loanPaymentType } = pawn;
+export const calculateInterestToTodayPawn = (pawn: Pawn) => {
+  const {
+    loanDate,
+    debitStatus,
+    interestType,
+    loanAmount,
+    interestMoney,
+    paymentHistories,
+  } = pawn;
 
-//   const todayTime = new Date().setHours(0, 0, 0, 0);
-// };
+  let interestMoneyToday = 0;
+  let interestDayToday = 0;
+  let interestMoneyOneDay = 0;
+  let interestDayPaid = 0;
+
+  const interestMoneyPaid = paymentHistories
+    .filter((paymentHistory) => !paymentHistory.isRootMoney)
+    .reduce((total, paymentHistory) => {
+      if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
+        return total + paymentHistory.payMoney;
+      }
+
+      return total;
+    }, 0);
+
+  if (debitStatus === DebitStatus.COMPLETED) {
+    return { interestDayToday, interestMoneyToday };
+  }
+
+  const todayTime = new Date().setHours(0, 0, 0, 0);
+  const loanDateTime = new Date(loanDate).setHours(0, 0, 0, 0);
+
+  if (interestType === PawnInterestType.LOAN_MIL_DAY) {
+    interestMoneyOneDay = interestMoney * (loanAmount / 1000000);
+    interestDayPaid = interestMoneyPaid / interestMoneyOneDay;
+  }
+
+  const rangeDayToToday = Math.round((todayTime - loanDateTime) / 86400000);
+
+  if (rangeDayToToday - interestDayPaid > 0) {
+    interestDayToday = rangeDayToToday - interestDayPaid;
+    interestMoneyToday = interestDayToday * interestMoneyOneDay;
+  }
+
+  return { interestDayToday, interestMoneyToday };
+};
