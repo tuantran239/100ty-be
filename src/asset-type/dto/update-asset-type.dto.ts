@@ -16,4 +16,8 @@ export class UpdateAssetTypeDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @ApiProperty()
+  @IsOptional()
+  properties?: string[];
 }
