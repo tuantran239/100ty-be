@@ -63,13 +63,44 @@ export class AssetTypeService extends BaseService<
   }
 
   async update(id: string, payload: UpdateAssetTypeDto): Promise<any> {
-    const assetType = await this.assetTypeRepository.findOne({ where: { id } });
+    const propertyUpdated = await this.databaseService.runTransaction(
+      async (properties) => {
+        const { assetPropertyRepository, assetTypeRepository } = properties;
 
-    if (!assetType) {
-      throw new Error('Không tìm thấy loại tài sản');
-    }
+        const assetType = await assetTypeRepository.findOne({
+          where: { id },
+          relations: ['properties'],
+        });
 
-    return await this.assetTypeRepository.update({ id }, payload);
+        if (!assetType) {
+          throw new Error('Không tìm thấy loại tài sản');
+        }
+
+        if (payload.properties) {
+          for (let i = 0; i < payload.properties.length; i++) {
+            const property = payload.properties[i];
+            const propertyExist = assetType.properties.find(
+              (p) => p.propertyName === property,
+            );
+
+            if (!propertyExist) {
+              const newAssetProperty = await assetPropertyRepository.create({
+                assetTypeId: assetType.id,
+                propertyName: property,
+              });
+              await assetPropertyRepository.save(newAssetProperty);
+            }
+          }
+        }
+
+        return await this.assetTypeRepository.update(
+          { id },
+          { ...payload, properties: undefined },
+        );
+      },
+    );
+
+    return propertyUpdated;
   }
 
   async delete(id: string): Promise<DeleteResult> {
