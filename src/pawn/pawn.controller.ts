@@ -34,7 +34,10 @@ import {
 } from 'src/common/utils/map';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { PaymentStatusHistory } from 'src/common/interface/history';
-import { calculateLateAndBadPaymentPawn } from 'src/common/utils/calculate';
+import {
+  calculateInterestToTodayPawn,
+  calculateLateAndBadPaymentPawn,
+} from 'src/common/utils/calculate';
 
 const ENTITY_LOG = 'Pawn';
 
@@ -333,6 +336,9 @@ export class PawnController {
         0,
       );
 
+      const { interestDayToday, interestMoneyToday } =
+        calculateInterestToTodayPawn(pawn);
+
       pawn.paymentHistories = undefined;
 
       const transactionHistories = pawn.transactionHistories ?? [];
@@ -360,6 +366,8 @@ export class PawnController {
           latePaymentMoney,
           badDebitMoney,
           totalInterestMoney: pawn.revenueReceived - pawn.loanAmount,
+          interestDayToday,
+          interestMoneyToday,
         },
         error: null,
         statusCode: 200,

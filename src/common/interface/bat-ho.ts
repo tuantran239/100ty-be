@@ -50,6 +50,8 @@ export interface PawnResponse extends Omit<Pawn, 'beforeInsert'> {
   latePaymentMoney: number;
   badDebitMoney: number;
   latePaymentPeriod: number;
+  interestDayToday: number;
+  interestMoneyToday: number;
   // moneyMustPay: string;
   // dateMustPay: string;
   // latePaymentDay: number;

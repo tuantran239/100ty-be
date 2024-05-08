@@ -10,6 +10,7 @@ import { PaymentStatusHistory } from '../interface/history';
 import { UserResponseData } from '../interface/response';
 import { Cash } from './../../cash/cash.entity';
 import {
+  calculateInterestToTodayPawn,
   calculateLateAndBadPaymentIcloud,
   calculateLateAndBadPaymentPawn,
 } from './calculate';
@@ -166,6 +167,9 @@ export const mapPawnResponse = (
         pawn.debitStatus,
       );
 
+    const { interestDayToday, interestMoneyToday } =
+      calculateInterestToTodayPawn(pawn);
+
     return {
       pawn: {
         ...pawn,
@@ -175,6 +179,8 @@ export const mapPawnResponse = (
         latePaymentMoney,
         latePaymentPeriod,
         badDebitMoney,
+        interestDayToday,
+        interestMoneyToday,
       },
     };
   }
