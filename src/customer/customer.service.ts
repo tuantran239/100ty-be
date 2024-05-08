@@ -129,7 +129,7 @@ export class CustomerService extends BaseService<
     return this.customerRepository.findOne(options);
   }
 
-  async getTransactionHistory(id: string) {
+  async getTransactionHistory(id: string, contractType?: string) {
     const { batHoRepository, pawnRepository } =
       this.databaseService.getRepositories();
 
@@ -151,7 +151,10 @@ export class CustomerService extends BaseService<
       relations: ['paymentHistories'],
     });
 
-    const contractResponses: ContractResponse[] = [];
+    let contractResponses: ContractResponse[] = [];
+
+    const icloudContractResponses: ContractResponse[] = [];
+    const pawnContractResponses: ContractResponse[] = [];
 
     for (let i = 0; i < batHoContracts.length; i++) {
       const batHo = batHoContracts[i];
@@ -174,7 +177,7 @@ export class CustomerService extends BaseService<
         0,
       );
 
-      contractResponses.push({
+      icloudContractResponses.push({
         badDebitMoney,
         moneyPaid: moneyPaidNumber,
         latePaymentDay,
@@ -209,7 +212,7 @@ export class CustomerService extends BaseService<
         0,
       );
 
-      contractResponses.push({
+      pawnContractResponses.push({
         badDebitMoney,
         moneyPaid: moneyPaidNumber,
         latePaymentDay: latePaymentPeriod,
@@ -219,8 +222,26 @@ export class CustomerService extends BaseService<
         debitStatus: pawn.debitStatus,
         loanAmount: pawn.loanAmount,
         moneyMustPay: pawn.revenueReceived,
-        contractType: ContractType.BAT_HO,
+        contractType: ContractType.CAM_DO,
       });
+    }
+
+    if (contractType === ContractType.BAT_HO) {
+      contractResponses = contractResponses.concat(
+        contractResponses,
+        icloudContractResponses,
+      );
+    } else if (contractType === ContractType.CAM_DO) {
+      contractResponses = contractResponses.concat(
+        contractResponses,
+        pawnContractResponses,
+      );
+    } else {
+      contractResponses = contractResponses.concat(
+        contractResponses,
+        icloudContractResponses,
+        pawnContractResponses,
+      );
     }
 
     return contractResponses;

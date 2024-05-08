@@ -77,20 +77,16 @@ export class AssetTypeService extends BaseService<
         }
 
         if (payload.properties) {
-          for (let i = 0; i < payload.properties.length; i++) {
-            const property = payload.properties[i];
-            const propertyExist = assetType.properties.find(
-              (p) => p.propertyName === property,
-            );
-
-            if (!propertyExist) {
+          await assetPropertyRepository.delete({ assetTypeId: assetType.id });
+          await Promise.all(
+            payload.properties.map(async (property) => {
               const newAssetProperty = await assetPropertyRepository.create({
                 assetTypeId: assetType.id,
                 propertyName: property,
               });
               await assetPropertyRepository.save(newAssetProperty);
-            }
-          }
+            }),
+          );
         }
 
         return await this.assetTypeRepository.update(
