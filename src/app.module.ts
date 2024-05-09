@@ -35,6 +35,7 @@ import { UserModule } from './user/user.module';
 import { GroupCashModule } from './group-cash/group-cash.module';
 import { AssetTypeModule } from './asset-type/asset-type.module';
 import { PawnModule } from './pawn/pawn.module';
+import { ContractModule } from './contract/contract.module';
 
 @Module({
   imports: [
@@ -85,6 +86,7 @@ import { PawnModule } from './pawn/pawn.module';
     GroupCashModule,
     AssetTypeModule,
     PawnModule,
+    ContractModule,
   ],
   providers: [
     {

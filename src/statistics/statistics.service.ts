@@ -10,21 +10,20 @@ import {
   StatisticsContractItem,
 } from 'src/common/interface';
 import { DebitStatus } from 'src/common/interface/bat-ho';
-import { PaymentStatusHistory } from 'src/common/interface/history';
+import { Contract } from 'src/common/interface/contract';
 import { StatisticsContractQuery } from 'src/common/interface/query';
 import {
+  ContractHomePreviewResponses,
   HomePreview,
+  HomePreviewContractResponse,
   ServiceFeeDetail,
   ServiceFeeItemStatistics,
   ServiceFeeStatisticsResponse,
 } from 'src/common/interface/statistics';
 import { getFullName } from 'src/common/utils/get-full-name';
+import { ContractService } from 'src/contract/contract.service';
 import { Customer } from 'src/customer/customer.entity';
-import { Device } from 'src/device/device.entity';
-import { HostServer } from 'src/host-server/host-server.entity';
-import { PaymentHistory } from 'src/payment-history/payment-history.entity';
-import { Role } from 'src/role/entities/role.entity';
-import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
+import { Pawn } from 'src/pawn/pawn.entity';
 import { User } from 'src/user/user.entity';
 import {
   DataSource,
@@ -37,27 +36,18 @@ import {
 @Injectable()
 export class StatisticsService {
   private batHoRepository: Repository<BatHo>;
+  private pawnRepository: Repository<Pawn>;
   private cashRepository: Repository<Cash>;
   private customerRepository: Repository<Customer>;
-  private deviceRepository: Repository<Device>;
-  private hostServerRepository: Repository<HostServer>;
-  private roleRepository: Repository<Role>;
-  private paymentHistoryRepository: Repository<PaymentHistory>;
-  private transactionHistoryRepository: Repository<TransactionHistory>;
   private userRepository: Repository<User>;
 
-  constructor(private dataSource: DataSource) {
+  constructor(
+    private dataSource: DataSource,
+    private contractService: ContractService,
+  ) {
     this.batHoRepository = this.dataSource.manager.getRepository(BatHo);
     this.cashRepository = this.dataSource.manager.getRepository(Cash);
     this.customerRepository = this.dataSource.manager.getRepository(Customer);
-    this.deviceRepository = this.dataSource.manager.getRepository(Device);
-    this.hostServerRepository =
-      this.dataSource.manager.getRepository(HostServer);
-    this.roleRepository = this.dataSource.manager.getRepository(Role);
-    this.paymentHistoryRepository =
-      this.dataSource.manager.getRepository(PaymentHistory);
-    this.transactionHistoryRepository =
-      this.dataSource.manager.getRepository(TransactionHistory);
     this.userRepository = this.dataSource.manager.getRepository(User);
   }
 
@@ -284,6 +274,90 @@ export class StatisticsService {
     return { totalPage, totalMoney, list_bat_ho };
   }
 
+  private calculateHomePreviewContractResponse(
+    listContract: Contract[],
+  ): HomePreviewContractResponse {
+    const badDebitMoneyTotal = listContract.reduce((total, contract) => {
+      return total + contract.badDebitMoney;
+    }, 0);
+
+    const contractInDebitTotal = listContract.reduce((total, contract) => {
+      if (contract.debitStatus === DebitStatus.IN_DEBIT) {
+        return total + 1;
+      }
+      return total;
+    }, 0);
+
+    const contractCompleteTotal = listContract.reduce((total, contract) => {
+      if (contract.debitStatus === DebitStatus.COMPLETED) {
+        return total + 1;
+      }
+      return total;
+    }, 0);
+
+    const contractBadDebitTotal = listContract.reduce((total, contract) => {
+      if (contract.debitStatus === DebitStatus.BAD_DEBIT) {
+        return total + 1;
+      }
+      return total;
+    }, 0);
+
+    const expectedRevenue = listContract.reduce((total, contract) => {
+      return total + contract.revenueReceived;
+    }, 0);
+
+    const receiptContract = listContract.reduce((total, contract) => {
+      return total + contract.moneyPaid;
+    }, 0);
+
+    const paymentContractTotal = listContract.reduce((total, contract) => {
+      return total + contract.disbursementMoney;
+    }, 0);
+
+    const rootMoneyTotal = listContract.reduce((total, contract) => {
+      return total + contract.rootMoney;
+    }, 0);
+
+    const interestMoneyTotal = listContract.reduce((total, contract) => {
+      return total + contract.interestMoney;
+    }, 0);
+
+    const deductionMoneyTotal = listContract.reduce((total, contract) => {
+      return total + contract.deductionMoney;
+    }, 0);
+
+    return {
+      badDebitMoneyTotal,
+      contractInDebitTotal,
+      contractBadDebitTotal,
+      contractCompleteTotal,
+      expectedRevenue,
+      receiptContract,
+      paymentContractTotal,
+      rootMoneyTotal,
+      interestMoneyTotal,
+      deductionMoneyTotal,
+    };
+  }
+
+  private async getHomePreviewContractResponse(
+    user?: any,
+  ): Promise<ContractHomePreviewResponses> {
+    const listIcloudContract =
+      await this.contractService.listContractIcloud(user);
+
+    const listPawnContract = await this.contractService.listContractPawn(user);
+
+    const pawn = this.calculateHomePreviewContractResponse(listPawnContract);
+    const icloud =
+      this.calculateHomePreviewContractResponse(listIcloudContract);
+
+    return {
+      pawn,
+      icloud,
+    };
+  }
+
   async homePreview(me: User): Promise<HomePreview> {
     const role = me.roles[0];
 
@@ -294,6 +368,8 @@ export class StatisticsService {
     } else if (role.id === RoleId.USER) {
       user = { id: user.id };
     }
+
+    const contractResponses = await this.getHomePreviewContractResponse(user);
 
     const cashes = await this.cashRepository.find({
       where: {
@@ -306,9 +382,14 @@ export class StatisticsService {
     });
 
     const initCashes = await this.cashRepository.find({
-      where: {
-        filterType: CashFilterType.INIT,
-      },
+      where: [
+        {
+          filterType: CashFilterType.INIT,
+        },
+        {
+          groupId: 'tien_quy',
+        },
+      ],
     });
 
     const batHos = await this.batHoRepository.find({
@@ -366,57 +447,30 @@ export class StatisticsService {
       return total;
     }, 0);
 
-    const paymentContractTotal = cashes.reduce((total, cash) => {
-      if (
-        cash.type === CashType.PAYMENT &&
-        cash.isContract &&
-        !cash.isPartner &&
-        !cash.isServiceFee
-      ) {
-        return total + cash.amount;
-      }
-      return total;
-    }, 0);
+    const paymentContractTotal =
+      contractResponses.icloud.paymentContractTotal +
+      contractResponses.pawn.paymentContractTotal;
 
     const paymentOffSiteTotal = paymentOrtherTotal;
 
-    const badDebitMoneyTotal = batHos.reduce((total, batHo) => {
-      if (batHo.debitStatus === DebitStatus.BAD_DEBIT) {
-        const moneyUnfinish = batHo.paymentHistories.reduce(
-          (total, paymentHistory) => {
-            if (
-              paymentHistory.paymentStatus == PaymentStatusHistory.UNFINISH ||
-              paymentHistory.paymentStatus == null
-            ) {
-              return total + paymentHistory.payNeed;
-            }
-            return total;
-          },
-          0,
-        );
-
-        return total + moneyUnfinish;
-      }
-      return total;
-    }, 0);
+    const badDebitMoneyTotal =
+      contractResponses.icloud.badDebitMoneyTotal +
+      contractResponses.pawn.badDebitMoneyTotal;
 
     const surplusMoney = fundTotal - paymentContractTotal - paymentOffSiteTotal;
 
-    const expectedRevenue = batHos.reduce((total, batHo) => {
-      return total + batHo.revenueReceived;
-    }, 0);
+    const expectedRevenue =
+      contractResponses.icloud.expectedRevenue +
+      contractResponses.pawn.expectedRevenue;
 
-    const receiptContract = cashes.reduce((total, cash) => {
-      if (
-        cash.type === CashType.RECEIPT &&
-        cash.isContract &&
-        !cash.isDeductionMoney
-      ) {
-        return cash.amount + total;
-      }
+    const receiptContract =
+      contractResponses.icloud.receiptContract +
+      contractResponses.pawn.receiptContract -
+      deductionMoneyTotal;
 
-      return total;
-    }, 0);
+    const receiptContractWithDeductionMoney =
+      contractResponses.icloud.receiptContract +
+      contractResponses.pawn.receiptContract;
 
     const contractInDebitTotal = batHos.filter(
       (batHo) => batHo.debitStatus == DebitStatus.IN_DEBIT,
@@ -438,6 +492,10 @@ export class StatisticsService {
     const storeTotal =
       users.filter((user) => user.roles[0].id == RoleId.ADMIN).length ?? 0;
 
+    const moneyContractMustReceipt = expectedRevenue - receiptContract;
+    const moneyContractMustReceiptWithDeductionMoney =
+      expectedRevenue - receiptContractWithDeductionMoney;
+
     return {
       fundTotal,
       surplusMoney,
@@ -457,6 +515,10 @@ export class StatisticsService {
       employeeTotal,
       storeTotal,
       customerTotal: customers.length,
+      contractResponses,
+      receiptContractWithDeductionMoney,
+      moneyContractMustReceipt,
+      moneyContractMustReceiptWithDeductionMoney,
     };
   }
 
