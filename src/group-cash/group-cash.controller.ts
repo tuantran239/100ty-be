@@ -22,34 +22,35 @@ import { GroupCashService } from './group-cash.service';
 import { UpdateGroupCashDto } from './dto/update-group-cash.dto';
 import { GroupCashQuery } from 'src/common/interface/query';
 import { DatabaseService } from 'src/database/database.service';
+import { GroupCashId } from 'src/common/constant/group-cash';
 
 export const GROUP_CASH_INIT_DATA = [
   {
-    id: 'phi_ho_so',
+    id: GroupCashId.SERVICE_FEE,
     groupName: 'Phí hồ sơ',
     filterType: CashFilterType.SERVICE_FEE,
     cashType: 'payment',
   },
   {
-    id: 'ctv',
+    id: GroupCashId.PARTNER,
     groupName: 'Tiền cộng tác viên',
     filterType: CashFilterType.PARTNER,
     cashType: 'payment',
   },
   {
-    id: 'luong_nv',
+    id: GroupCashId.PAY_ROLL,
     groupName: 'Tiền lương nhân viên',
     filterType: CashFilterType.PAY_ROLL,
     cashType: 'payment',
   },
   {
-    id: 'chi_tieu_khac',
+    id: GroupCashId.PAYMENT_ORTHER,
     groupName: 'Chi tiêu khác',
     filterType: CashFilterType.PAYMENT_ORTHER,
     cashType: 'payment',
   },
   {
-    id: 'tien_quy',
+    id: GroupCashId.INIT,
     groupName: 'Tiền quỹ',
     filterType: CashFilterType.INIT,
     cashType: 'receipt',
