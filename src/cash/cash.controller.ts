@@ -262,6 +262,10 @@ export class CashController {
           'batHo.customer',
           'batHo.user.manager',
           'group',
+          'pawn',
+          'pawn.user',
+          'pawn.customer',
+          'pawn.user.manager',
         ],
       });
 
