@@ -51,22 +51,41 @@ export const mapUserResponse = (
 export const mapCashResponse = (cash: Cash | null): { cash: any } | null => {
   if (cash) {
     let admin = '';
+    let rootMoney = 0;
+    let interestMoney = 0;
+    let contractId = '';
+    let customer = {};
 
-    if (cash.batHo?.customer) {
-      cash.traders =
-        getFullName(
-          cash.batHo?.customer.firstName,
-          cash.batHo?.customer.lastName,
-        ) ?? '';
-    }
-
-    if (cash.batHo?.user) {
-      cash.staff = cash.batHo?.user?.fullName ?? cash.batHo.user.username;
-    }
-
-    if (cash.batHo?.user?.manager) {
-      admin =
-        cash.batHo?.user?.manager?.fullName ?? cash.batHo.user.manager.username;
+    if (cash.isContract) {
+      if (cash.batHo) {
+        cash.traders =
+          getFullName(
+            cash.batHo?.customer?.firstName,
+            cash.batHo?.customer?.lastName,
+          ) ?? '';
+        cash.staff = cash.batHo?.user?.fullName ?? cash.batHo.user.username;
+        admin =
+          cash.batHo?.user?.manager?.fullName ??
+          cash.batHo?.user?.manager?.username;
+        contractId = cash.batHo.contractId;
+        rootMoney = cash.batHo.loanAmount;
+        interestMoney = cash.batHo.revenueReceived - cash.batHo.loanAmount;
+        customer = cash.batHo.customer ?? {};
+      } else if (cash.pawn) {
+        cash.traders =
+          getFullName(
+            cash.pawn?.customer?.firstName,
+            cash.pawn?.customer?.lastName,
+          ) ?? '';
+        cash.staff = cash.pawn?.user?.fullName ?? cash.pawn?.user?.username;
+        admin =
+          cash.pawn?.user?.manager?.fullName ??
+          cash.pawn?.user?.manager?.username;
+        contractId = cash.pawn.contractId;
+        rootMoney = cash.pawn.loanAmount;
+        interestMoney = cash.pawn.revenueReceived - cash.pawn.loanAmount;
+        customer = cash.pawn.customer ?? {};
+      }
     }
 
     return {
@@ -74,7 +93,10 @@ export const mapCashResponse = (cash: Cash | null): { cash: any } | null => {
         ...cash,
         createAt: moment(new Date(cash.createAt)).format('DD/MM/YYYY') as any,
         admin,
-        contractId: cash.batHo?.contractId ?? '',
+        contractId,
+        rootMoney,
+        interestMoney,
+        customer,
       },
     };
   }

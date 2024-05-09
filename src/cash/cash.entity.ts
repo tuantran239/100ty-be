@@ -3,6 +3,7 @@ import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity
 import { paymentHistoriesCash } from 'src/common/interface';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { GroupCash } from 'src/group-cash/entity/group-cash.entity';
+import { Pawn } from 'src/pawn/pawn.entity';
 import { User } from 'src/user/user.entity';
 import { BeforeInsert, Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 
@@ -77,6 +78,10 @@ export class Cash extends SoftDeletableEntity {
   @OneToOne(() => BatHo)
   @JoinColumn()
   batHo?: BatHo;
+
+  @OneToOne(() => Pawn)
+  @JoinColumn()
+  pawn?: Pawn;
 
   @OneToOne(() => GroupCash)
   @JoinColumn()
