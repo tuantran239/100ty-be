@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import { Cash } from 'src/cash/cash.entity';
+import { GroupCashId } from 'src/common/constant/group-cash';
 import {
   CashFilterType,
   CashType,
@@ -387,7 +388,7 @@ export class StatisticsService {
           filterType: CashFilterType.INIT,
         },
         {
-          groupId: 'tien_quy',
+          groupId: GroupCashId.INIT,
         },
       ],
     });
@@ -423,14 +424,14 @@ export class StatisticsService {
     }, 0);
 
     const partnerMoneyTotal = cashes.reduce((total, cash) => {
-      if (cash.groupId === 'ctv' && !cash.isContract) {
+      if (cash.groupId === GroupCashId.PARTNER && !cash.isContract) {
         return total + cash.amount;
       }
       return total;
     }, 0);
 
     const serviceFeeTotal = cashes.reduce((total, cash) => {
-      if (cash.groupId === 'phi_ho_so' && !cash.isContract) {
+      if (cash.groupId === GroupCashId.SERVICE_FEE && !cash.isContract) {
         return total + cash.amount;
       }
       return total;
