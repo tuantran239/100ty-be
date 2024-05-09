@@ -18,6 +18,24 @@ export interface ServiceFeeStatisticsResponse {
   totalPage: number;
 }
 
+export interface HomePreviewContractResponse {
+  badDebitMoneyTotal: number;
+  contractInDebitTotal: number;
+  contractBadDebitTotal: number;
+  contractCompleteTotal: number;
+  expectedRevenue: number;
+  receiptContract: number;
+  deductionMoneyTotal: number;
+  rootMoneyTotal: number;
+  interestMoneyTotal: number;
+  paymentContractTotal: number;
+}
+
+export interface ContractHomePreviewResponses {
+  pawn: HomePreviewContractResponse;
+  icloud: HomePreviewContractResponse;
+}
+
 export interface HomePreview {
   fundTotal: number;
   deductionMoneyTotal: number;
@@ -37,4 +55,8 @@ export interface HomePreview {
   contractInDebitTotal: number;
   contractBadDebitTotal: number;
   contractCompleteTotal: number;
+  contractResponses: ContractHomePreviewResponses;
+  receiptContractWithDeductionMoney: number;
+  moneyContractMustReceipt: number;
+  moneyContractMustReceiptWithDeductionMoney: number;
 }
