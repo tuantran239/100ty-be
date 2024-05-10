@@ -56,3 +56,60 @@ export const countTimeMustPay = (endDate: string) => {
 
   return formatDate(endDate);
 };
+
+export const getTotalDayInMonth = (month: number, year: number) => {
+  if (month > 12 || month <= 0) {
+    return 0;
+  }
+  if (month === 2) {
+    return year % 4 ? 29 : 28;
+  }
+
+  return month % 2 ? 30 : 31;
+};
+
+export const convertPrefixTime = (time: number) => {
+  return time >= 10 ? time.toString() : `0${time}`;
+};
+
+export const calculateRangeTime = (
+  data: { hour?: number; day?: number; month?: number; year?: number },
+  type: 'hour' | 'day' | 'month' | 'year',
+) => {
+  const hour = convertPrefixTime(data.hour ?? new Date().getHours());
+  const day = convertPrefixTime(data.day ?? new Date().getDate());
+  const month = convertPrefixTime(data.month ?? new Date().getMonth() + 1);
+  const year = data.year ?? new Date().getFullYear();
+  const minute = new Date().getMinutes();
+  const seconds = new Date().getSeconds();
+
+  let fromDate = new Date(
+    `${year}-${month}-${day}T${hour}:${minute}:${seconds}.000Z`,
+  );
+  let toDate = new Date(
+    `${year}-${month}-${day}T${hour}:${minute}:${seconds}.000Z`,
+  );
+
+  switch (type) {
+    case 'hour':
+      fromDate = new Date(`${year}-${month}-${day}T${hour}:00:00.000Z`);
+      toDate = new Date(`${year}-${month}-${day}T${hour}:59:59.999Z`);
+      break;
+    case 'day':
+      fromDate = new Date(`${year}-${month}-${day}T00:00:00.000Z`);
+      toDate = new Date(`${year}-${month}-${day}T23:59:59.999Z`);
+      break;
+    case 'month':
+      fromDate = new Date(`${year}-${month}-01T00:00:00.000Z`);
+      toDate = new Date(
+        `${year}-${month}-${getTotalDayInMonth(parseInt(month), year)}T23:59:59.999Z`,
+      );
+      break;
+    case 'year':
+      fromDate = new Date(`${year}-01-01T00:00:00.000Z`);
+      toDate = new Date(`${year}-12-31T23:59:59.999Z`);
+      break;
+  }
+
+  return { fromDate, toDate };
+};

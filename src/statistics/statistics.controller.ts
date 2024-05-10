@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   InternalServerErrorException,
@@ -9,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
@@ -21,7 +23,8 @@ import {
 import { User } from 'src/user/user.entity';
 import { FindManyOptions, IsNull, Not } from 'typeorm';
 import { StatisticsService } from './statistics.service';
-import { BatHo } from 'src/bat-ho/bat-ho.entity';
+import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { StatisticsProfitQueryDto } from './dto/statistics-profit-query.dto';
 
 @Controller(RouterUrl.STATISTICS.ROOT)
 export class StatisticsController {
@@ -133,7 +136,7 @@ export class StatisticsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(RouterUrl.STATISTICS.STATISTICS_CONTRACT)
   async statisticsContract(@Res() res: Response, @Req() req) {
     try {
@@ -142,6 +145,35 @@ export class StatisticsController {
       const query = req.body as StatisticsContractQuery;
 
       const data = await this.statisticsService.statisticsContract(me, query);
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Post(RouterUrl.STATISTICS.PROFIT)
+  async statisticsProfit(
+    @Body(new BodyValidationPipe()) payload: StatisticsProfitQueryDto,
+    @Res() res: Response,
+    @Req() req,
+  ) {
+    try {
+      const me = req?.user as User;
+
+      const data = await this.statisticsService.statisticsProfit({
+        ...payload,
+        me,
+      });
 
       const responseData: ResponseData = {
         message: 'success',
