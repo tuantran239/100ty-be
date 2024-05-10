@@ -31,7 +31,9 @@ import { calculateProfit } from 'src/common/utils/calculate';
 import { getFullName } from 'src/common/utils/get-full-name';
 import {
   calculateRangeTime,
+  convertPostgresDate,
   convertPrefixTime,
+  formatDate,
   getTotalDayInMonth,
 } from 'src/common/utils/time';
 import { ContractService } from 'src/contract/contract.service';
@@ -712,9 +714,11 @@ export class StatisticsService {
 
         const cashes = await cashRepository.find({
           where: {
-            created_at: Between(timestamp.fromDate, timestamp.toDate),
+            createAt: Between(
+              convertPostgresDate(formatDate(timestamp.fromDate)),
+              convertPostgresDate(formatDate(timestamp.toDate)),
+            ),
             user,
-            isContract: false,
           },
           relations: ['group'],
         });
@@ -788,9 +792,11 @@ export class StatisticsService {
 
     const cashes = await cashRepository.find({
       where: {
-        created_at: Between(timestamp.fromDate, timestamp.toDate),
+        createAt: Between(
+          convertPostgresDate(formatDate(timestamp.fromDate)),
+          convertPostgresDate(formatDate(timestamp.toDate)),
+        ),
         user,
-        isContract: false,
       },
       relations: ['group'],
     });
