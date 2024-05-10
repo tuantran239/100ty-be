@@ -226,7 +226,11 @@ export const calculateProfit = (
   }
 
   const receiptCash = cashes.reduce((total, cash) => {
-    if (cash.type === CashType.RECEIPT && cash.groupId !== GroupCashId.INIT) {
+    if (
+      cash.type === CashType.RECEIPT &&
+      cash.groupId !== GroupCashId.INIT &&
+      !cash.isContract
+    ) {
       return total + cash.amount;
     }
     return total;
@@ -238,10 +242,10 @@ export const calculateProfit = (
     value: receiptCash,
   });
 
-  for (let i = 0; i < cashes.length; i++) {
-    const cash = cashes[i];
+  const cashPayments = cashes.filter((cash) => cash.type === CashType.PAYMENT);
 
-    const group = cash.group;
+  for (let i = 0; i < cashPayments.length; i++) {
+    const cash = cashPayments[i];
 
     const paymentCashIndex = paymentDetails.findIndex(
       (r) => r.key === cash.groupId,
@@ -249,8 +253,8 @@ export const calculateProfit = (
 
     if (paymentCashIndex === -1) {
       paymentDetails.push({
-        label: group.groupName,
-        key: group.id,
+        label: cash?.group?.groupName ?? 'Giải ngân',
+        key: cash.groupId,
         value: cash.amount,
       });
     } else {
