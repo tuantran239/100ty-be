@@ -12,6 +12,12 @@ import {
 } from 'src/common/interface';
 import { DebitStatus } from 'src/common/interface/bat-ho';
 import { Contract } from 'src/common/interface/contract';
+import { PaymentStatusHistory } from 'src/common/interface/history';
+import {
+  ProfitChartDetail,
+  ProfitChartDetailItem,
+  ProfitStatistics,
+} from 'src/common/interface/profit';
 import { StatisticsContractQuery } from 'src/common/interface/query';
 import {
   ContractHomePreviewResponses,
@@ -21,12 +27,20 @@ import {
   ServiceFeeItemStatistics,
   ServiceFeeStatisticsResponse,
 } from 'src/common/interface/statistics';
+import { calculateProfit } from 'src/common/utils/calculate';
 import { getFullName } from 'src/common/utils/get-full-name';
+import {
+  calculateRangeTime,
+  convertPrefixTime,
+  getTotalDayInMonth,
+} from 'src/common/utils/time';
 import { ContractService } from 'src/contract/contract.service';
 import { Customer } from 'src/customer/customer.entity';
+import { DatabaseService } from 'src/database/database.service';
 import { Pawn } from 'src/pawn/pawn.entity';
 import { User } from 'src/user/user.entity';
 import {
+  Between,
   DataSource,
   Equal,
   FindManyOptions,
@@ -45,6 +59,7 @@ export class StatisticsService {
   constructor(
     private dataSource: DataSource,
     private contractService: ContractService,
+    private databaseService: DatabaseService,
   ) {
     this.batHoRepository = this.dataSource.manager.getRepository(BatHo);
     this.cashRepository = this.dataSource.manager.getRepository(Cash);
@@ -636,5 +651,158 @@ export class StatisticsService {
       totalPage: totalCash.length,
       list_contract,
     };
+  }
+
+  async getChartProfitDetails({
+    year,
+    month,
+    user,
+  }: {
+    year: number;
+    month?: number;
+    user?: any;
+  }): Promise<ProfitChartDetail> {
+    const chartDetails: ProfitChartDetailItem[] = [];
+
+    const { paymentHistoryRepository, cashRepository } =
+      this.databaseService.getRepositories();
+
+    if (!month) {
+      for (let i = 1; i <= 12; i++) {
+        const timestamp = calculateRangeTime({ year, month: i }, 'month');
+
+        const paymentHistories = await paymentHistoryRepository.find({
+          where: {
+            paymentStatus: PaymentStatusHistory.FINISH,
+            updated_at: Between(timestamp.fromDate, timestamp.toDate),
+            user,
+          },
+        });
+
+        const cashes = await cashRepository.find({
+          where: {
+            created_at: Between(timestamp.fromDate, timestamp.toDate),
+            user,
+            isContract: false,
+          },
+          relations: ['group'],
+        });
+
+        const detail = calculateProfit(paymentHistories, cashes);
+
+        chartDetails.push({
+          date: i,
+          type: 'month',
+          detail,
+        });
+      }
+    } else {
+      const dayOfMonth = getTotalDayInMonth(month, year);
+
+      for (let i = 1; i <= dayOfMonth; i++) {
+        const timestamp = calculateRangeTime({ year, month, day: i }, 'day');
+
+        const paymentHistories = await paymentHistoryRepository.find({
+          where: {
+            paymentStatus: PaymentStatusHistory.FINISH,
+            updated_at: Between(timestamp.fromDate, timestamp.toDate),
+            user,
+          },
+        });
+
+        const cashes = await cashRepository.find({
+          where: {
+            created_at: Between(timestamp.fromDate, timestamp.toDate),
+            user,
+            isContract: false,
+          },
+          relations: ['group'],
+        });
+
+        const detail = calculateProfit(paymentHistories, cashes);
+
+        chartDetails.push({
+          date: `${convertPrefixTime(i)}/${month}/${year}`,
+          type: 'date',
+          detail,
+        });
+      }
+    }
+
+    const minInterest = chartDetails.reduce((min, chart) => {
+      if (chart.detail.interest < min) {
+        return chart.detail.interest;
+      }
+      return min;
+    }, chartDetails[0].detail.interest);
+
+    const maxInterest = chartDetails.reduce((max, chart) => {
+      if (chart.detail.interest > max) {
+        return chart.detail.interest;
+      }
+      return max;
+    }, chartDetails[0].detail.interest);
+
+    return {
+      items: [...chartDetails],
+      minInterest,
+      maxInterest,
+    };
+  }
+
+  async statisticsProfit({
+    year,
+    month,
+    me,
+  }: {
+    year: number;
+    month?: number;
+    me: User;
+  }): Promise<ProfitStatistics> {
+    const role = me.roles[0];
+
+    let user = undefined;
+
+    if (role.id === RoleId.ADMIN) {
+      user = [{ id: me.id }, { managerId: me.id }];
+    } else if (role.id === RoleId.USER) {
+      user = { id: user.id };
+    }
+
+    const { paymentHistoryRepository, cashRepository } =
+      this.databaseService.getRepositories();
+
+    let timestamp = calculateRangeTime({ year }, 'year');
+
+    if (month) {
+      timestamp = calculateRangeTime({ year, month }, 'month');
+    }
+
+    const paymentHistories = await paymentHistoryRepository.find({
+      where: {
+        paymentStatus: PaymentStatusHistory.FINISH,
+        updated_at: Between(timestamp.fromDate, timestamp.toDate),
+        user,
+      },
+    });
+
+    const cashes = await cashRepository.find({
+      where: {
+        created_at: Between(timestamp.fromDate, timestamp.toDate),
+        user,
+        isContract: false,
+      },
+      relations: ['group'],
+    });
+
+    const overview = calculateProfit(paymentHistories, cashes);
+
+    const chartDetail = await this.getChartProfitDetails({
+      year,
+      month,
+      user,
+    });
+
+    return { overview, chartDetail };
   }
 }

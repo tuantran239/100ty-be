@@ -154,6 +154,7 @@ interface StatisticsRouter {
   PARTNER: string;
   HOME_PREVIEW: string;
   STATISTICS_CONTRACT: string;
+  PROFIT: string;
 }
 
 const STATISTICS: StatisticsRouter = {
@@ -162,6 +163,7 @@ const STATISTICS: StatisticsRouter = {
   PARTNER: '/partner',
   HOME_PREVIEW: '/home-preview',
   STATISTICS_CONTRACT: '/contract',
+  PROFIT: '/profit',
 };
 
 const CSV = {

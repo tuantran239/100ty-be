@@ -4,6 +4,11 @@ import { DebitStatus } from '../interface/bat-ho';
 import { PaymentStatusHistory } from '../interface/history';
 import { PawnInterestType } from '../interface/pawn';
 import { convertPostgresDate, formatDate } from './time';
+import { Cash } from 'src/cash/cash.entity';
+import { CashType } from '../interface';
+import { GroupCashId } from '../constant/group-cash';
+import { ProfitCash, ProfitData } from '../interface/profit';
+import { ContractInit } from '../constant/contract';
 
 export const isLastPaymentHistoryUnFinish = (
   paymentHistory: PaymentHistory,
@@ -190,4 +195,89 @@ export const calculateInterestToTodayPawn = (pawn: Pawn) => {
   }
 
   return { interestDayToday, interestMoneyToday };
+};
+
+export const calculateProfit = (
+  paymentHistories: PaymentHistory[],
+  cashes: Cash[],
+): ProfitData => {
+  const receiptDetails: ProfitCash[] = [];
+  const paymentDetails: ProfitCash[] = [];
+
+  for (let i = 0; i < paymentHistories.length; i++) {
+    const paymentHistory = paymentHistories[i];
+
+    const contractType = paymentHistory.contractType;
+
+    const receiptContractIndex = receiptDetails.findIndex(
+      (r) => r.key === contractType,
+    );
+
+    if (receiptContractIndex === -1) {
+      receiptDetails.push({
+        label: ContractInit[contractType],
+        key: contractType,
+        value: paymentHistory.payMoney,
+      });
+    } else {
+      receiptDetails[receiptContractIndex].value =
+        receiptDetails[receiptContractIndex].value + paymentHistory.payMoney;
+    }
+  }
+
+  const receiptCash = cashes.reduce((total, cash) => {
+    if (cash.type === CashType.RECEIPT && cash.groupId !== GroupCashId.INIT) {
+      return total + cash.amount;
+    }
+    return total;
+  }, 0);
+
+  receiptDetails.push({
+    key: 'receipt_outside',
+    label: 'Thu ngoài lề',
+    value: receiptCash,
+  });
+
+  for (let i = 0; i < cashes.length; i++) {
+    const cash = cashes[i];
+
+    const group = cash.group;
+
+    const paymentCashIndex = paymentDetails.findIndex(
+      (r) => r.key === cash.groupId,
+    );
+
+    if (paymentCashIndex === -1) {
+      paymentDetails.push({
+        label: group.groupName,
+        key: group.id,
+        value: cash.amount,
+      });
+    } else {
+      paymentDetails[paymentCashIndex].value =
+        paymentDetails[paymentCashIndex].value + cash.amount;
+    }
+  }
+
+  const totalReceipt = receiptDetails.reduce((total, receipt) => {
+    return total + receipt.value;
+  }, 0);
+
+  const totalPayment = paymentDetails.reduce((total, payment) => {
+    return total + payment.value;
+  }, 0);
+
+  const interestTotal = totalReceipt - totalPayment;
+
+  return {
+    receipt: {
+      details: receiptDetails,
+      total: totalReceipt,
+    },
+    payment: {
+      details: paymentDetails,
+      total: totalPayment,
+    },
+    interest: interestTotal,
+  };
 };
