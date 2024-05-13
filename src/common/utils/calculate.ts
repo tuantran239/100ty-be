@@ -287,5 +287,5 @@ export const calculateProfit = (
 };
 
 export const calculatePercent = (partialValue, totalValue) => {
-  return (100 * partialValue) / totalValue;
+  return parseFloat(((100 * partialValue) / totalValue).toFixed(2));
 };

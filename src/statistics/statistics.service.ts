@@ -26,6 +26,7 @@ import {
   ServiceFeeDetail,
   ServiceFeeItemStatistics,
   ServiceFeeStatisticsResponse,
+  StatisticContractBaseQuery,
   StatisticsOverview,
 } from 'src/common/interface/statistics';
 import { calculatePercent, calculateProfit } from 'src/common/utils/calculate';
@@ -938,6 +939,9 @@ export class StatisticsService {
       },
     });
 
+    console.log(formatDate(timestamp.fromDate));
+    console.log(formatDate(timestamp.toDate));
+
     const cashes = await cashRepository.find({
       where: {
         createAt: Between(
@@ -958,5 +962,45 @@ export class StatisticsService {
     });
 
     return { overview, chartDetail };
+  }
+
+  async statisticsExpectedReceipt(query: StatisticContractBaseQuery, me: User) {
+    const role = me.roles[0];
+
+    let user = undefined;
+
+    if (role.id === RoleId.ADMIN) {
+      user = [{ id: me.id }, { managerId: me.id }];
+    } else if (role.id === RoleId.USER) {
+      user = { id: user.id };
+    }
+
+    const { paymentHistoryRepository } = this.databaseService.getRepositories();
+
+    const paymentHistories = await paymentHistoryRepository.find({
+      where: {
+        user,
+      },
+    });
+
+    const rootMoney = paymentHistories.reduce((total, paymentHistory) => {
+      if (paymentHistory.isRootMoney) {
+        return total + paymentHistory.payNeed;
+      }
+      return total;
+    }, 0);
+
+    const interestMoney = paymentHistories.reduce((total, paymentHistory) => {
+      if (!paymentHistory.isDeductionMoney || !paymentHistory.isRootMoney) {
+        return total + paymentHistory.payNeed;
+      }
+      return total;
+    }, 0);
+
+    return {
+      rootMoney,
+      interestMoney,
+      total: rootMoney + interestMoney,
+    };
   }
 }

@@ -209,4 +209,29 @@ export class StatisticsController {
       throw new InternalServerErrorException(error.message);
     }
   }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Post(RouterUrl.STATISTICS.EXPECTED_RECEIPT)
+  async statisticsExpectedReceipt(@Res() res: Response, @Req() req) {
+    try {
+      const me = req?.user as User;
+
+      const data = await this.statisticsService.statisticsExpectedReceipt(
+        req.body,
+        me,
+      );
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
 }
