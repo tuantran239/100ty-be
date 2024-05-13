@@ -60,3 +60,15 @@ export interface HomePreview {
   moneyContractMustReceipt: number;
   moneyContractMustReceiptWithDeductionMoney: number;
 }
+
+type StatisticsOverviewDetail = {
+  contractName: string;
+  total: number;
+  percent: number;
+};
+
+export interface StatisticsOverview {
+  label: string;
+  total: number;
+  details: StatisticsOverviewDetail[];
+}

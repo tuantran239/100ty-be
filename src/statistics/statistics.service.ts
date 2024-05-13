@@ -26,8 +26,9 @@ import {
   ServiceFeeDetail,
   ServiceFeeItemStatistics,
   ServiceFeeStatisticsResponse,
+  StatisticsOverview,
 } from 'src/common/interface/statistics';
-import { calculateProfit } from 'src/common/utils/calculate';
+import { calculatePercent, calculateProfit } from 'src/common/utils/calculate';
 import { getFullName } from 'src/common/utils/get-full-name';
 import {
   calculateRangeTime,
@@ -361,10 +362,19 @@ export class StatisticsService {
   private async getHomePreviewContractResponse(
     user?: any,
   ): Promise<ContractHomePreviewResponses> {
-    const listIcloudContract =
-      await this.contractService.listContractIcloud(user);
+    const options = {
+      where: {
+        user,
+        deleted_at: IsNull(),
+      },
+      relations: ['paymentHistories', 'customer', 'user'],
+    };
 
-    const listPawnContract = await this.contractService.listContractPawn(user);
+    const listIcloudContract =
+      await this.contractService.listContractIcloud(options);
+
+    const listPawnContract =
+      await this.contractService.listContractPawn(options);
 
     const pawn = this.calculateHomePreviewContractResponse(listPawnContract);
     const icloud =
@@ -538,6 +548,144 @@ export class StatisticsService {
       moneyContractMustReceipt,
       moneyContractMustReceiptWithDeductionMoney,
     };
+  }
+
+  async statisticsOverview(me: User): Promise<StatisticsOverview[]> {
+    const role = me.roles[0];
+
+    let user = undefined;
+
+    if (role.id === RoleId.ADMIN) {
+      user = [{ id: me.id }, { managerId: me.id }];
+    } else if (role.id === RoleId.USER) {
+      user = { id: user.id };
+    }
+
+    const { icloud: icloudContract, pawn: pawnContract } =
+      await this.getHomePreviewContractResponse(user);
+
+    const statisticsOverviews: StatisticsOverview[] = [];
+
+    const keys = Object.values(StatisticsContractFilter);
+
+    for (let i = 0; i < keys.length; i++) {
+      const key = keys[i];
+
+      if (key === StatisticsContractFilter.TOTAL_DISBURSEMENT) {
+        const total =
+          icloudContract.paymentContractTotal +
+          pawnContract.paymentContractTotal;
+        statisticsOverviews.push({
+          label: 'Tổng giải ngân',
+          total,
+          details: [
+            {
+              contractName: 'Icloud',
+              total: icloudContract.paymentContractTotal,
+              percent: calculatePercent(
+                icloudContract.paymentContractTotal,
+                total,
+              ),
+            },
+            {
+              contractName: 'Cầm đồ',
+              total: pawnContract.paymentContractTotal,
+              percent: calculatePercent(
+                pawnContract.paymentContractTotal,
+                total,
+              ),
+            },
+          ],
+        });
+      } else if (key === StatisticsContractFilter.TOTAL_MUST_RECEIPT) {
+        const total =
+          icloudContract.expectedRevenue + pawnContract.expectedRevenue;
+        statisticsOverviews.push({
+          label: 'Tổng phải thu',
+          total,
+          details: [
+            {
+              contractName: 'Icloud',
+              total: icloudContract.expectedRevenue,
+              percent: calculatePercent(icloudContract.expectedRevenue, total),
+            },
+            {
+              contractName: 'Cầm đồ',
+              total: pawnContract.expectedRevenue,
+              percent: calculatePercent(pawnContract.expectedRevenue, total),
+            },
+          ],
+        });
+      } else if (key === StatisticsContractFilter.TOTAL_RECEIPT) {
+        const total =
+          icloudContract.receiptContract + pawnContract.receiptContract;
+        statisticsOverviews.push({
+          label: 'Tổng đã thu',
+          total,
+          details: [
+            {
+              contractName: 'Icloud',
+              total: icloudContract.receiptContract,
+              percent: calculatePercent(icloudContract.receiptContract, total),
+            },
+            {
+              contractName: 'Cầm đồ',
+              total: pawnContract.receiptContract,
+              percent: calculatePercent(pawnContract.receiptContract, total),
+            },
+          ],
+        });
+      } else if (key === StatisticsContractFilter.TOTAL_DEDUCTION) {
+        const total =
+          icloudContract.deductionMoneyTotal + pawnContract.deductionMoneyTotal;
+        statisticsOverviews.push({
+          label: 'Tổng cắt trước',
+          total,
+          details: [
+            {
+              contractName: 'Icloud',
+              total: icloudContract.deductionMoneyTotal,
+              percent: calculatePercent(
+                icloudContract.deductionMoneyTotal,
+                total,
+              ),
+            },
+            {
+              contractName: 'Cầm đồ',
+              total: pawnContract.deductionMoneyTotal,
+              percent: calculatePercent(
+                pawnContract.deductionMoneyTotal,
+                total,
+              ),
+            },
+          ],
+        });
+      } else if (key === StatisticsContractFilter.TOTAL_BAD_DEBIT) {
+        const total =
+          icloudContract.badDebitMoneyTotal + pawnContract.badDebitMoneyTotal;
+        statisticsOverviews.push({
+          label: 'Tổng nợ xấu',
+          total,
+          details: [
+            {
+              contractName: 'Icloud',
+              total: icloudContract.badDebitMoneyTotal,
+              percent: calculatePercent(
+                icloudContract.badDebitMoneyTotal,
+                total,
+              ),
+            },
+            {
+              contractName: 'Cầm đồ',
+              total: pawnContract.badDebitMoneyTotal,
+              percent: calculatePercent(pawnContract.badDebitMoneyTotal, total),
+            },
+          ],
+        });
+      }
+    }
+
+    return statisticsOverviews;
   }
 
   async statisticsContract(me: User, query: StatisticsContractQuery) {

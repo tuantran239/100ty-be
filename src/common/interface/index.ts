@@ -69,6 +69,7 @@ export enum StatisticsContractFilter {
   TOTAL_BAD_DEBIT = 'total_bad_debit',
   TOTAL_RECEIPT = 'total_receipt',
   TOTAL_DEDUCTION = 'total_deduction',
+  TOTAL_INTEREST = 'total_interest',
 }
 
 export interface StatisticsContractItem {
