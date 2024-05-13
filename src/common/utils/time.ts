@@ -1,7 +1,7 @@
 import * as moment from 'moment';
 
 export const formatDate = (date: any, format?: string) =>
-  moment(new Date(date)).format(format ?? 'DD/MM/YYYY');
+  moment(new Date(date).toJSON()).format(format ?? 'DD/MM/YYYY');
 
 export const convertPostgresDate = (date: string) =>
   date.split('/').reverse().join('-');
@@ -109,7 +109,12 @@ export const calculateRangeTime = (
       fromDate = new Date(`${year}-01-01T00:00:00.000Z`);
       toDate = new Date(`${year}-12-31T23:59:59.999Z`);
       break;
+    default:
+      fromDate = new Date(`${year}-01-01T00:00:00.000Z`);
+      toDate = new Date(`${year}-12-31T23:59:59.999Z`);
   }
 
   return { fromDate, toDate };
 };
+
+export const calculateRangeDate = () => {};

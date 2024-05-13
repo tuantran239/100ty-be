@@ -72,3 +72,11 @@ export interface StatisticsOverview {
   total: number;
   details: StatisticsOverviewDetail[];
 }
+
+export interface StatisticContractBaseQuery {
+  date?: number;
+  month?: number;
+  week?: number;
+  year: number;
+  search?: string;
+}
