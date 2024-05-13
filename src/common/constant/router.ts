@@ -155,6 +155,7 @@ interface StatisticsRouter {
   HOME_PREVIEW: string;
   STATISTICS_CONTRACT: string;
   PROFIT: string;
+  OVERVIEW: string;
 }
 
 const STATISTICS: StatisticsRouter = {
@@ -164,6 +165,7 @@ const STATISTICS: StatisticsRouter = {
   HOME_PREVIEW: '/home-preview',
   STATISTICS_CONTRACT: '/contract',
   PROFIT: '/profit',
+  OVERVIEW: '/overview',
 };
 
 const CSV = {

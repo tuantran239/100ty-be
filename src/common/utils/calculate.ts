@@ -285,3 +285,7 @@ export const calculateProfit = (
     interest: interestTotal,
   };
 };
+
+export const calculatePercent = (partialValue, totalValue) => {
+  return (100 * partialValue) / totalValue;
+};

@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import { ContractType } from 'src/common/interface';
 import { Contract } from 'src/common/interface/contract';
 import { PaymentStatusHistory } from 'src/common/interface/history';
@@ -8,7 +9,8 @@ import {
 } from 'src/common/utils/calculate';
 import { formatDate } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
-import { DataSource, IsNull } from 'typeorm';
+import { Pawn } from 'src/pawn/pawn.entity';
+import { DataSource, FindManyOptions } from 'typeorm';
 
 @Injectable()
 export class ContractService {
@@ -17,16 +19,12 @@ export class ContractService {
     private databaseService: DatabaseService,
   ) {}
 
-  async listContractIcloud(user?: any): Promise<Contract[]> {
+  async listContractIcloud(
+    options: FindManyOptions<BatHo>,
+  ): Promise<Contract[]> {
     const { batHoRepository } = this.databaseService.getRepositories();
 
-    const iClouds = await batHoRepository.find({
-      where: {
-        user,
-        deleted_at: IsNull(),
-      },
-      relations: ['paymentHistories', 'customer', 'user'],
-    });
+    const iClouds = await batHoRepository.find(options);
 
     const icloudContracts = iClouds.map((icloud) => {
       const paymentHistories = icloud.paymentHistories;
@@ -78,16 +76,10 @@ export class ContractService {
     return icloudContracts;
   }
 
-  async listContractPawn(user?: any): Promise<Contract[]> {
+  async listContractPawn(options: FindManyOptions<Pawn>): Promise<Contract[]> {
     const { pawnRepository } = this.databaseService.getRepositories();
 
-    const pawns = await pawnRepository.find({
-      where: {
-        user,
-        deleted_at: IsNull(),
-      },
-      relations: ['paymentHistories', 'customer', 'user'],
-    });
+    const pawns = await pawnRepository.find(options);
 
     const pawnContracts = pawns.map((pawn) => {
       const paymentHistories = pawn.paymentHistories;
@@ -139,28 +131,31 @@ export class ContractService {
     return pawnContracts;
   }
 
-  async listContract(contractType?: string, user?: any): Promise<Contract[]> {
+  async listContract(
+    contractType?: string,
+    options?: FindManyOptions<any>,
+  ): Promise<Contract[]> {
     let contracts: Contract[] = [];
 
     switch (contractType) {
       case ContractType.BAT_HO:
         {
-          const icloudContracts = await this.listContractIcloud(user);
+          const icloudContracts = await this.listContractIcloud(options);
 
           contracts = contracts.concat(contracts, icloudContracts);
         }
         break;
       case ContractType.CAM_DO:
         {
-          const pawnContracts = await this.listContractPawn(user);
+          const pawnContracts = await this.listContractPawn(options);
 
           contracts = contracts.concat(contracts, pawnContracts);
         }
         break;
       default: {
-        const icloudContracts = await this.listContractIcloud(user);
+        const icloudContracts = await this.listContractIcloud(options);
 
-        const pawnContracts = await this.listContractPawn(user);
+        const pawnContracts = await this.listContractPawn(options);
 
         contracts = contracts.concat(contracts, icloudContracts, pawnContracts);
       }
