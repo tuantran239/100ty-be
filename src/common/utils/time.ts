@@ -117,4 +117,34 @@ export const calculateRangeTime = (
   return { fromDate, toDate };
 };
 
-export const calculateRangeDate = () => {};
+export const calculateRangeDate = (
+  data: { day?: number; month?: number; year?: number },
+  type: 'day' | 'month' | 'year',
+) => {
+  const day = convertPrefixTime(data.day ?? new Date().getDate());
+  const month = convertPrefixTime(data.month ?? new Date().getMonth() + 1);
+  const year = data.year ?? new Date().getFullYear();
+
+  let fromDate = `${year}-${month}-${day}`;
+  let toDate = `${year}-${month}-${day}`;
+
+  switch (type) {
+    case 'day':
+      fromDate = `${year}-${month}-${day}`;
+      toDate = `${year}-${month}-${day}`;
+      break;
+    case 'month':
+      fromDate = `${year}-${month}-01`;
+      toDate = `${year}-${month}-${getTotalDayInMonth(parseInt(month), year)}`;
+      break;
+    case 'year':
+      fromDate = `${year}-01-01`;
+      toDate = `${year}-12-31`;
+      break;
+    default:
+      fromDate = `${year}-01-01`;
+      toDate = `${year}-12-31`;
+  }
+
+  return { fromDate, toDate };
+};

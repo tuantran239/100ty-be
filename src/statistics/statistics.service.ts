@@ -26,12 +26,12 @@ import {
   ServiceFeeDetail,
   ServiceFeeItemStatistics,
   ServiceFeeStatisticsResponse,
-  StatisticContractBaseQuery,
   StatisticsOverview,
 } from 'src/common/interface/statistics';
 import { calculatePercent, calculateProfit } from 'src/common/utils/calculate';
 import { getFullName } from 'src/common/utils/get-full-name';
 import {
+  calculateRangeDate,
   calculateRangeTime,
   convertPostgresDate,
   convertPrefixTime,
@@ -51,6 +51,7 @@ import {
   IsNull,
   Repository,
 } from 'typeorm';
+import { StatisticsContractQueryDto } from './dto/statistics-contract-query.dto';
 
 @Injectable()
 export class StatisticsService {
@@ -939,9 +940,6 @@ export class StatisticsService {
       },
     });
 
-    console.log(formatDate(timestamp.fromDate));
-    console.log(formatDate(timestamp.toDate));
-
     const cashes = await cashRepository.find({
       where: {
         createAt: Between(
@@ -964,10 +962,13 @@ export class StatisticsService {
     return { overview, chartDetail };
   }
 
-  async statisticsExpectedReceipt(query: StatisticContractBaseQuery, me: User) {
+  async statisticsExpectedReceipt(query: StatisticsContractQueryDto, me: User) {
     const role = me.roles[0];
 
     let user = undefined;
+    let customer = undefined;
+    let endDate = undefined;
+    let startDate = undefined;
 
     if (role.id === RoleId.ADMIN) {
       user = [{ id: me.id }, { managerId: me.id }];
@@ -977,30 +978,133 @@ export class StatisticsService {
 
     const { paymentHistoryRepository } = this.databaseService.getRepositories();
 
-    const paymentHistories = await paymentHistoryRepository.find({
+    const { month, year, search, day } = query;
+
+    if (search && search.length > 0) {
+      customer = {
+        personalID: search,
+      };
+    }
+
+    if (day) {
+      const { fromDate, toDate } = calculateRangeDate(
+        { day, month, year },
+        'day',
+      );
+      startDate = Between(fromDate, toDate);
+      endDate = Between(fromDate, toDate);
+    } else if (month) {
+      const { fromDate, toDate } = calculateRangeDate(
+        { day, month, year },
+        'month',
+      );
+      startDate = Between(fromDate, toDate);
+      endDate = Between(fromDate, toDate);
+    } else {
+      const { fromDate, toDate } = calculateRangeDate(
+        { day, month, year },
+        'year',
+      );
+      startDate = Between(fromDate, toDate);
+      endDate = Between(fromDate, toDate);
+    }
+
+    const paymentHistoriesOfIcloud = await paymentHistoryRepository.find({
       where: {
         user,
+        batHo: {
+          customer,
+        },
+        startDate,
       },
     });
 
-    const rootMoney = paymentHistories.reduce((total, paymentHistory) => {
-      if (paymentHistory.isRootMoney) {
-        return total + paymentHistory.payNeed;
-      }
-      return total;
-    }, 0);
+    const paymentHistoriesOfPawn = await paymentHistoryRepository.find({
+      where: {
+        user,
+        pawn: {
+          customer,
+        },
+        endDate,
+      },
+    });
 
-    const interestMoney = paymentHistories.reduce((total, paymentHistory) => {
-      if (!paymentHistory.isDeductionMoney || !paymentHistory.isRootMoney) {
-        return total + paymentHistory.payNeed;
-      }
-      return total;
-    }, 0);
+    const rootMoneyIcloud = paymentHistoriesOfIcloud.reduce(
+      (total, paymentHistory) => {
+        if (paymentHistory.isRootMoney) {
+          return total + paymentHistory.payNeed;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const interestMoneyIcloud = paymentHistoriesOfIcloud.reduce(
+      (total, paymentHistory) => {
+        if (!paymentHistory.isDeductionMoney || !paymentHistory.isRootMoney) {
+          return total + paymentHistory.payNeed;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const rootMoneyPawn = paymentHistoriesOfPawn.reduce(
+      (total, paymentHistory) => {
+        if (paymentHistory.isRootMoney) {
+          return total + paymentHistory.payNeed;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const interestMoneyPawn = paymentHistoriesOfPawn.reduce(
+      (total, paymentHistory) => {
+        if (!paymentHistory.isDeductionMoney || !paymentHistory.isRootMoney) {
+          return total + paymentHistory.payNeed;
+        }
+        return total;
+      },
+      0,
+    );
 
     return {
-      rootMoney,
-      interestMoney,
-      total: rootMoney + interestMoney,
+      rootMoney: rootMoneyPawn + rootMoneyIcloud,
+      interestMoney: interestMoneyPawn + interestMoneyIcloud,
+      total:
+        rootMoneyPawn +
+        rootMoneyIcloud +
+        interestMoneyPawn +
+        interestMoneyIcloud,
+      details: [
+        {
+          label: 'Icloud',
+          expectedRevenues: [
+            {
+              label: 'Tổng thu gốc dự kiến',
+              value: rootMoneyIcloud,
+            },
+            {
+              label: 'Tổng thu lãi dự kiến',
+              value: interestMoneyIcloud,
+            },
+          ],
+        },
+        {
+          label: 'Cầm đồ',
+          expectedRevenues: [
+            {
+              label: 'Tổng thu gốc dự kiến',
+              value: rootMoneyPawn,
+            },
+            {
+              label: 'Tổng thu lãi dự kiến',
+              value: interestMoneyPawn,
+            },
+          ],
+        },
+      ],
     };
   }
 }

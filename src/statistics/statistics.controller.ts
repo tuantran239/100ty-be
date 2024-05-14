@@ -25,6 +25,7 @@ import { FindManyOptions, IsNull, Not } from 'typeorm';
 import { StatisticsService } from './statistics.service';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { StatisticsProfitQueryDto } from './dto/statistics-profit-query.dto';
+import { StatisticsContractQueryDto } from './dto/statistics-contract-query.dto';
 
 @Controller(RouterUrl.STATISTICS.ROOT)
 export class StatisticsController {
@@ -213,12 +214,16 @@ export class StatisticsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(RouterUrl.STATISTICS.EXPECTED_RECEIPT)
-  async statisticsExpectedReceipt(@Res() res: Response, @Req() req) {
+  async statisticsExpectedReceipt(
+    @Body(new BodyValidationPipe()) payload: StatisticsContractQueryDto,
+    @Res() res: Response,
+    @Req() req,
+  ) {
     try {
       const me = req?.user as User;
 
       const data = await this.statisticsService.statisticsExpectedReceipt(
-        req.body,
+        payload,
         me,
       );
 

@@ -74,9 +74,8 @@ export interface StatisticsOverview {
 }
 
 export interface StatisticContractBaseQuery {
-  date?: number;
   month?: number;
-  week?: number;
   year: number;
   search?: string;
+  day?: number;
 }
