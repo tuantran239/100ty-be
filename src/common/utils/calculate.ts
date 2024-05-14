@@ -248,13 +248,13 @@ export const calculateProfit = (
     const cash = cashPayments[i];
 
     const paymentCashIndex = paymentDetails.findIndex(
-      (r) => r.key === cash.groupId,
+      (r) => r.key === (cash.groupId ? cash.groupId : 'giai_ngan'),
     );
 
     if (paymentCashIndex === -1) {
       paymentDetails.push({
         label: cash?.group?.groupName ?? 'Giải ngân',
-        key: cash.groupId,
+        key: cash.groupId ?? 'giai_ngan',
         value: cash.amount,
       });
     } else {
