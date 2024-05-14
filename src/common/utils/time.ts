@@ -1,4 +1,5 @@
 import * as moment from 'moment';
+import { TimeZone } from '../constant/timezone';
 
 export const formatDate = (date: any, format?: string) =>
   moment(new Date(date).toJSON()).format(format ?? 'DD/MM/YYYY');
@@ -75,6 +76,7 @@ export const convertPrefixTime = (time: number) => {
 export const calculateRangeTime = (
   data: { hour?: number; day?: number; month?: number; year?: number },
   type: 'hour' | 'day' | 'month' | 'year',
+  timezone?: string,
 ) => {
   const hour = convertPrefixTime(data.hour ?? new Date().getHours());
   const day = convertPrefixTime(data.day ?? new Date().getDate());
@@ -83,35 +85,41 @@ export const calculateRangeTime = (
   const minute = new Date().getMinutes();
   const seconds = new Date().getSeconds();
 
+  const localTime = TimeZone[timezone ?? 'vn'];
+
   let fromDate = new Date(
-    `${year}-${month}-${day}T${hour}:${minute}:${seconds}.000Z`,
+    `${year}-${month}-${day} ${hour}:${minute}:${seconds}.000${localTime}`,
   );
   let toDate = new Date(
-    `${year}-${month}-${day}T${hour}:${minute}:${seconds}.000Z`,
+    `${year}-${month}-${day} ${hour}:${minute}:${seconds}.000${localTime}`,
   );
 
   switch (type) {
     case 'hour':
-      fromDate = new Date(`${year}-${month}-${day}T${hour}:00:00.000Z`);
-      toDate = new Date(`${year}-${month}-${day}T${hour}:59:59.999Z`);
+      fromDate = new Date(
+        `${year}-${month}-${day} ${hour}:00:00.000${localTime}`,
+      );
+      toDate = new Date(
+        `${year}-${month}-${day} ${hour}:59:59.999${localTime}`,
+      );
       break;
     case 'day':
-      fromDate = new Date(`${year}-${month}-${day}T00:00:00.000Z`);
-      toDate = new Date(`${year}-${month}-${day}T23:59:59.999Z`);
+      fromDate = new Date(`${year}-${month}-${day} 00:00:00.000${localTime}`);
+      toDate = new Date(`${year}-${month}-${day} 23:59:59.999${localTime}`);
       break;
     case 'month':
-      fromDate = new Date(`${year}-${month}-01T00:00:00.000Z`);
+      fromDate = new Date(`${year}-${month}-01 00:00:00.000${localTime}`);
       toDate = new Date(
-        `${year}-${month}-${getTotalDayInMonth(parseInt(month), year)}T23:59:59.999Z`,
+        `${year}-${month}-${getTotalDayInMonth(parseInt(month), year)} 23:59:59.999${localTime}`,
       );
       break;
     case 'year':
-      fromDate = new Date(`${year}-01-01T00:00:00.000Z`);
-      toDate = new Date(`${year}-12-31T23:59:59.999Z`);
+      fromDate = new Date(`${year}-01-01 00:00:00.000${localTime}`);
+      toDate = new Date(`${year}-12-31 23:59:59.999${localTime}`);
       break;
     default:
-      fromDate = new Date(`${year}-01-01T00:00:00.000Z`);
-      toDate = new Date(`${year}-12-31T23:59:59.999Z`);
+      fromDate = new Date(`${year}-01-01 00:00:00.000${localTime}`);
+      toDate = new Date(`${year}-12-31 23:59:59.999${localTime}`);
   }
 
   return { fromDate, toDate };
