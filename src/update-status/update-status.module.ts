@@ -3,9 +3,10 @@ import { UpdateStatusService } from './update-status.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Customer } from 'src/customer/customer.entity';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
+import { ContractModule } from 'src/contract/contract.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Customer, BatHo])],
+  imports: [TypeOrmModule.forFeature([Customer, BatHo]), ContractModule],
   providers: [UpdateStatusService],
   exports: [UpdateStatusService],
 })
