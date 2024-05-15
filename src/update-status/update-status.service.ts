@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { CashFilterType } from 'src/common/interface';
-import { DebitStatus } from 'src/common/interface/bat-ho';
-import { PaymentStatusHistory } from 'src/common/interface/history';
 import { createPaymentHistoriesCash } from 'src/common/utils/cash-payload';
 import { getBatHoStatus, getPawnStatus } from 'src/common/utils/status';
+import { ContractService } from 'src/contract/contract.service';
 import { DatabaseService } from 'src/database/database.service';
 import { DataSource } from 'typeorm';
 
@@ -12,6 +11,7 @@ export class UpdateStatusService {
   constructor(
     private dataSource: DataSource,
     private databaseService: DatabaseService,
+    private contractService: ContractService,
   ) {}
 
   async updateBatHoStatus(batHoId: string) {
@@ -35,32 +35,15 @@ export class UpdateStatusService {
 
         const status = getBatHoStatus(batHo.paymentHistories ?? []);
 
-        if (
-          status == DebitStatus.BAD_DEBIT ||
-          status == DebitStatus.RISK_DEBIT
-        ) {
-          const debtMoney = batHo.paymentHistories.reduce(
-            (total, paymentHistory) => {
-              if (paymentHistory.paymentStatus != PaymentStatusHistory.FINISH) {
-                return total + paymentHistory.payNeed;
-              }
-              return total;
-            },
-            0,
-          );
-
-          await customerRepository.update(customer.id, {
-            debtMoney,
-            isDebt: true,
-          });
-        } else {
-          await customerRepository.update(customer.id, {
-            debtMoney: 0,
-            isDebt: false,
-          });
-        }
-
         await batHoRepository.update({ id: batHo.id }, { debitStatus: status });
+
+        const customerBadDebitContract =
+          await this.contractService.listBadDebitContractCustomer(customer.id);
+
+        await customerRepository.update(customer.id, {
+          debtMoney: customerBadDebitContract.total,
+          isDebt: customerBadDebitContract.total !== 0,
+        });
 
         const findPaymentHistories = await paymentHistoryRepository.find({
           where: { batHoId: batHo.id },
@@ -104,32 +87,15 @@ export class UpdateStatusService {
 
         const status = getPawnStatus(pawn.paymentHistories ?? []);
 
-        if (
-          status == DebitStatus.BAD_DEBIT ||
-          status == DebitStatus.RISK_DEBIT
-        ) {
-          const debtMoney = pawn.paymentHistories.reduce(
-            (total, paymentHistory) => {
-              if (paymentHistory.paymentStatus != PaymentStatusHistory.FINISH) {
-                return total + paymentHistory.payNeed;
-              }
-              return total;
-            },
-            0,
-          );
-
-          await customerRepository.update(customer.id, {
-            debtMoney,
-            isDebt: true,
-          });
-        } else {
-          await customerRepository.update(customer.id, {
-            debtMoney: 0,
-            isDebt: false,
-          });
-        }
-
         await pawnRepository.update({ id: pawn.id }, { debitStatus: status });
+
+        const customerBadDebitContract =
+          await this.contractService.listBadDebitContractCustomer(customer.id);
+
+        await customerRepository.update(customer.id, {
+          debtMoney: customerBadDebitContract.total,
+          isDebt: customerBadDebitContract.total !== 0,
+        });
 
         const findPaymentHistories = await paymentHistoryRepository.find({
           where: { pawnId: pawn.id },

@@ -50,6 +50,7 @@ import {
   Repository,
 } from 'typeorm';
 import { StatisticsContractQueryDto } from './dto/statistics-contract-query.dto';
+import { filterRole } from 'src/common/utils/filter-role';
 
 @Injectable()
 export class StatisticsService {
@@ -387,15 +388,7 @@ export class StatisticsService {
   }
 
   async homePreview(me: User): Promise<HomePreview> {
-    const role = me.roles[0];
-
-    let user = undefined;
-
-    if (role.id === RoleId.ADMIN) {
-      user = [{ id: me.id }, { managerId: me.id }];
-    } else if (role.id === RoleId.USER) {
-      user = { id: user.id };
-    }
+    const user = filterRole(me);
 
     const contractResponses = await this.getHomePreviewContractResponse(user);
 
@@ -551,15 +544,7 @@ export class StatisticsService {
   }
 
   async statisticsOverview(me: User): Promise<StatisticsOverview[]> {
-    const role = me.roles[0];
-
-    let user = undefined;
-
-    if (role.id === RoleId.ADMIN) {
-      user = [{ id: me.id }, { managerId: me.id }];
-    } else if (role.id === RoleId.USER) {
-      user = { id: user.id };
-    }
+    const user = filterRole(me);
 
     const { icloud: icloudContract, pawn: pawnContract } =
       await this.getHomePreviewContractResponse(user);
@@ -691,15 +676,7 @@ export class StatisticsService {
   async statisticsContract(me: User, query: StatisticsContractQuery) {
     const { type, page, pageSize } = query;
 
-    const role = me.roles[0];
-
-    let user = undefined;
-
-    if (role.id === RoleId.ADMIN) {
-      user = [{ id: me.id }, { managerId: me.id }];
-    } else if (role.id === RoleId.USER) {
-      user = { id: user.id };
-    }
+    const user = filterRole(me);
 
     let queryWhere = {};
     const relations = ['batHo', 'batHo.customer', 'batHo.user', 'user'];
@@ -912,15 +889,7 @@ export class StatisticsService {
     month?: number;
     me: User;
   }): Promise<ProfitStatistics> {
-    const role = me.roles[0];
-
-    let user = undefined;
-
-    if (role.id === RoleId.ADMIN) {
-      user = [{ id: me.id }, { managerId: me.id }];
-    } else if (role.id === RoleId.USER) {
-      user = { id: user.id };
-    }
+    const user = filterRole(me);
 
     const { paymentHistoryRepository, cashRepository } =
       this.databaseService.getRepositories();
@@ -961,18 +930,11 @@ export class StatisticsService {
   }
 
   async statisticsExpectedReceipt(query: StatisticsContractQueryDto, me: User) {
-    const role = me.roles[0];
-
-    let user = undefined;
     let customer = undefined;
     let endDate = undefined;
     let startDate = undefined;
 
-    if (role.id === RoleId.ADMIN) {
-      user = [{ id: me.id }, { managerId: me.id }];
-    } else if (role.id === RoleId.USER) {
-      user = { id: user.id };
-    }
+    const user = filterRole(me);
 
     const { paymentHistoryRepository } = this.databaseService.getRepositories();
 

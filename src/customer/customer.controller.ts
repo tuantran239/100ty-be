@@ -13,17 +13,20 @@ import { ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import RouterUrl from 'src/common/constant/router';
-import { ResponseData, RoleId, RoleName } from 'src/common/interface';
+import { Roles } from 'src/common/decorator/roles.decorator';
+import { RolesGuard } from 'src/common/guard/roles.guard';
+import { ResponseData, RoleName } from 'src/common/interface';
 import { CustomerQuery } from 'src/common/interface/query';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { filterRole } from 'src/common/utils/filter-role';
 import { getSearch } from 'src/common/utils/query';
+import { DatabaseService } from 'src/database/database.service';
+import { User } from 'src/user/user.entity';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { Roles } from 'src/common/decorator/roles.decorator';
-import { RolesGuard } from 'src/common/guard/roles.guard';
-import { User } from 'src/user/user.entity';
-import { DatabaseService } from 'src/database/database.service';
+import { ContractService } from 'src/contract/contract.service';
+import { IsNull } from 'typeorm';
 
 @ApiTags('Customer')
 @Controller(RouterUrl.CUSTOMER.ROOT)
@@ -31,6 +34,7 @@ export class CustomerController {
   constructor(
     private customerService: CustomerService,
     private databaseService: DatabaseService,
+    private contractService: ContractService,
   ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -90,26 +94,7 @@ export class CustomerController {
     try {
       const me = req.user as User;
 
-      const role = me.roles[0];
-
-      let batHos = undefined;
-
-      if (role.id === RoleId.USER) {
-        batHos = {
-          userId: me.id,
-        };
-      } else if (role.id === RoleId.ADMIN) {
-        batHos = {
-          user: [
-            {
-              managerId: me.id,
-            },
-            {
-              id: me.id,
-            },
-          ],
-        };
-      }
+      const user = filterRole(me);
 
       const { search, page, pageSize, isDebt } = req.body as CustomerQuery;
 
@@ -117,7 +102,7 @@ export class CustomerController {
 
       const where = [];
 
-      const query = { isDebt: isDebt, batHos };
+      const query = { isDebt: isDebt };
 
       if (!Number.isNaN(searchType)) {
         where.push({ ...query, personalID: getSearch(search, 'both') });
@@ -133,12 +118,29 @@ export class CustomerController {
         where: [...where],
         take: pageSize ?? 10,
         skip: ((page ?? 1) - 1) * (pageSize ?? 10),
-        relations: ['batHos', 'batHos.user'],
       });
+
+      const list_customer = [];
+
+      await Promise.all(
+        data[0].map(async (customer) => {
+          const contracts = await this.contractService.listContract(null, {
+            where: {
+              user,
+              deleted_at: IsNull(),
+              customer: {
+                id: customer.id,
+              },
+            },
+            relations: ['customer', 'user', 'paymentHistories'],
+          });
+          list_customer.push({ ...customer, contracts });
+        }),
+      );
 
       const responseData: ResponseData = {
         message: 'success',
-        data: { list_customer: data[0], total: data[1] },
+        data: { list_customer, total: data[1] },
         error: null,
         statusCode: 200,
       };

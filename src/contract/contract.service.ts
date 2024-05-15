@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import { ContractType } from 'src/common/interface';
+import { DebitStatus } from 'src/common/interface/bat-ho';
 import { Contract } from 'src/common/interface/contract';
 import { PaymentStatusHistory } from 'src/common/interface/history';
 import {
@@ -10,7 +11,7 @@ import {
 import { formatDate } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import { Pawn } from 'src/pawn/pawn.entity';
-import { DataSource, FindManyOptions } from 'typeorm';
+import { DataSource, Equal, FindManyOptions, IsNull } from 'typeorm';
 
 @Injectable()
 export class ContractService {
@@ -27,7 +28,7 @@ export class ContractService {
     const iClouds = await batHoRepository.find(options);
 
     const icloudContracts = iClouds.map((icloud) => {
-      const paymentHistories = icloud.paymentHistories;
+      const paymentHistories = icloud.paymentHistories ?? [];
       const { latePaymentDay, latePaymentMoney, badDebitMoney } =
         calculateLateAndBadPaymentIcloud(
           paymentHistories ?? [],
@@ -82,7 +83,7 @@ export class ContractService {
     const pawns = await pawnRepository.find(options);
 
     const pawnContracts = pawns.map((pawn) => {
-      const paymentHistories = pawn.paymentHistories;
+      const paymentHistories = pawn.paymentHistories ?? [];
       const { latePaymentPeriod, latePaymentMoney, badDebitMoney } =
         calculateLateAndBadPaymentPawn(
           paymentHistories ?? [],
@@ -162,5 +163,38 @@ export class ContractService {
     }
 
     return contracts;
+  }
+
+  async listBadDebitContractCustomer(customerId: string, user?: any) {
+    const { customerRepository } = this.databaseService.getRepositories();
+
+    const customer = await customerRepository.findOne({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      throw new Error('Không tìm thấy khách hàng');
+    }
+
+    const contracts = await this.listContract(null, {
+      where: {
+        user,
+        deleted_at: IsNull(),
+        customer: {
+          id: customerId,
+        },
+        debitStatus: Equal(DebitStatus.BAD_DEBIT),
+      },
+      relations: ['paymentHistories', 'customer', 'user'],
+    });
+
+    const total = contracts.reduce((total, contract) => {
+      return total + contract.badDebitMoney;
+    }, 0);
+
+    return {
+      total,
+      contracts,
+    };
   }
 }
