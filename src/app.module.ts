@@ -29,7 +29,6 @@ import { RoleModule } from './role/role.module';
 import { StatisticsModule } from './statistics/statistics.module';
 import { StatisticsService } from './statistics/statistics.service';
 import { TransactionHistoryModule } from './transaction-history/transaction-history.module';
-import { UpdateStatusModule } from './update-status/update-status.module';
 import { UploadModule } from './upload/upload.module';
 import { UserModule } from './user/user.module';
 import { GroupCashModule } from './group-cash/group-cash.module';
@@ -78,7 +77,6 @@ import { ContractModule } from './contract/contract.module';
     TransactionHistoryModule,
     HostServerModule,
     DeviceModule,
-    UpdateStatusModule,
     DatabaseModule,
     LogActionModule,
     StatisticsModule,

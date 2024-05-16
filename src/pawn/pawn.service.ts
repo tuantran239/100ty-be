@@ -19,7 +19,6 @@ import {
 } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import { CreatePaymentHistoryDto } from 'src/payment-history/dto/create-payment-history';
-import { UpdateStatusService } from 'src/update-status/update-status.service';
 import {
   DataSource,
   EntityManager,
@@ -33,6 +32,7 @@ import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { Pawn } from './pawn.entity';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { LoggerServerService } from 'src/logger/logger-server.service';
+import { ContractService } from 'src/contract/contract.service';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -45,7 +45,7 @@ export class PawnService extends BaseService<
   constructor(
     private dataSource: DataSource,
     private databaseService: DatabaseService,
-    private updateStatusService: UpdateStatusService,
+    private contractService: ContractService,
     private logger: LoggerServerService,
   ) {
     super();
@@ -218,7 +218,7 @@ export class PawnService extends BaseService<
       },
     );
 
-    await this.updateStatusService.updatePawnStatus(newPawn.id);
+    await this.contractService.updatePawnStatus(newPawn.id);
 
     return newPawn;
   }
@@ -372,7 +372,7 @@ export class PawnService extends BaseService<
       },
     );
 
-    await this.updateStatusService.updatePawnStatus(pawnUpdated.id);
+    await this.contractService.updatePawnStatus(pawnUpdated.id);
 
     return pawnUpdated;
   }
@@ -537,7 +537,7 @@ export class PawnService extends BaseService<
 
     Promise.allSettled(
       pawns.map(async (pawn) => {
-        await this.updateStatusService.updatePawnStatus(pawn.id);
+        await this.contractService.updatePawnStatus(pawn.id);
       }),
     );
   }

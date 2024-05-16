@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { PawnController } from './pawn.controller';
 import { PawnService } from './pawn.service';
-import { UpdateStatusModule } from 'src/update-status/update-status.module';
 import { LoggerServerModule } from 'src/logger/logger-server.module';
+import { ContractModule } from 'src/contract/contract.module';
 
 @Module({
-  imports: [UpdateStatusModule, LoggerServerModule],
+  imports: [LoggerServerModule, ContractModule],
   controllers: [PawnController],
   providers: [PawnService],
 })
