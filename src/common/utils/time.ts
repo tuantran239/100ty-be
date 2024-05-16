@@ -65,8 +65,11 @@ export const getTotalDayInMonth = (month: number, year: number) => {
   if (month === 2) {
     return year % 4 ? 29 : 28;
   }
+  if (month >= 8) {
+    return month % 2 === 0 ? 31 : 30;
+  }
 
-  return month % 2 ? 30 : 31;
+  return month % 2 === 0 ? 30 : 31;
 };
 
 export const convertPrefixTime = (time: number) => {
