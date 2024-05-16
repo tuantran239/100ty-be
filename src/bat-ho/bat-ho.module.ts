@@ -9,8 +9,8 @@ import { CashModule } from 'src/cash/cash.module';
 import { UserModule } from 'src/user/user.module';
 import { PaymentHistoryModule } from 'src/payment-history/payment-history.module';
 import { TransactionHistoryModule } from 'src/transaction-history/transaction-history.module';
-import { UpdateStatusModule } from 'src/update-status/update-status.module';
 import { DatabaseModule } from 'src/database/database.module';
+import { ContractModule } from 'src/contract/contract.module';
 
 @Module({
   imports: [
@@ -21,8 +21,8 @@ import { DatabaseModule } from 'src/database/database.module';
     UserModule,
     PaymentHistoryModule,
     TransactionHistoryModule,
-    UpdateStatusModule,
     DatabaseModule,
+    ContractModule,
   ],
   controllers: [BatHoController],
   providers: [BatHoService],

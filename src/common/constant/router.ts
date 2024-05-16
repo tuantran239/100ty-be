@@ -195,6 +195,16 @@ const ASSET_TYPE: BaseRouter = {
   DELETE: '/:id',
 };
 
+interface ContractRouter {
+  ROOT: string;
+  UPDATE_STATUS: string;
+}
+
+const CONTRACT: ContractRouter = {
+  ROOT: `${API_URL}/contract`,
+  UPDATE_STATUS: '/update-status',
+};
+
 const RouterUrl = {
   USER,
   AUTH,
@@ -211,6 +221,7 @@ const RouterUrl = {
   GROUP_CASH,
   ASSET_TYPE,
   PAWN,
+  CONTRACT,
 };
 
 export default RouterUrl;

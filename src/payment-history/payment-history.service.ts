@@ -16,7 +16,6 @@ import {
 import { convertPostgresDate, formatDate } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateTransactionHistoryDto } from 'src/transaction-history/dto/create-transaction-history';
-import { UpdateStatusService } from 'src/update-status/update-status.service';
 import { User } from 'src/user/user.entity';
 import {
   DataSource,
@@ -32,6 +31,7 @@ import { CreatePaymentHistoryDto } from './dto/create-payment-history';
 import { PayMoneyDto } from './dto/pay-money';
 import { UpdatePaymentHistoryDto } from './dto/update-payment-history';
 import { PaymentHistory } from './payment-history.entity';
+import { ContractService } from 'src/contract/contract.service';
 
 @Injectable()
 export class PaymentHistoryService extends BaseService<
@@ -43,7 +43,7 @@ export class PaymentHistoryService extends BaseService<
   private paymentHistoryRepository: Repository<PaymentHistory>;
   constructor(
     private dataSource: DataSource,
-    private updateStatusService: UpdateStatusService,
+    private contractService: ContractService,
     private databaseService: DatabaseService,
   ) {
     super();
@@ -184,9 +184,9 @@ export class PaymentHistoryService extends BaseService<
         return { result, paymentHistory };
       });
 
-    await this.updateStatusService.updateBatHoStatus(paymentHistory?.batHo?.id);
+    await this.contractService.updateBatHoStatus(paymentHistory?.batHo?.id);
 
-    await this.updateStatusService.updatePawnStatus(paymentHistory?.pawn?.id);
+    await this.contractService.updatePawnStatus(paymentHistory?.pawn?.id);
 
     return result;
   }

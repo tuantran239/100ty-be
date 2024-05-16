@@ -23,7 +23,6 @@ import {
 import { DatabaseService } from 'src/database/database.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
 import { CreatePaymentHistoryDto } from 'src/payment-history/dto/create-payment-history';
-import { UpdateStatusService } from 'src/update-status/update-status.service';
 import {
   DataSource,
   EntityManager,
@@ -39,6 +38,7 @@ import { BatHo } from './bat-ho.entity';
 import { CreateBatHoDto } from './dto/create-bat-ho.dto';
 import { SettlementBatHoDto } from './dto/settlement-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
+import { ContractService } from 'src/contract/contract.service';
 
 @Injectable()
 export class BatHoService extends BaseService<
@@ -51,7 +51,7 @@ export class BatHoService extends BaseService<
   constructor(
     private dataSource: DataSource,
     private logger: LoggerServerService,
-    private updateStatusService: UpdateStatusService,
+    private contractService: ContractService,
     private databaseService: DatabaseService,
   ) {
     super();
@@ -241,7 +241,7 @@ export class BatHoService extends BaseService<
       },
     );
 
-    await this.updateStatusService.updateBatHoStatus(newBatHo.id);
+    await this.contractService.updateBatHoStatus(newBatHo.id);
 
     return newBatHo;
   }
@@ -403,7 +403,7 @@ export class BatHoService extends BaseService<
       },
     );
 
-    await this.updateStatusService.updateBatHoStatus(batHoUpdated.id);
+    await this.contractService.updateBatHoStatus(batHoUpdated.id);
 
     return batHoUpdated;
   }
@@ -559,7 +559,7 @@ export class BatHoService extends BaseService<
 
     Promise.allSettled(
       batHos.map(async (batHo) => {
-        await this.updateStatusService.updateBatHoStatus(batHo.id);
+        await this.contractService.updateBatHoStatus(batHo.id);
       }),
     );
   }
@@ -763,7 +763,7 @@ export class BatHoService extends BaseService<
 
     Promise.allSettled(
       batHos.map(async (batHo) => {
-        await this.updateStatusService.updateBatHoStatus(batHo.id);
+        await this.contractService.updateBatHoStatus(batHo.id);
       }),
     );
   }
