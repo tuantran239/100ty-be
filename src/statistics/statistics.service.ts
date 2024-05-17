@@ -1040,27 +1040,33 @@ export class StatisticsService {
       details: [
         {
           label: 'Icloud',
+          key: 'icloud',
           expectedRevenues: [
             {
               label: 'Tổng thu gốc dự kiến',
               value: rootMoneyIcloud,
+              key: 'icloud_root_money',
             },
             {
               label: 'Tổng thu lãi dự kiến',
               value: interestMoneyIcloud,
+              key: 'icloud_interest_money',
             },
           ],
         },
         {
           label: 'Cầm đồ',
+          key: 'pawn',
           expectedRevenues: [
             {
               label: 'Tổng thu gốc dự kiến',
               value: rootMoneyPawn,
+              key: 'pawn_root_money',
             },
             {
               label: 'Tổng thu lãi dự kiến',
               value: interestMoneyPawn,
+              key: 'pawn_interest_money',
             },
           ],
         },
