@@ -182,7 +182,7 @@ export class PaymentHistoryService extends BaseService<
           await cashRepository.save(cash);
         }
 
-        if (paymentHistory.pawnId && !paymentHistory.pawn.startPaymentDate) {
+        if (paymentHistory.pawn && !paymentHistory.pawn.startPaymentDate) {
           await pawnRepository.update(
             {
               id: paymentHistory.pawnId,
