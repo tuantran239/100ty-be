@@ -175,7 +175,10 @@ export class ContractService {
     });
 
     if (!customer) {
-      throw new Error('Không tìm thấy khách hàng');
+      return {
+        total: 0,
+        contracts: [],
+      };
     }
 
     const contracts = await this.listContract(null, {
@@ -183,7 +186,7 @@ export class ContractService {
         user,
         deleted_at: IsNull(),
         customer: {
-          id: customerId,
+          id: customer.id,
         },
         debitStatus: Equal(DebitStatus.BAD_DEBIT),
       },
@@ -202,12 +205,8 @@ export class ContractService {
 
   async updateBatHoStatus(batHoId: string) {
     await this.databaseService.runTransaction(async (repositories) => {
-      const {
-        batHoRepository,
-        customerRepository,
-        paymentHistoryRepository,
-        cashRepository,
-      } = repositories;
+      const { batHoRepository, paymentHistoryRepository, cashRepository } =
+        repositories;
 
       const batHo = await batHoRepository.findOne({
         where: { id: batHoId },
@@ -215,21 +214,9 @@ export class ContractService {
       });
 
       if (batHo) {
-        const customer = await customerRepository.findOne({
-          where: { id: batHo.customerId },
-        });
-
         const status = getBatHoStatus(batHo.paymentHistories ?? []);
 
         await batHoRepository.update({ id: batHo.id }, { debitStatus: status });
-
-        const customerBadDebitContract =
-          await this.listBadDebitContractCustomer(customer.id);
-
-        await customerRepository.update(customer.id, {
-          debtMoney: customerBadDebitContract.total,
-          isDebt: customerBadDebitContract.total !== 0,
-        });
 
         const findPaymentHistories = await paymentHistoryRepository.find({
           where: { batHoId: batHo.id },
@@ -250,30 +237,18 @@ export class ContractService {
         }
       }
     });
-  }
 
-  async updatePawnStatus(pawnId: string) {
     await this.databaseService.runTransaction(async (repositories) => {
-      const {
-        pawnRepository,
-        customerRepository,
-        paymentHistoryRepository,
-        cashRepository,
-      } = repositories;
+      const { batHoRepository, customerRepository } = repositories;
 
-      const pawn = await pawnRepository.findOne({
-        where: { id: pawnId },
-        relations: ['paymentHistories'],
+      const batHo = await batHoRepository.findOne({
+        where: { id: batHoId },
       });
 
-      if (pawn) {
+      if (batHo) {
         const customer = await customerRepository.findOne({
-          where: { id: pawn.customerId },
+          where: { id: batHo.customerId },
         });
-
-        const status = getPawnStatus(pawn.paymentHistories ?? []);
-
-        await pawnRepository.update({ id: pawn.id }, { debitStatus: status });
 
         const customerBadDebitContract =
           await this.listBadDebitContractCustomer(customer.id);
@@ -282,6 +257,24 @@ export class ContractService {
           debtMoney: customerBadDebitContract.total,
           isDebt: customerBadDebitContract.total !== 0,
         });
+      }
+    });
+  }
+
+  async updatePawnStatus(pawnId: string) {
+    await this.databaseService.runTransaction(async (repositories) => {
+      const { pawnRepository, paymentHistoryRepository, cashRepository } =
+        repositories;
+
+      const pawn = await pawnRepository.findOne({
+        where: { id: pawnId },
+        relations: ['paymentHistories'],
+      });
+
+      if (pawn) {
+        const status = getPawnStatus(pawn.paymentHistories ?? []);
+
+        await pawnRepository.update({ id: pawn.id }, { debitStatus: status });
 
         const findPaymentHistories = await paymentHistoryRepository.find({
           where: { pawnId: pawn.id },
@@ -300,6 +293,28 @@ export class ContractService {
 
           await cashRepository.save(cash);
         }
+      }
+    });
+
+    await this.databaseService.runTransaction(async (repositories) => {
+      const { pawnRepository, customerRepository } = repositories;
+
+      const pawn = await pawnRepository.findOne({
+        where: { id: pawnId },
+      });
+
+      if (pawn) {
+        const customer = await customerRepository.findOne({
+          where: { id: pawn.customerId },
+        });
+
+        const customerBadDebitContract =
+          await this.listBadDebitContractCustomer(customer.id);
+
+        await customerRepository.update(customer.id, {
+          debtMoney: customerBadDebitContract.total,
+          isDebt: customerBadDebitContract.total !== 0,
+        });
       }
     });
   }

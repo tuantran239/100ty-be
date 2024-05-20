@@ -8,7 +8,5 @@ export class ContractController {
   constructor(private contractService: ContractService) {}
 
   @Post(RouterUrl.CONTRACT.UPDATE_STATUS)
-  async updateStatus(@Res() res: Response) {
-    
-  }
+  async updateStatus(@Res() res: Response) {}
 }

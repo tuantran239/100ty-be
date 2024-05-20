@@ -270,7 +270,6 @@ export class PawnController {
 
       return res.status(200).send(responseData);
     } catch (error: any) {
-      console.log(error);
       this.logger.error(
         { loggerType: 'list', entity: ENTITY_LOG, serverType: 'error' },
         error,

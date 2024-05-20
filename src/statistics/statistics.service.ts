@@ -5,6 +5,7 @@ import { GroupCashId } from 'src/common/constant/group-cash';
 import {
   CashFilterType,
   CashType,
+  ContractType,
   GroupCashStatus,
   RoleId,
   StatisticsContractFilter,
@@ -976,6 +977,7 @@ export class StatisticsService {
           customer,
         },
         startDate,
+        contractType: ContractType.BAT_HO,
       },
     });
 
@@ -986,6 +988,7 @@ export class StatisticsService {
           customer,
         },
         endDate,
+        contractType: ContractType.CAM_DO,
       },
     });
 
@@ -1001,7 +1004,7 @@ export class StatisticsService {
 
     const interestMoneyIcloud = paymentHistoriesOfIcloud.reduce(
       (total, paymentHistory) => {
-        if (!paymentHistory.isDeductionMoney || !paymentHistory.isRootMoney) {
+        if (!paymentHistory.isDeductionMoney && !paymentHistory.isRootMoney) {
           return total + paymentHistory.payNeed;
         }
         return total;
@@ -1021,7 +1024,7 @@ export class StatisticsService {
 
     const interestMoneyPawn = paymentHistoriesOfPawn.reduce(
       (total, paymentHistory) => {
-        if (!paymentHistory.isDeductionMoney || !paymentHistory.isRootMoney) {
+        if (!paymentHistory.isDeductionMoney && !paymentHistory.isRootMoney) {
           return total + paymentHistory.payNeed;
         }
         return total;
