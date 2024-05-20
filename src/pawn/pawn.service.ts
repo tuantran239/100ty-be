@@ -156,7 +156,15 @@ export class PawnService extends BaseService<
           0,
         );
 
-        await pawnRepository.update({ id: newPawn.id }, { revenueReceived });
+        await pawnRepository.update(
+          { id: newPawn.id },
+          {
+            revenueReceived,
+            startPaymentDate: paymentHistories[0]?.endDate,
+            settlementDate:
+              paymentHistories[paymentHistories.length - 1]?.endDate,
+          },
+        );
 
         const user = await userRepository.findOne({ where: { id: userId } });
 
