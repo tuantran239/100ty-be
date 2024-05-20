@@ -3,7 +3,7 @@ image: docker/compose:latest
 services:
     - name: docker:dind
       alias: docker
-      command: [ "--tls=false" ]
+      #command: [ "--tls=false" ]
 
 variables:
   DEV_IMAGE_APP_TAG: "$CI_REGISTRY_IMAGE:dev"
