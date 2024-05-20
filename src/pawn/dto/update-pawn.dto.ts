@@ -64,4 +64,14 @@ export class UpdatePawnDto {
   @ApiProperty()
   @IsOptional()
   pawnInfo?: Record<string, unknown>;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  settlementDate?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  startPaymentDate?: string;
 }

@@ -65,6 +65,7 @@ export class PaymentHistoryService extends BaseService<
           paymentHistoryRepository,
           cashRepository,
           transactionHistoryRepository,
+          pawnRepository,
         } = repositories;
 
         const paymentHistoryFind = await paymentHistoryRepository.findOne({
@@ -179,6 +180,15 @@ export class PaymentHistoryService extends BaseService<
         ) {
           cash.amount = cash.amount - payload.customerPaymentAmount;
           await cashRepository.save(cash);
+        }
+
+        if (paymentHistory.pawn && !paymentHistory.pawn.startPaymentDate) {
+          await pawnRepository.update(
+            {
+              id: paymentHistory.pawnId,
+            },
+            { startPaymentDate: convertPostgresDate(formatDate(new Date())) },
+          );
         }
 
         return { result, paymentHistory };
