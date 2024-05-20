@@ -318,4 +318,66 @@ export class ContractService {
       }
     });
   }
+
+  async updateStatusContract(contractType?: string) {
+    let total = 0;
+    let updated = 0;
+
+    const { batHoRepository, pawnRepository } =
+      this.databaseService.getRepositories();
+
+    if (contractType === ContractType.BAT_HO) {
+      const icloudContracts = await batHoRepository.find({
+        where: { deleted_at: IsNull() },
+      });
+
+      total = icloudContracts.length;
+
+      await Promise.allSettled(
+        icloudContracts.map(async (icloudContract) => {
+          await this.updateBatHoStatus(icloudContract.id);
+          updated++;
+        }),
+      );
+    } else if (contractType === ContractType.CAM_DO) {
+      const pawnContracts = await pawnRepository.find({
+        where: { deleted_at: IsNull() },
+      });
+
+      total = pawnContracts.length;
+
+      await Promise.allSettled(
+        pawnContracts.map(async (pawnContract) => {
+          await this.updatePawnStatus(pawnContract.id);
+          updated++;
+        }),
+      );
+    } else {
+      const icloudContracts = await batHoRepository.find({
+        where: { deleted_at: IsNull() },
+      });
+
+      const pawnContracts = await pawnRepository.find({
+        where: { deleted_at: IsNull() },
+      });
+
+      total = pawnContracts.length + icloudContracts.length;
+
+      await Promise.allSettled(
+        icloudContracts.map(async (icloudContract) => {
+          await this.updateBatHoStatus(icloudContract.id);
+          updated++;
+        }),
+      );
+
+      await Promise.allSettled(
+        pawnContracts.map(async (pawnContract) => {
+          await this.updatePawnStatus(pawnContract.id);
+          updated++;
+        }),
+      );
+    }
+
+    return { updated: `${updated}/${total}` };
+  }
 }
