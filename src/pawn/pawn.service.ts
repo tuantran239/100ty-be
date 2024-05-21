@@ -463,17 +463,24 @@ export class PawnService extends BaseService<
       paymentPeriodType,
     );
 
+    const methodType =
+      paymentPeriodType === PawnPaymentPeriodType.MOTH ||
+      paymentPeriodType === PawnPaymentPeriodType.REGULAR_MOTH
+        ? 'month'
+        : 'day';
+
+    let countPeriod = paymentPeriod;
+
+    if (paymentPeriodType === PawnPaymentPeriodType.WEEK) {
+      countPeriod = countPeriod * 7;
+    }
+
     while (duration > 0) {
-      const dates = countFromToDate(
-        paymentPeriod,
-        paymentPeriodType as any,
-        skip,
-        loanDate,
-      );
+      const dates = countFromToDate(countPeriod, methodType, skip, loanDate);
 
       if (duration === 1) {
         paymentHistories.push({
-          rowId: index,
+          rowId: index + 1,
           pawnId: id,
           userId,
           contractId: contractId,
@@ -486,9 +493,22 @@ export class PawnService extends BaseService<
           contractType: ContractType.CAM_DO,
           isRootMoney: true,
         });
-      } else {
         paymentHistories.push({
           rowId: index,
+          pawnId: id,
+          userId,
+          contractId: contractId,
+          startDate: convertPostgresDate(formatDate(dates[0])),
+          endDate: convertPostgresDate(formatDate(dates[1])),
+          paymentMethod: paymentPeriodType,
+          payMoney: 0,
+          payNeed: interestMoneyEachPeriod,
+          paymentStatus: null,
+          contractType: ContractType.CAM_DO,
+        });
+      } else {
+        paymentHistories.push({
+          rowId: index + 1,
           pawnId: id,
           userId,
           contractId: contractId,
@@ -504,31 +524,217 @@ export class PawnService extends BaseService<
 
       index++;
       duration -= 1;
-      skip += paymentPeriod;
+      skip += countPeriod;
     }
 
     return paymentHistories;
   }
 
-  countInterestMoneyEachPeriod = (
+  private calculateInterestMoneyOfOneDay(
+    loanAmount: number,
+    paymentPeriod: number,
+    interestMoney: number,
+    interestType: string,
+  ) {
+    let moneyOneDay = 0;
+
+    switch (interestType) {
+      case PawnInterestType.LOAN_MIL_DAY:
+        moneyOneDay = Math.round(loanAmount / 1000000) * interestMoney;
+        break;
+      case PawnInterestType.LOAN_DAY:
+        moneyOneDay = interestMoney;
+        break;
+      case PawnInterestType.LOAN_PERCENT_MONTH:
+        moneyOneDay = (loanAmount * (interestMoney / 100)) / 30;
+        break;
+      case PawnInterestType.LOAN_PERIOD:
+        moneyOneDay = interestMoney / paymentPeriod;
+        break;
+      case PawnInterestType.LOAN_PERCENT_PERIOD:
+        moneyOneDay = (loanAmount * (interestMoney / 100)) / paymentPeriod;
+        break;
+      case PawnInterestType.LOAN_PERCENT_WEEK:
+        moneyOneDay = (loanAmount * (interestMoney / 100)) / 7;
+        break;
+      case PawnInterestType.LOAN_WEEK:
+        moneyOneDay = interestMoney / 7;
+        break;
+      default:
+        moneyOneDay = 0;
+    }
+
+    return moneyOneDay;
+  }
+
+  calculateInterestMoneyWithDay(
+    loanAmount: number,
+    interestMoney: number,
+    paymentPeriod: number,
+    interestType: string,
+  ) {
+    let money = 0;
+
+    const moneyOneDay = this.calculateInterestMoneyOfOneDay(
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+    );
+
+    switch (interestType) {
+      case PawnInterestType.LOAN_MIL_DAY:
+        money = moneyOneDay * paymentPeriod;
+        break;
+      case PawnInterestType.LOAN_DAY:
+        money = moneyOneDay * paymentPeriod;
+        break;
+      case PawnInterestType.LOAN_PERCENT_MONTH:
+        money = Math.round(moneyOneDay * paymentPeriod);
+      case PawnInterestType.LOAN_PERIOD:
+        money = paymentPeriod * moneyOneDay;
+        break;
+      case PawnInterestType.LOAN_PERCENT_PERIOD:
+        money = paymentPeriod * moneyOneDay;
+        break;
+      default:
+        money = 0;
+    }
+
+    return money;
+  }
+
+  calculateInterestMoneyWithWeek(
+    loanAmount: number,
+    interestMoney: number,
+    paymentPeriod: number,
+    interestType: string,
+  ) {
+    let money = 0;
+
+    const moneyOneDay = this.calculateInterestMoneyOfOneDay(
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+    );
+
+    switch (interestType) {
+      case PawnInterestType.LOAN_PERCENT_WEEK:
+        money = moneyOneDay * paymentPeriod * 7;
+        break;
+      case PawnInterestType.LOAN_WEEK:
+        money = moneyOneDay * paymentPeriod * 7;
+        break;
+      default:
+        money = 0;
+    }
+
+    return money;
+  }
+
+  calculateInterestMoneyWithMonth(
+    loanAmount: number,
+    interestMoney: number,
+    paymentPeriod: number,
+    interestType: string,
+    totalDayMonth?: number,
+  ) {
+    let money = 0;
+
+    const moneyOneDay = this.calculateInterestMoneyOfOneDay(
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+    );
+
+    switch (interestType) {
+      case PawnInterestType.LOAN_MIL_DAY:
+        money = moneyOneDay * (totalDayMonth ?? paymentPeriod * 30);
+        break;
+      case PawnInterestType.LOAN_DAY:
+        money = moneyOneDay * (totalDayMonth ?? paymentPeriod * 30);
+        break;
+      case PawnInterestType.LOAN_PERCENT_MONTH:
+        money = Math.round(moneyOneDay * (totalDayMonth ?? paymentPeriod * 30));
+      default:
+        money = 0;
+    }
+
+    return money;
+  }
+
+  calculateInterestMoneyWithMonthRegular(
+    loanAmount: number,
+    interestMoney: number,
+    paymentPeriod: number,
+    interestType: string,
+    totalDayMonth?: number,
+  ) {
+    let money = 0;
+
+    const moneyOneDay = this.calculateInterestMoneyOfOneDay(
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+    );
+
+    switch (interestType) {
+      case PawnInterestType.LOAN_PERCENT_MONTH:
+        money = Math.round(moneyOneDay * (totalDayMonth ?? paymentPeriod * 30));
+      default:
+        money = 0;
+    }
+
+    return money;
+  }
+
+  countInterestMoneyEachPeriod(
     loanAmount: number,
     interestMoney: number,
     paymentPeriod: number,
     interestType: string,
     paymentPeriodType: string,
-  ) => {
+    totalDayMonth?: number,
+  ) {
     let money = 0;
 
-    if (
-      paymentPeriodType === PawnPaymentPeriodType.DAY &&
-      interestType === PawnInterestType.LOAN_MIL_DAY
-    ) {
-      const milPeriod = Math.round(loanAmount / 1000000);
-      money = milPeriod * interestMoney * paymentPeriod;
+    if (paymentPeriodType === PawnPaymentPeriodType.DAY) {
+      money = this.calculateInterestMoneyWithDay(
+        loanAmount,
+        interestMoney,
+        paymentPeriod,
+        interestType,
+      );
+    } else if (paymentPeriodType === PawnPaymentPeriodType.WEEK) {
+      money = this.calculateInterestMoneyWithWeek(
+        loanAmount,
+        interestMoney,
+        paymentPeriod,
+        interestType,
+      );
+    } else if (paymentPeriodType === PawnPaymentPeriodType.MOTH) {
+      money = this.calculateInterestMoneyWithMonth(
+        loanAmount,
+        interestMoney,
+        paymentPeriod,
+        interestType,
+        totalDayMonth,
+      );
+    } else if (paymentPeriodType === PawnPaymentPeriodType.REGULAR_MOTH) {
+      money = this.calculateInterestMoneyWithMonthRegular(
+        loanAmount,
+        interestMoney,
+        paymentPeriod,
+        PawnInterestType.LOAN_PERCENT_MONTH,
+        totalDayMonth,
+      );
     }
 
     return money;
-  };
+  }
 
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async handleUpdatePawnDebitStatus() {

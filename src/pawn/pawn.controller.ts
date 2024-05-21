@@ -38,6 +38,7 @@ import {
   calculateInterestToTodayPawn,
   calculateLateAndBadPaymentPawn,
 } from 'src/common/utils/calculate';
+import { InitPeriodTypeData } from 'src/common/constant/init-data';
 
 const ENTITY_LOG = 'Pawn';
 
@@ -429,6 +430,28 @@ export class PawnController {
     } catch (error: any) {
       this.logger.error(
         { loggerType: 'delete', entity: ENTITY_LOG, serverType: 'error' },
+        error,
+      );
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Get(RouterUrl.PAWN.PERIOD_TYPE)
+  async listPeriodType(@Res() res: Response) {
+    try {
+      const responseData: ResponseData = {
+        message: 'success',
+        data: [...InitPeriodTypeData],
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      this.logger.error(
+        { loggerType: 'list', entity: ENTITY_LOG, serverType: 'error' },
         error,
       );
       throw new InternalServerErrorException(error.message);
