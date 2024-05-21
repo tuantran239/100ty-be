@@ -27,13 +27,13 @@ variables:
       if [ $CI_JOB_STATUS == 'success' ]; then
         echo "text=\[$CI_COMMIT_BRANCH] 🟢 $CI_PROJECT_NAME Deployment:* $GITLAB_USER_NAME* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
         curl -v -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
-        -d "chat_id=-4114180992" \
+        -d "chat_id=$TELE_CHAT_ID" \
         -d "parse_mode=markdown" \
         -d "text=\[$CI_COMMIT_BRANCH] 🟢 $CI_PROJECT_NAME Deployment:* $GITLAB_USER_NAME* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
       else
         echo "text=\[$CI_COMMIT_BRANCH] 🔴 $CI_PROJECT_NAME Deployment:* $GITLAB_USER_NAME* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
         curl -v -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendMessage" \
-        -d "chat_id=-4114180992" \
+        -d "chat_id=$TELE_CHAT_ID" \
         -d "parse_mode=markdown" \
         -d "text=\[$CI_COMMIT_BRANCH] 🔴 $CI_PROJECT_NAME Deployment:* $GITLAB_USER_NAME* - Commit Message:_ $CI_COMMIT_MESSAGE._ "  
       fi
