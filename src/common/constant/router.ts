@@ -84,6 +84,7 @@ const BAT_HO: BatHoRouter = {
 interface PawnRouter extends BaseRouter {
   REMOVE: string;
   INFO: string;
+  PERIOD_TYPE: string;
 }
 
 const PAWN: PawnRouter = {
@@ -95,6 +96,7 @@ const PAWN: PawnRouter = {
   DELETE: '/:id',
   REMOVE: '/remove/:id',
   INFO: '/info/:id',
+  PERIOD_TYPE: '/period-type',
 };
 
 interface PaymentHistoryRouter extends BaseRouter {
