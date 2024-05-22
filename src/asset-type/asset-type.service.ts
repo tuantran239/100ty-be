@@ -12,6 +12,7 @@ import {
   DataSource,
 } from 'typeorm';
 import { DatabaseService } from 'src/database/database.service';
+import { AssetTypeInitData } from 'src/common/constant/init-data';
 
 @Injectable()
 export class AssetTypeService extends BaseService<
@@ -29,6 +30,47 @@ export class AssetTypeService extends BaseService<
     super();
     this.manager = this.dataSource.manager;
     this.assetTypeRepository = this.dataSource.manager.getRepository(AssetType);
+
+    const databaseServiceInit = this.databaseService;
+
+    async function init() {
+      await databaseServiceInit.runTransaction(async (repositories) => {
+        const { assetTypeRepository, assetPropertyRepository } = repositories;
+
+        await Promise.all(
+          AssetTypeInitData.map(async (initData) => {
+            const assetType = await assetTypeRepository.findOne({
+              where: {
+                id: initData.id,
+              },
+            });
+
+            if (!assetType) {
+              let newAssetType = await assetTypeRepository.create({
+                ...initData,
+                properties: undefined,
+              });
+
+              newAssetType = await assetTypeRepository.save(newAssetType);
+
+              await Promise.all(
+                initData.properties.map(async (property) => {
+                  const newAssetProperty = await assetPropertyRepository.create(
+                    {
+                      assetTypeId: newAssetType.id,
+                      propertyName: property,
+                    },
+                  );
+                  await assetPropertyRepository.save(newAssetProperty);
+                }),
+              );
+            }
+          }),
+        );
+      });
+    }
+
+    init();
   }
 
   async create(payload: CreateAssetTypeDto): Promise<AssetType> {
