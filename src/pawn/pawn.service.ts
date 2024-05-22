@@ -1,3 +1,4 @@
+import { PawnPaymentType } from './../common/interface/profit';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CashFilterType, ContractType } from 'src/common/interface';
 import { DebitStatus } from 'src/common/interface/bat-ho';
@@ -118,20 +119,24 @@ export class PawnService extends BaseService<
           throw new BadRequestException('Mã hợp đồng đã tồn tại.');
         }
 
-        const pawnCompleted = await pawnRepository.findOne({
+        const pawnNotCompleted = await pawnRepository.findOne({
           where: {
             customerId: payloadData.customerId,
             debitStatus: Not(DebitStatus.COMPLETED),
           },
         });
 
-        if (pawnCompleted) {
+        if (pawnNotCompleted) {
           throw new BadRequestException(
             'Khách hàng còn hợp đồng chưa trả hết.',
           );
         }
 
-        let newPawn = await pawnRepository.create({ ...payloadData, userId });
+        let newPawn = await pawnRepository.create({
+          ...payloadData,
+          userId,
+          paymentType: payloadData.paymentType ?? PawnPaymentType.AFTER,
+        });
 
         newPawn = await pawnRepository.save(newPawn);
 

@@ -83,4 +83,9 @@ export class CreatePawnDto {
   @ApiProperty()
   @IsOptional()
   pawnInfo?: Record<string, unknown>;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  paymentType?: string;
 }
