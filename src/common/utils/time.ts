@@ -7,35 +7,79 @@ export const formatDate = (date: any, format?: string) =>
 export const convertPostgresDate = (date: string) =>
   date.split('/').reverse().join('-');
 
+const calculateRangeDay = (date: Date, range: number) => {
+  const day = date.getDate() + range;
+  const month = date.getMonth() + 1;
+
+  const year = date.getFullYear();
+
+  const totalDayInMonth = getTotalDayInMonth(month, year);
+
+  const dayRange = day > totalDayInMonth ? day - totalDayInMonth : day;
+
+  const monthRange =
+    day > totalDayInMonth
+      ? month + 1 > 12
+        ? month + 1 - 12
+        : month + 1
+      : month;
+
+  const yearRange =
+    day > totalDayInMonth ? (month + 1 > 12 ? year + 1 : year) : year;
+
+  return new Date(
+    `${yearRange}-${convertPrefixTime(monthRange)}-${convertPrefixTime(dayRange)}`,
+  );
+};
+
+export const calculateRangeMonth = (date: Date, range: number) => {
+  const month = date.getMonth() + 1;
+
+  const year = date.getFullYear();
+
+  const monthRange = month + range > 12 ? month + range - 12 : month + range;
+  const yearRange = month + range > 12 ? year + 1 : year;
+
+  return new Date(
+    `${yearRange}-${convertPrefixTime(monthRange)}-${convertPrefixTime(date.getDate())}`,
+  );
+};
+
+export const calculateRangeYear = (date: Date, range: number) => {
+  const month = date.getMonth() + 1;
+
+  const year = date.getFullYear() + range;
+
+  return new Date(
+    `${year}-${convertPrefixTime(month)}-${convertPrefixTime(date.getDate())}`,
+  );
+};
+
 export const countFromToDate = (
   count: number,
   method: 'month' | 'day' | 'year',
   skip: number,
   startDate: string,
 ): any => {
-  const dayMiliseconds = 24 * 60 * 60 * 1000;
-  const monthMiliseconds = 31 * 24 * 60 * 60 * 1000;
-  const yearMiliseconds = 365 * 24 * 60 * 60 * 1000;
-
   const skipDate = skip ?? 0;
   const countDate = count ?? 1;
 
   switch (method) {
     case 'day':
-      const fromDateDay =
-        new Date(startDate).getTime() + skipDate * dayMiliseconds;
-      const toDateDay = fromDateDay + countDate * dayMiliseconds;
-      return [new Date(fromDateDay), new Date(toDateDay)];
+      const fromDateDay = calculateRangeDay(new Date(startDate), skipDate);
+      const toDateDay = calculateRangeDay(new Date(fromDateDay), countDate);
+      return [fromDateDay, toDateDay];
     case 'month':
-      const fromDateMonth =
-        new Date(startDate).getTime() + skipDate * monthMiliseconds;
-      const toDatemonth = fromDateMonth + countDate * monthMiliseconds;
-      return [new Date(fromDateMonth), new Date(toDatemonth)];
+      const fromDateMonth = calculateRangeMonth(new Date(startDate), skipDate);
+      const toDatemonth = calculateRangeMonth(
+        new Date(fromDateMonth),
+        countDate,
+      );
+      return [fromDateMonth, toDatemonth];
     case 'year':
-      const fromDateYear =
-        new Date(startDate).getTime() + skipDate * yearMiliseconds;
-      const toDateYear = fromDateYear + countDate * yearMiliseconds;
-      return [new Date(fromDateYear), new Date(toDateYear)];
+      const fromDateYear = calculateRangeYear(new Date(startDate), skipDate);
+      const toDateYear = calculateRangeYear(new Date(fromDateYear), countDate);
+      return [fromDateYear, toDateYear];
     default:
       return [new Date(), new Date()];
   }
@@ -158,4 +202,13 @@ export const calculateRangeDate = (
   }
 
   return { fromDate, toDate };
+};
+
+export const calculateTotalDayRangeDate = (startDate: Date, endDate: Date) => {
+  const startDateTime = startDate.getTime();
+  const endDateTime = endDate.getTime();
+
+  const timeOneDay = 24 * 60 * 60 * 1000;
+
+  return Math.round((endDateTime - startDateTime) / timeOneDay);
 };

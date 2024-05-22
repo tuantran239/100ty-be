@@ -13,6 +13,7 @@ import {
 } from 'src/common/utils/cash-payload';
 import { getContentTransactionHistory } from 'src/common/utils/history';
 import {
+  calculateTotalDayRangeDate,
   convertPostgresDate,
   countFromToDate,
   formatDate,
@@ -455,14 +456,6 @@ export class PawnService extends BaseService<
     let skip = 0;
     let index = 1;
 
-    const interestMoneyEachPeriod = this.countInterestMoneyEachPeriod(
-      loanAmount,
-      interestMoney,
-      paymentPeriod,
-      interestType,
-      paymentPeriodType,
-    );
-
     const methodType =
       paymentPeriodType === PawnPaymentPeriodType.MOTH ||
       paymentPeriodType === PawnPaymentPeriodType.REGULAR_MOTH
@@ -477,6 +470,21 @@ export class PawnService extends BaseService<
 
     while (duration > 0) {
       const dates = countFromToDate(countPeriod, methodType, skip, loanDate);
+
+      const totalDayMonth =
+        paymentPeriodType === PawnPaymentPeriodType.MOTH ||
+        paymentPeriodType === PawnPaymentPeriodType.REGULAR_MOTH
+          ? calculateTotalDayRangeDate(dates[0], dates[1])
+          : undefined;
+
+      const interestMoneyEachPeriod = this.countInterestMoneyEachPeriod(
+        loanAmount,
+        interestMoney,
+        paymentPeriod,
+        interestType,
+        paymentPeriodType,
+        totalDayMonth,
+      );
 
       if (duration === 1) {
         paymentHistories.push({
@@ -532,8 +540,8 @@ export class PawnService extends BaseService<
 
   private calculateInterestMoneyOfOneDay(
     loanAmount: number,
-    paymentPeriod: number,
     interestMoney: number,
+    paymentPeriod: number,
     interestType: string,
   ) {
     let moneyOneDay = 0;
@@ -651,7 +659,8 @@ export class PawnService extends BaseService<
 
     switch (interestType) {
       case PawnInterestType.LOAN_MIL_DAY:
-        money = moneyOneDay * (totalDayMonth ?? paymentPeriod * 30);
+        money =
+          moneyOneDay * (totalDayMonth ? totalDayMonth : paymentPeriod * 30);
         break;
       case PawnInterestType.LOAN_DAY:
         money = moneyOneDay * (totalDayMonth ?? paymentPeriod * 30);
