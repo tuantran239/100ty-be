@@ -8,28 +8,9 @@ export const convertPostgresDate = (date: string) =>
   date.split('/').reverse().join('-');
 
 const calculateRangeDay = (date: Date, range: number) => {
-  const day = date.getDate() + range;
-  const month = date.getMonth() + 1;
+  const dayMiliSeconds = 24 * 60 * 60 * 1000;
 
-  const year = date.getFullYear();
-
-  const totalDayInMonth = getTotalDayInMonth(month, year);
-
-  const dayRange = day > totalDayInMonth ? day - totalDayInMonth : day;
-
-  const monthRange =
-    day > totalDayInMonth
-      ? month + 1 > 12
-        ? month + 1 - 12
-        : month + 1
-      : month;
-
-  const yearRange =
-    day > totalDayInMonth ? (month + 1 > 12 ? year + 1 : year) : year;
-
-  return new Date(
-    `${yearRange}-${convertPrefixTime(monthRange)}-${convertPrefixTime(dayRange)}`,
-  );
+  return new Date(new Date(date).getTime() + range * dayMiliSeconds);
 };
 
 export const calculateRangeMonth = (date: Date, range: number) => {
@@ -37,8 +18,15 @@ export const calculateRangeMonth = (date: Date, range: number) => {
 
   const year = date.getFullYear();
 
-  const monthRange = month + range > 12 ? month + range - 12 : month + range;
-  const yearRange = month + range > 12 ? year + 1 : year;
+  const yearOfMonthRange =
+    month + range > 12 ? (month + range - ((month + range) % 12)) / 12 : 0;
+
+  const monthRange =
+    yearOfMonthRange > 0
+      ? month + range - 12 * yearOfMonthRange
+      : month + range;
+
+  const yearRange = yearOfMonthRange > 0 ? year + yearOfMonthRange : year;
 
   return new Date(
     `${yearRange}-${convertPrefixTime(monthRange)}-${convertPrefixTime(date.getDate())}`,
