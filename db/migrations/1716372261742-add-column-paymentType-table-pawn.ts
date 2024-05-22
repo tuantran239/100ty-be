@@ -12,6 +12,7 @@ export class AddColumnPaymentTypeTablePawn1716372261742
         name: 'paymentType',
         type: 'varchar',
         isNullable: true,
+        default: null,
       }),
     );
   }
