@@ -60,6 +60,9 @@ export class Pawn extends SoftDeletableEntity {
   @Column()
   revenueReceived: number;
 
+  @Column()
+  paymentType?: string;
+
   @Column({ type: 'jsonb', nullable: true })
   pawnInfo?: Record<string, unknown>;
 

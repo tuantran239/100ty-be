@@ -32,3 +32,8 @@ export interface ProfitStatistics {
   overview: ProfitData;
   chartDetail: ProfitChartDetail;
 }
+
+export enum PawnPaymentType {
+  BEFORE = 'before',
+  AFTER = 'after',
+}
