@@ -609,7 +609,7 @@ export class PawnService extends BaseService<
         money = 0;
     }
 
-    return money;
+    return parseInt(Math.round(money).toString());
   }
 
   calculateInterestMoneyWithWeek(
@@ -638,7 +638,7 @@ export class PawnService extends BaseService<
         money = 0;
     }
 
-    return money;
+    return parseInt(Math.round(money).toString());
   }
 
   calculateInterestMoneyWithMonth(
@@ -667,11 +667,12 @@ export class PawnService extends BaseService<
         break;
       case PawnInterestType.LOAN_PERCENT_MONTH:
         money = Math.round(moneyOneDay * (totalDayMonth ?? paymentPeriod * 30));
+        break;
       default:
         money = 0;
     }
 
-    return money;
+    return parseInt(Math.round(money).toString());
   }
 
   calculateInterestMoneyWithMonthRegular(
@@ -693,11 +694,12 @@ export class PawnService extends BaseService<
     switch (interestType) {
       case PawnInterestType.LOAN_PERCENT_MONTH:
         money = Math.round(moneyOneDay * (totalDayMonth ?? paymentPeriod * 30));
+        break;
       default:
         money = 0;
     }
 
-    return money;
+    return parseInt(Math.round(money).toString());
   }
 
   countInterestMoneyEachPeriod(

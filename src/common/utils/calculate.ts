@@ -150,6 +150,43 @@ export const calculateLateAndBadPaymentPawn = (
   };
 };
 
+export const calculateInterestMoneyOfOneDay = (
+  loanAmount: number,
+  interestMoney: number,
+  paymentPeriod: number,
+  interestType: string,
+) => {
+  let moneyOneDay = 0;
+
+  switch (interestType) {
+    case PawnInterestType.LOAN_MIL_DAY:
+      moneyOneDay = Math.round(loanAmount / 1000000) * interestMoney;
+      break;
+    case PawnInterestType.LOAN_DAY:
+      moneyOneDay = interestMoney;
+      break;
+    case PawnInterestType.LOAN_PERCENT_MONTH:
+      moneyOneDay = (loanAmount * (interestMoney / 100)) / 30;
+      break;
+    case PawnInterestType.LOAN_PERIOD:
+      moneyOneDay = interestMoney / paymentPeriod;
+      break;
+    case PawnInterestType.LOAN_PERCENT_PERIOD:
+      moneyOneDay = (loanAmount * (interestMoney / 100)) / paymentPeriod;
+      break;
+    case PawnInterestType.LOAN_PERCENT_WEEK:
+      moneyOneDay = (loanAmount * (interestMoney / 100)) / 7;
+      break;
+    case PawnInterestType.LOAN_WEEK:
+      moneyOneDay = interestMoney / 7;
+      break;
+    default:
+      moneyOneDay = 0;
+  }
+
+  return moneyOneDay;
+};
+
 export const calculateInterestToTodayPawn = (pawn: Pawn) => {
   const {
     loanDate,
@@ -158,11 +195,11 @@ export const calculateInterestToTodayPawn = (pawn: Pawn) => {
     loanAmount,
     interestMoney,
     paymentHistories,
+    paymentPeriod,
   } = pawn;
 
   let interestMoneyToday = 0;
   let interestDayToday = 0;
-  let interestMoneyOneDay = 0;
   let interestDayPaid = 0;
 
   const interestMoneyPaid = paymentHistories
@@ -182,10 +219,14 @@ export const calculateInterestToTodayPawn = (pawn: Pawn) => {
   const todayTime = new Date().setHours(0, 0, 0, 0);
   const loanDateTime = new Date(loanDate).setHours(0, 0, 0, 0);
 
-  if (interestType === PawnInterestType.LOAN_MIL_DAY) {
-    interestMoneyOneDay = interestMoney * (loanAmount / 1000000);
-    interestDayPaid = interestMoneyPaid / interestMoneyOneDay;
-  }
+  const interestMoneyOneDay = calculateInterestMoneyOfOneDay(
+    loanAmount,
+    interestMoney,
+    paymentPeriod,
+    interestType,
+  );
+
+  interestDayPaid = interestMoneyPaid / interestMoneyOneDay;
 
   const rangeDayToToday = Math.round((todayTime - loanDateTime) / 86400000);
 
