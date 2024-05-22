@@ -546,8 +546,6 @@ export class PawnService extends BaseService<
   ) {
     let moneyOneDay = 0;
 
-    console.log(Math.round(loanAmount / 1000000));
-
     switch (interestType) {
       case PawnInterestType.LOAN_MIL_DAY:
         moneyOneDay = Math.round(loanAmount / 1000000) * interestMoney;
