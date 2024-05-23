@@ -94,6 +94,10 @@ export class PaymentHistoryService extends BaseService<
           if (paymentHistory.isDeductionMoney) {
             throw new Error('Không thể thay đổi ngày cắt');
           }
+        } else if (paymentHistoryFind.contractType === ContractType.CAM_DO) {
+          if (paymentHistory.pawn?.settlementDate) {
+            throw new Error('Hợp đồng này đã tất toán');
+          }
         }
 
         const cash = await cashRepository.findOne({

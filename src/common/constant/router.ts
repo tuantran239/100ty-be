@@ -85,6 +85,9 @@ interface PawnRouter extends BaseRouter {
   REMOVE: string;
   INFO: string;
   PERIOD_TYPE: string;
+  SETTLEMENT_REQUEST: string;
+  SETTLEMENT_CHANGE: string;
+  SETTLEMENT_CONFIRM: string;
 }
 
 const PAWN: PawnRouter = {
@@ -97,6 +100,9 @@ const PAWN: PawnRouter = {
   REMOVE: '/remove/:id',
   INFO: '/info/:id',
   PERIOD_TYPE: '/period-type',
+  SETTLEMENT_REQUEST: '/settlement/request/:id',
+  SETTLEMENT_CHANGE: '/settlement/change/:id',
+  SETTLEMENT_CONFIRM: '/settlement/confirm/:id',
 };
 
 interface PaymentHistoryRouter extends BaseRouter {

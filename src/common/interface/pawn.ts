@@ -1,3 +1,5 @@
+import { PaymentHistory } from 'src/payment-history/payment-history.entity';
+
 export enum PawnPaymentPeriodType {
   DAY = 'day',
   MOTH = 'month',
@@ -18,4 +20,29 @@ export enum PawnInterestType {
 export enum AssetTypeStatus {
   ACTIVE = 'active',
   OFF = 'off',
+}
+
+export interface SettlementPawnContractInfo {
+  contractId: string;
+  loanAmount: number;
+  interestRate: string;
+  contractType: string;
+  loanDate: string;
+  totalMoneyMustPay: number;
+  moneyPaid: number;
+  moneyMustReceipt: number;
+  interestDay: number;
+  note: string;
+}
+
+export interface SettlementPawnInfo {
+  customer: string;
+  paymentDate: string;
+  settlementMoney: number;
+}
+
+export interface SettlementPawn {
+  paymentHistories: PaymentHistory[];
+  contractInfo: SettlementPawnContractInfo;
+  settlementInfo: SettlementPawnInfo;
 }
