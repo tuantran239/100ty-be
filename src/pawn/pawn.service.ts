@@ -813,6 +813,7 @@ export class PawnService extends BaseService<
         moneyMustReceipt: settlementMoney,
         interestDay: totalDayToToday,
         note: pawn.noteContract,
+        interestMoney: pawn.interestMoney,
       },
       settlementInfo: {
         settlementMoney,
@@ -902,6 +903,7 @@ export class PawnService extends BaseService<
         moneyMustReceipt: settlementMoney,
         interestDay: totalDayToToday,
         note: pawn.noteContract,
+        interestMoney: pawn.interestMoney,
       },
       settlementInfo: {
         settlementMoney,
