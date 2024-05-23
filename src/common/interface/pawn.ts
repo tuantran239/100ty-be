@@ -33,6 +33,7 @@ export interface SettlementPawnContractInfo {
   moneyPaid: number;
   moneyMustReceipt: number;
   interestDay: number;
+  interestMoney: number;
   note: string;
 }
 
