@@ -1,4 +1,5 @@
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
+import { ServiceFee } from './bat-ho';
 
 export enum PawnPaymentPeriodType {
   DAY = 'day',
@@ -39,6 +40,7 @@ export interface SettlementPawnInfo {
   customer: string;
   paymentDate: string;
   settlementMoney: number;
+  serviceFee: ServiceFee[];
 }
 
 export interface SettlementPawn {

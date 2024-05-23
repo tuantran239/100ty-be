@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CashFilterType, ContractType } from 'src/common/interface';
-import { DebitStatus } from 'src/common/interface/bat-ho';
+import { DebitStatus, ServiceFee } from 'src/common/interface/bat-ho';
 import {
   PaymentStatusHistory,
   TransactionHistoryType,
@@ -821,6 +821,7 @@ export class PawnService extends BaseService<
           pawn.customer?.firstName,
           pawn.customer?.lastName,
         ),
+        serviceFee: (pawn.serviceFee ?? []) as ServiceFee[],
       },
     };
 
@@ -909,6 +910,7 @@ export class PawnService extends BaseService<
           pawn.customer?.firstName,
           pawn.customer?.lastName,
         ),
+        serviceFee: (pawn.serviceFee ?? []) as ServiceFee[],
       },
     };
 
