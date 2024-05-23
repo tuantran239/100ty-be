@@ -39,6 +39,7 @@ import {
   calculateLateAndBadPaymentPawn,
 } from 'src/common/utils/calculate';
 import { InitPeriodTypeData } from 'src/common/constant/init-data';
+import { SettlementPawnDto } from './dto/settlement-pawn.dto';
 
 const ENTITY_LOG = 'Pawn';
 
@@ -444,6 +445,90 @@ export class PawnController {
       const responseData: ResponseData = {
         message: 'success',
         data: [...InitPeriodTypeData],
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      this.logger.error(
+        { loggerType: 'list', entity: ENTITY_LOG, serverType: 'error' },
+        error,
+      );
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Get(RouterUrl.PAWN.SETTLEMENT_REQUEST)
+  async settlementRequest(@Res() res: Response, @Req() req: Request) {
+    try {
+      const id = req.params.id;
+
+      const data = await this.pawnService.settlementRequest(id);
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      this.logger.error(
+        { loggerType: 'list', entity: ENTITY_LOG, serverType: 'error' },
+        error,
+      );
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Put(RouterUrl.PAWN.SETTLEMENT_CHANGE)
+  async settlementChange(@Res() res: Response, @Req() req: Request) {
+    try {
+      const id = req.params.id;
+
+      const paymentDate = req.body.paymentDate;
+
+      const data = await this.pawnService.settlementChange(id, paymentDate);
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      this.logger.error(
+        { loggerType: 'list', entity: ENTITY_LOG, serverType: 'error' },
+        error,
+      );
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Post(RouterUrl.PAWN.SETTLEMENT_CONFIRM)
+  async settlementConfirm(
+    @Body(new BodyValidationPipe()) payload: SettlementPawnDto,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
+    try {
+      const id = req.params.id;
+
+      const data = await this.pawnService.settlementConfirm(id, payload);
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
         error: null,
         statusCode: 200,
       };

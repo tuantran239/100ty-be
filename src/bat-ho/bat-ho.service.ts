@@ -592,6 +592,7 @@ export class BatHoService extends BaseService<
             payDate: convertPostgresDate(payload.payDate),
             payMoney: paymentHistory.payNeed,
             isMaturity: true,
+            updated_at: new Date(),
           });
         }),
       );

@@ -200,3 +200,11 @@ export const calculateTotalDayRangeDate = (startDate: Date, endDate: Date) => {
 
   return Math.round((endDateTime - startDateTime) / timeOneDay);
 };
+
+export const getTodayNotTimeZone = () => {
+  const today = new Date();
+
+  return new Date(
+    `${today.getFullYear()}-${convertPrefixTime(today.getMonth() + 1)}-${convertPrefixTime(today.getDate())}`,
+  );
+};

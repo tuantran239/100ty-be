@@ -23,7 +23,7 @@ export enum DebitStatus {
 
 export interface ServiceFee {
   name: string;
-  value: any;
+  value: number;
 }
 
 export interface Partner {

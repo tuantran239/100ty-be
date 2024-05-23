@@ -1,25 +1,33 @@
-import { PawnPaymentType } from './../common/interface/profit';
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { CashFilterType, ContractType } from 'src/common/interface';
-import { DebitStatus } from 'src/common/interface/bat-ho';
-import { TransactionHistoryType } from 'src/common/interface/history';
+import { DebitStatus, ServiceFee } from 'src/common/interface/bat-ho';
+import {
+  PaymentStatusHistory,
+  TransactionHistoryType,
+} from 'src/common/interface/history';
 import {
   PawnInterestType,
   PawnPaymentPeriodType,
+  SettlementPawn,
 } from 'src/common/interface/pawn';
 import { BaseService } from 'src/common/service/base.service';
 import {
   createCashContractPayload,
   createPaymentHistoriesCash,
 } from 'src/common/utils/cash-payload';
+import { getFullName } from 'src/common/utils/get-full-name';
 import { getContentTransactionHistory } from 'src/common/utils/history';
 import {
   calculateTotalDayRangeDate,
   convertPostgresDate,
   countFromToDate,
   formatDate,
+  getTodayNotTimeZone,
 } from 'src/common/utils/time';
+import { ContractService } from 'src/contract/contract.service';
 import { DatabaseService } from 'src/database/database.service';
+import { LoggerServerService } from 'src/logger/logger-server.service';
 import { CreatePaymentHistoryDto } from 'src/payment-history/dto/create-payment-history';
 import {
   DataSource,
@@ -29,12 +37,11 @@ import {
   Not,
   Repository,
 } from 'typeorm';
+import { PawnPaymentType } from './../common/interface/profit';
 import { CreatePawnDto } from './dto/create-pawn.dto';
+import { SettlementPawnDto } from './dto/settlement-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { Pawn } from './pawn.entity';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { LoggerServerService } from 'src/logger/logger-server.service';
-import { ContractService } from 'src/contract/contract.service';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -166,9 +173,6 @@ export class PawnService extends BaseService<
           { id: newPawn.id },
           {
             revenueReceived,
-            startPaymentDate: paymentHistories[0]?.endDate,
-            settlementDate:
-              paymentHistories[paymentHistories.length - 1]?.endDate,
           },
         );
 
@@ -750,6 +754,273 @@ export class PawnService extends BaseService<
     }
 
     return money;
+  }
+
+  async settlementRequest(id: string) {
+    const pawn = await this.pawnRepository.findOne({
+      where: { id },
+      relations: ['paymentHistories', 'customer'],
+    });
+
+    if (!pawn) {
+      throw new Error('Không tìm thấy hợp đồng');
+    }
+
+    const {
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+      loanDate,
+      paymentHistories,
+    } = pawn;
+
+    const interestMoneyOneDay = this.calculateInterestMoneyOfOneDay(
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+    );
+
+    const today = getTodayNotTimeZone();
+
+    const totalDayToToday = calculateTotalDayRangeDate(
+      new Date(loanDate),
+      today,
+    );
+
+    const interestMoneyTotal = totalDayToToday * interestMoneyOneDay;
+
+    const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
+      if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
+        return total + paymentHistory.payMoney;
+      }
+      return total;
+    }, 0);
+
+    const settlementMoney = loanAmount + interestMoneyTotal - moneyPaid;
+
+    const settlementPawn: SettlementPawn = {
+      paymentHistories,
+      contractInfo: {
+        contractId: pawn.contractId,
+        loanAmount,
+        interestRate: `${pawn.interestType}`,
+        contractType: 'Cầm Đồ',
+        loanDate: `${formatDate(loanDate)}-${formatDate(paymentHistories[paymentHistories.length - 1].endDate)}`,
+        totalMoneyMustPay: loanAmount + interestMoneyTotal,
+        moneyPaid,
+        moneyMustReceipt: settlementMoney,
+        interestDay: totalDayToToday,
+        note: pawn.noteContract,
+      },
+      settlementInfo: {
+        settlementMoney,
+        paymentDate: formatDate(today),
+        customer: getFullName(
+          pawn.customer?.firstName,
+          pawn.customer?.lastName,
+        ),
+        serviceFee: (pawn.serviceFee ?? []) as ServiceFee[],
+      },
+    };
+
+    return settlementPawn;
+  }
+
+  async settlementChange(id: string, paymentDate: string) {
+    const pawn = await this.pawnRepository.findOne({
+      where: { id },
+      relations: ['paymentHistories', 'customer'],
+    });
+
+    if (!pawn) {
+      throw new Error('Không tìm thấy hợp đồng');
+    }
+
+    const today = getTodayNotTimeZone();
+    const paymentDateTime = new Date(convertPostgresDate(paymentDate)).setHours(
+      0,
+      0,
+      0,
+    );
+    const loanDateTime = new Date(pawn.loanDate).setHours(0, 0, 0);
+
+    if (today.getTime() < paymentDateTime) {
+      throw new Error('Thời gian tất toán không được lớn hơn hôm nay');
+    }
+
+    if (paymentDateTime < loanDateTime) {
+      throw new Error('Thời gian tất toán không được nhỏ hơn ngày vay');
+    }
+
+    const {
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+      loanDate,
+      paymentHistories,
+    } = pawn;
+
+    const interestMoneyOneDay = this.calculateInterestMoneyOfOneDay(
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+    );
+
+    const totalDayToToday = calculateTotalDayRangeDate(
+      new Date(paymentDate),
+      today,
+    );
+
+    const interestMoneyTotal = totalDayToToday * interestMoneyOneDay;
+
+    const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
+      if (
+        paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
+        new Date(paymentHistory.endDate).setHours(0, 0, 0) < paymentDateTime
+      ) {
+        return total + paymentHistory.payMoney;
+      }
+      return total;
+    }, 0);
+
+    const settlementMoney = loanAmount + interestMoneyTotal - moneyPaid;
+
+    const settlementPawn: SettlementPawn = {
+      paymentHistories,
+      contractInfo: {
+        contractId: pawn.contractId,
+        loanAmount,
+        interestRate: `${pawn.interestType}`,
+        contractType: 'Cầm Đồ',
+        loanDate: `${formatDate(loanDate)}-${formatDate(paymentHistories[paymentHistories.length - 1].endDate)}`,
+        totalMoneyMustPay: loanAmount + interestMoneyTotal,
+        moneyPaid,
+        moneyMustReceipt: settlementMoney,
+        interestDay: totalDayToToday,
+        note: pawn.noteContract,
+      },
+      settlementInfo: {
+        settlementMoney,
+        paymentDate: formatDate(today),
+        customer: getFullName(
+          pawn.customer?.firstName,
+          pawn.customer?.lastName,
+        ),
+        serviceFee: (pawn.serviceFee ?? []) as ServiceFee[],
+      },
+    };
+
+    return settlementPawn;
+  }
+
+  async settlementConfirm(id: string, payload: SettlementPawnDto) {
+    const pawn = await this.pawnRepository.findOne({
+      where: { id },
+      relations: ['paymentHistories', 'customer', 'user'],
+    });
+
+    if (!pawn) {
+      throw new Error('Không tìm thấy hợp đồng');
+    }
+
+    const { paymentDate, settlementMoney, serviceFee } = payload;
+
+    const today = getTodayNotTimeZone();
+    const paymentDateTime = new Date(convertPostgresDate(paymentDate)).setHours(
+      0,
+      0,
+      0,
+    );
+
+    if (today.getTime() < paymentDateTime) {
+      throw new Error('Thời gian tất toán không được lớn hơn hôm nay');
+    }
+
+    const {
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+      paymentHistories,
+    } = pawn;
+
+    const interestMoneyOneDay = this.calculateInterestMoneyOfOneDay(
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+    );
+
+    const totalDayToToday = calculateTotalDayRangeDate(
+      new Date(paymentDate),
+      today,
+    );
+
+    const interestMoneyTotal = totalDayToToday * interestMoneyOneDay;
+
+    const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
+      if (
+        paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
+        new Date(paymentHistory.endDate).setHours(0, 0, 0) < paymentDateTime
+      ) {
+        return total + paymentHistory.payMoney;
+      }
+      return total;
+    }, 0);
+
+    const settlementMoneyExpected = loanAmount + interestMoneyTotal - moneyPaid;
+
+    if (settlementMoney < settlementMoneyExpected) {
+      throw new Error(`Số tiền đóng không được nhỏ hơn số tiền còn phải thu`);
+    }
+
+    let feeServiceTotal = 0;
+
+    if (serviceFee) {
+      feeServiceTotal = serviceFee.reduce((total, fee) => total + fee.value, 0);
+    }
+
+    await this.databaseService.runTransaction(async (repositories) => {
+      const { cashRepository, transactionHistoryRepository, pawnRepository } =
+        repositories;
+
+      const cash = await cashRepository.findOne({
+        where: {
+          contractId: pawn.contractId,
+          filterType: CashFilterType.RECEIPT_CONTRACT,
+        },
+      });
+
+      cash.amount = settlementMoney + feeServiceTotal;
+
+      const newTransactionHistory = await transactionHistoryRepository.create({
+        pawnId: pawn.id,
+        userId: pawn.user?.id,
+        contractId: pawn.contractId,
+        type: TransactionHistoryType.PAYMENT,
+        content: `Tất toán hợp đồng ${pawn.contractId}`,
+        moneyAdd: settlementMoney + feeServiceTotal,
+        moneySub: 0,
+        otherMoney: 0,
+      });
+
+      await transactionHistoryRepository.save(newTransactionHistory);
+
+      await pawnRepository.update(
+        { id: pawn.id },
+        {
+          debitStatus: DebitStatus.COMPLETED,
+          settlementDate: convertPostgresDate(paymentDate),
+          serviceFee,
+        },
+      );
+    });
+
+    return true;
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
