@@ -48,3 +48,28 @@ export interface SettlementPawn {
   contractInfo: SettlementPawnContractInfo;
   settlementInfo: SettlementPawnInfo;
 }
+
+export interface PaymentDownRootMoneyHistory {
+  customer: string;
+  paymentDate: string;
+  paymentMoney: number;
+  ortherFee: number;
+  note: string;
+}
+
+export interface PaymentDownRootContractInfo {
+  contractId: string;
+  customer: string;
+  birthdayDate: string;
+  address: string;
+  loanAmount: number;
+  loanDate: string;
+  interestRate: string;
+  contractType: string;
+}
+
+export interface PaymentDownRootMoney {
+  paymentHistories: PaymentHistory[];
+  transactionHistories: PaymentDownRootMoneyHistory[];
+  contractInfo: PaymentDownRootContractInfo;
+}

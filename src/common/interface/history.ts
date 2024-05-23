@@ -3,6 +3,7 @@ export enum TransactionHistoryType {
   PAYMENT = 'payment',
   CANCEL = 'cancel',
   CREATE_CONTRACT = 'create_contract',
+  PAYMENT_DOWN_ROOT_MONEY = 'payment_down_root_money',
 }
 
 export enum PaymentStatusHistory {

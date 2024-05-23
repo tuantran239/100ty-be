@@ -9,6 +9,8 @@ import {
 import {
   PawnInterestType,
   PawnPaymentPeriodType,
+  PaymentDownRootMoney,
+  PaymentDownRootMoneyHistory,
   SettlementPawn,
 } from 'src/common/interface/pawn';
 import { BaseService } from 'src/common/service/base.service';
@@ -32,6 +34,7 @@ import { CreatePaymentHistoryDto } from 'src/payment-history/dto/create-payment-
 import {
   DataSource,
   EntityManager,
+  Equal,
   FindManyOptions,
   FindOneOptions,
   Not,
@@ -1021,6 +1024,116 @@ export class PawnService extends BaseService<
     });
 
     return true;
+  }
+
+  async paymentDownRootMoneyRequest(id: string) {
+    const { transactionHistoryRepository } =
+      await this.databaseService.getRepositories();
+
+    const pawn = await this.pawnRepository.findOne({
+      where: { id },
+      relations: ['paymentHistories', 'customer', 'user'],
+    });
+
+    if (!pawn) {
+      throw new Error('Không tìm thấy hợp đồng');
+    }
+
+    const { paymentHistories } = pawn;
+
+    const transactionHistories = await transactionHistoryRepository.find({
+      where: {
+        pawnId: pawn.id,
+        type: Equal(TransactionHistoryType.PAYMENT_DOWN_ROOT_MONEY),
+      },
+    });
+
+    const transactionHistoriesMap: PaymentDownRootMoneyHistory[] =
+      transactionHistories.map((transactionHistory) => ({
+        customer: getFullName(
+          pawn.customer?.firstName,
+          pawn.customer?.lastName,
+        ),
+        paymentDate: formatDate(transactionHistory.created_at),
+        paymentMoney: transactionHistory.moneyAdd,
+        ortherFee: transactionHistory.otherMoney,
+        note: transactionHistory.note,
+      }));
+
+    const paymentDownRootMoney: PaymentDownRootMoney = {
+      paymentHistories,
+      transactionHistories: [...transactionHistoriesMap],
+      contractInfo: {
+        contractId: pawn.contractId,
+        customer: getFullName(
+          pawn.customer?.firstName,
+          pawn.customer?.lastName,
+        ),
+        birthdayDate: formatDate(pawn.customer?.dateOfBirth),
+        address: pawn.customer?.address,
+        loanAmount: pawn.loanAmount,
+        loanDate: formatDate(pawn.loanDate),
+        interestRate: pawn.interestType,
+        contractType: 'Cầm đồ',
+      },
+    };
+
+    return paymentDownRootMoney;
+  }
+
+  async paymentDownRootMoneyConfirm(id: string) {
+    const { transactionHistoryRepository } =
+      await this.databaseService.getRepositories();
+
+    const pawn = await this.pawnRepository.findOne({
+      where: { id },
+      relations: ['paymentHistories', 'customer', 'user'],
+    });
+
+    if (!pawn) {
+      throw new Error('Không tìm thấy hợp đồng');
+    }
+
+    const { paymentHistories } = pawn;
+
+    const transactionHistories = await transactionHistoryRepository.find({
+      where: {
+        pawnId: pawn.id,
+        type: Equal(TransactionHistoryType.PAYMENT_DOWN_ROOT_MONEY),
+      },
+    });
+
+    const transactionHistoriesMap: PaymentDownRootMoneyHistory[] =
+      transactionHistories.map((transactionHistory) => ({
+        customer: getFullName(
+          pawn.customer?.firstName,
+          pawn.customer?.lastName,
+        ),
+        paymentDate: formatDate(transactionHistory.created_at),
+        paymentMoney: transactionHistory.moneyAdd,
+        ortherFee: transactionHistory.otherMoney,
+        note: transactionHistory.note,
+      }));
+
+    const paymentDownRootMoney: PaymentDownRootMoney = {
+      paymentHistories,
+      transactionHistories: [...transactionHistoriesMap],
+      contractInfo: {
+        contractId: pawn.contractId,
+        customer: getFullName(
+          pawn.customer?.firstName,
+          pawn.customer?.lastName,
+        ),
+        birthdayDate: formatDate(pawn.customer?.dateOfBirth),
+        address: pawn.customer?.address,
+        loanAmount: pawn.loanAmount,
+        loanDate: formatDate(pawn.loanDate),
+        interestRate: pawn.interestType,
+        contractType: 'Cầm đồ',
+      },
+    };
+
+    return paymentDownRootMoney;
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
