@@ -44,6 +44,7 @@ export enum CashFilterType {
   PAY_ROLL = 'payroll',
   PAY_IP = 'payIp',
   IMEI = 'imei',
+  LOAN_MORE_CONTRACT = 'loan_more_contract',
 }
 
 export enum ContractType {

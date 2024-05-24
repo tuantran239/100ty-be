@@ -77,3 +77,30 @@ export interface PaymentDownRootMoney {
   contractInfo: PaymentDownRootContractInfo;
   customer: Customer | any;
 }
+
+export interface LoanMoreMoneyHistory {
+  customer: string;
+  paymentDate: string;
+  loanMoney: number;
+  ortherFee: number;
+  note: string;
+}
+
+export interface LoanMoreMoneyContractInfo {
+  contractId: string;
+  customer: string;
+  birthdayDate: string;
+  address: string;
+  loanAmount: number;
+  loanDate: string;
+  interestRate: string;
+  contractType: string;
+  interestMoney: number;
+}
+
+export interface LoanMoreMoney {
+  paymentHistories: PaymentHistory[];
+  transactionHistories: LoanMoreMoneyHistory[];
+  contractInfo: LoanMoreMoneyContractInfo;
+  customer: Customer | any;
+}
