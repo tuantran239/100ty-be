@@ -41,6 +41,7 @@ import { PaymentDownRootMoneyDto } from './dto/payment-down-root-money.dto';
 import { SettlementPawnDto } from './dto/settlement-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { PawnService } from './pawn.service';
+import { LoanMoreMoneyDto } from './dto/loan-more-money.dto';
 
 const ENTITY_LOG = 'Pawn';
 
@@ -585,6 +586,62 @@ export class PawnController {
         id,
         payload,
       );
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      this.logger.error(
+        { loggerType: 'list', entity: ENTITY_LOG, serverType: 'error' },
+        error,
+      );
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Get(RouterUrl.PAWN.LOAN_MORE_REQUEST)
+  async loanMoreMoneyRequest(@Res() res: Response, @Req() req: Request) {
+    try {
+      const id = req.params.id;
+
+      const data = await this.pawnService.loanMoreMoneyRequest(id);
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      this.logger.error(
+        { loggerType: 'list', entity: ENTITY_LOG, serverType: 'error' },
+        error,
+      );
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Post(RouterUrl.PAWN.LOAN_MORE_CONFIRM)
+  async loanMoreMoneyConfirm(
+    @Body(new BodyValidationPipe()) payload: LoanMoreMoneyDto,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
+    try {
+      const id = req.params.id;
+
+      const data = await this.pawnService.loanMoreMoneyConfirm(id, payload);
 
       const responseData: ResponseData = {
         message: 'success',

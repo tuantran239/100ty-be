@@ -8,6 +8,8 @@ import {
   TransactionHistoryType,
 } from 'src/common/interface/history';
 import {
+  LoanMoreMoney,
+  LoanMoreMoneyHistory,
   PawnInterestType,
   PawnPaymentPeriodType,
   PaymentDownRootMoney,
@@ -49,6 +51,7 @@ import { SettlementPawnDto } from './dto/settlement-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { Pawn } from './pawn.entity';
 import { PaymentDownRootMoneyDto } from './dto/payment-down-root-money.dto';
+import { LoanMoreMoneyDto } from './dto/loan-more-money.dto';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -1126,7 +1129,7 @@ export class PawnService extends BaseService<
           paymentStatus: Or(Equal(PaymentStatusHistory.UNFINISH), IsNull()),
           type: Or(
             Not(Equal(PaymentHistoryType.DOWN_ROOT_MONEY)),
-            Not(Equal(PaymentHistoryType.ADD_ROOT_MONEY)),
+            Not(Equal(PaymentHistoryType.LOAN_MORE_MONEY)),
             Not(Equal(PaymentHistoryType.OTHER_MONEY)),
           ),
         },
@@ -1186,6 +1189,8 @@ export class PawnService extends BaseService<
         type: PaymentHistoryType.DOWN_ROOT_MONEY,
         paymentStatus: PaymentStatusHistory.FINISH,
         contractType: ContractType.CAM_DO,
+        paymentMethod: pawn.paymentPeriodType,
+        contractId: pawn.contractId,
       });
       await paymentHistoryRepository.save(downPaymentHistory);
 
@@ -1199,6 +1204,8 @@ export class PawnService extends BaseService<
         type: PaymentHistoryType.OTHER_MONEY,
         paymentStatus: PaymentStatusHistory.FINISH,
         contractType: ContractType.CAM_DO,
+        paymentMethod: pawn.paymentPeriodType,
+        contractId: pawn.contractId,
       });
       await paymentHistoryRepository.save(ortherPaymentHistory);
 
@@ -1223,9 +1230,198 @@ export class PawnService extends BaseService<
         },
       });
 
-      cash.amount = payload.otherMoney + payload.paymentMoney;
+      cash.amount = cash.amount + payload.otherMoney + payload.paymentMoney;
 
       await cashRepository.save(cash);
+    });
+
+    return true;
+  }
+
+  async loanMoreMoneyRequest(id: string) {
+    const { transactionHistoryRepository } =
+      await this.databaseService.getRepositories();
+
+    const pawn = await this.pawnRepository.findOne({
+      where: { id },
+      relations: ['paymentHistories', 'customer', 'user'],
+    });
+
+    if (!pawn) {
+      throw new Error('Không tìm thấy hợp đồng');
+    }
+
+    const { paymentHistories } = pawn;
+
+    const transactionHistories = await transactionHistoryRepository.find({
+      where: {
+        pawnId: pawn.id,
+        type: Equal(TransactionHistoryType.LOAN_MORE_MONEY),
+      },
+    });
+
+    const transactionHistoriesMap: LoanMoreMoneyHistory[] =
+      transactionHistories.map((transactionHistory) => ({
+        customer: getFullName(
+          pawn.customer?.firstName,
+          pawn.customer?.lastName,
+        ),
+        paymentDate: formatDate(transactionHistory.created_at),
+        loanMoney: transactionHistory.moneySub,
+        ortherFee: transactionHistory.otherMoney,
+        note: transactionHistory.note,
+      }));
+
+    const paymentDownRootMoney: LoanMoreMoney = {
+      paymentHistories,
+      transactionHistories: [...transactionHistoriesMap],
+      contractInfo: {
+        contractId: pawn.contractId,
+        customer: getFullName(
+          pawn.customer?.firstName,
+          pawn.customer?.lastName,
+        ),
+        birthdayDate: formatDate(pawn.customer?.dateOfBirth),
+        address: pawn.customer?.address,
+        loanAmount: pawn.loanAmount,
+        loanDate: formatDate(pawn.loanDate),
+        interestRate: pawn.interestType,
+        contractType: 'Cầm đồ',
+        interestMoney: pawn.interestMoney,
+      },
+      customer: pawn.customer ?? {},
+    };
+
+    return paymentDownRootMoney;
+  }
+
+  async loanMoreMoneyConfirm(id: string, payload: LoanMoreMoneyDto) {
+    const pawn = await this.pawnRepository.findOne({
+      where: { id },
+      relations: ['paymentHistories', 'customer', 'user'],
+    });
+
+    if (!pawn) {
+      throw new Error('Không tìm thấy hợp đồng');
+    }
+
+    await this.databaseService.runTransaction(async (repositories) => {
+      const {
+        paymentPeriodType,
+        interestMoney,
+        interestType,
+        paymentPeriod,
+        id,
+        paymentHistories: pawnPaymentHistories,
+      } = pawn;
+
+      const {
+        paymentHistoryRepository,
+        transactionHistoryRepository,
+        cashRepository,
+      } = repositories;
+
+      const paymentHistories = await paymentHistoryRepository.find({
+        where: {
+          pawnId: id,
+          paymentStatus: Or(Equal(PaymentStatusHistory.UNFINISH), IsNull()),
+          type: Or(
+            Not(Equal(PaymentHistoryType.DOWN_ROOT_MONEY)),
+            Not(Equal(PaymentHistoryType.LOAN_MORE_MONEY)),
+            Not(Equal(PaymentHistoryType.OTHER_MONEY)),
+          ),
+        },
+      });
+
+      const rootMoney = pawn.loanAmount + payload.loanMoney;
+
+      const sortPaymentHistories = paymentHistories.sort(
+        (p1, p2) => p1.rowId - p2.rowId,
+      );
+
+      await Promise.all(
+        sortPaymentHistories.map(async (paymentHistory) => {
+          const totalDayMonth =
+            paymentPeriodType === PawnPaymentPeriodType.MOTH ||
+            paymentPeriodType === PawnPaymentPeriodType.REGULAR_MOTH
+              ? calculateTotalDayRangeDate(
+                  new Date(paymentHistory.startDate),
+                  new Date(paymentHistory.endDate),
+                )
+              : undefined;
+
+          const interestMoneyEachPeriod = this.countInterestMoneyEachPeriod(
+            rootMoney,
+            interestMoney,
+            paymentPeriod,
+            interestType,
+            paymentPeriodType,
+            totalDayMonth,
+          );
+
+          if (paymentHistory.isRootMoney) {
+            await paymentHistoryRepository.update(
+              { id: paymentHistory.id },
+              {
+                payMoney: rootMoney,
+              },
+            );
+          } else {
+            await paymentHistoryRepository.update(
+              { id: paymentHistory.id },
+              {
+                payMoney: interestMoneyEachPeriod,
+              },
+            );
+          }
+        }),
+      );
+
+      const ortherPaymentHistory = await paymentHistoryRepository.create({
+        rowId: pawnPaymentHistories.length + 1,
+        pawnId: id,
+        payMoney: payload.otherMoney,
+        payNeed: payload.otherMoney,
+        startDate: convertPostgresDate(payload.loanDate),
+        endDate: convertPostgresDate(payload.loanDate),
+        type: PaymentHistoryType.OTHER_MONEY,
+        paymentStatus: null,
+        contractType: ContractType.CAM_DO,
+        paymentMethod: pawn.paymentPeriodType,
+        contractId: pawn.contractId,
+      });
+      await paymentHistoryRepository.save(ortherPaymentHistory);
+
+      const newTransactionHistory = await transactionHistoryRepository.create({
+        pawnId: pawn.id,
+        userId: pawn.user?.id,
+        contractId: pawn.contractId,
+        type: TransactionHistoryType.LOAN_MORE_MONEY,
+        content: `Vay thêm hợp đồng ${pawn.contractId}`,
+        moneyAdd: 0,
+        moneySub: payload.loanMoney,
+        otherMoney: payload.otherMoney,
+        note: payload.note,
+      });
+
+      await transactionHistoryRepository.save(newTransactionHistory);
+
+      const newCash = await cashRepository.create({
+        ...createCashContractPayload(
+          pawn.user,
+          pawn.customer as any,
+          CashFilterType.LOAN_MORE_CONTRACT,
+          {
+            id: pawn.id,
+            amount: payload.loanMoney + payload.otherMoney,
+            date: formatDate(convertPostgresDate(payload.loanDate)),
+            contractType: ContractType.CAM_DO,
+            contractId: pawn.contractId,
+          },
+        ),
+      });
+
+      await cashRepository.save(newCash);
     });
 
     return true;

@@ -76,6 +76,13 @@ export const createCashContractPayload = (
         note: noteContract(filterCash, contract.contractId),
         filterType: CashFilterType.RECEIPT_CONTRACT,
       };
+    case CashFilterType.LOAN_MORE_CONTRACT:
+      return {
+        ...defaultPayload,
+        type: CashType.PAYMENT,
+        note: noteContract(filterCash, contract.contractId),
+        filterType: CashFilterType.LOAN_MORE_CONTRACT,
+      };
     case CashFilterType.DEDUCTION:
       return {
         ...defaultPayload,
