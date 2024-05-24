@@ -1081,6 +1081,7 @@ export class PawnService extends BaseService<
         loanDate: formatDate(pawn.loanDate),
         interestRate: pawn.interestType,
         contractType: 'Cầm đồ',
+        interestMoney: pawn.interestMoney,
       },
       customer: pawn.customer ?? {},
     };

@@ -67,6 +67,7 @@ export interface PaymentDownRootContractInfo {
   loanDate: string;
   interestRate: string;
   contractType: string;
+  interestMoney: number;
 }
 
 export interface PaymentDownRootMoney {
