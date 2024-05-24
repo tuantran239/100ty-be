@@ -1,5 +1,6 @@
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { ServiceFee } from './bat-ho';
+import { Customer } from 'src/customer/customer.entity';
 
 export enum PawnPaymentPeriodType {
   DAY = 'day',
@@ -72,4 +73,5 @@ export interface PaymentDownRootMoney {
   paymentHistories: PaymentHistory[];
   transactionHistories: PaymentDownRootMoneyHistory[];
   contractInfo: PaymentDownRootContractInfo;
+  customer: Customer | any;
 }

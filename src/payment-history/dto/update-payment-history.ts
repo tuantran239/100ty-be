@@ -63,4 +63,9 @@ export class UpdatePaymentHistoryDto {
   @IsString()
   @IsOptional()
   note?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  type?: string;
 }

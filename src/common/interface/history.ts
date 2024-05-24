@@ -10,3 +10,9 @@ export enum PaymentStatusHistory {
   FINISH = 'finish',
   UNFINISH = 'unfinish',
 }
+
+export enum PaymentHistoryType {
+  DOWN_ROOT_MONEY = 'down_root_money',
+  ADD_ROOT_MONEY = 'add_root_money',
+  OTHER_MONEY = 'other_money',
+}

@@ -1,12 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { ServiceFee } from 'src/common/interface/bat-ho';
 
-export class SettlementPawnDto {
+export class PaymentDownRootMoneyDto {
   @ApiProperty()
   @IsNumber()
   @IsNotEmpty()
-  settlementMoney: number;
+  paymentMoney: number;
 
   @ApiProperty()
   @IsString()
@@ -14,8 +13,9 @@ export class SettlementPawnDto {
   paymentDate: string;
 
   @ApiProperty()
-  @IsOptional()
-  serviceFee?: ServiceFee[];
+  @IsNumber()
+  @IsNotEmpty()
+  otherMoney: number;
 
   @ApiProperty()
   @IsString()

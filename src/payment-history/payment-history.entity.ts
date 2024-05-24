@@ -33,6 +33,9 @@ export class PaymentHistory extends SoftDeletableEntity {
   payDate: string;
 
   @Column()
+  type: string;
+
+  @Column()
   isDeductionMoney?: boolean;
 
   @Column()
