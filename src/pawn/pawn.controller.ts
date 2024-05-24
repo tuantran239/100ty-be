@@ -572,7 +572,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.PAWN.SETTLEMENT_CONFIRM)
+  @Post(RouterUrl.PAWN.PAYMENT_DOWN_CONFIRM)
   async paymentDownRootMoneyConfirm(
     @Body(new BodyValidationPipe()) payload: PaymentDownRootMoneyDto,
     @Res() res: Response,
