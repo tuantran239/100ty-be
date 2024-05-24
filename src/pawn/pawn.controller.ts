@@ -11,35 +11,36 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import RouterUrl from 'src/common/constant/router';
-import { RolesGuard } from 'src/common/guard/roles.guard';
-import { LogActionService } from 'src/log-action/log-action.service';
-import { PawnService } from './pawn.service';
-import { Roles } from 'src/common/decorator/roles.decorator';
-import { ResponseData, RoleId, RoleName } from 'src/common/interface';
-import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import { CreatePawnDto } from './dto/create-pawn.dto';
-import { LogActionType } from 'src/common/constant/log';
 import { Request, Response } from 'express';
-import { LoggerServerService } from 'src/logger/logger-server.service';
-import { PawnQuery } from 'src/common/interface/query';
-import { convertPostgresDate, formatDate } from 'src/common/utils/time';
-import { User } from 'src/user/user.entity';
-import { And, Between, Equal, ILike, IsNull, Not, Or } from 'typeorm';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { InitPeriodTypeData } from 'src/common/constant/init-data';
+import { LogActionType } from 'src/common/constant/log';
+import RouterUrl from 'src/common/constant/router';
+import { Roles } from 'src/common/decorator/roles.decorator';
+import { RolesGuard } from 'src/common/guard/roles.guard';
+import { ResponseData, RoleId, RoleName } from 'src/common/interface';
 import { DebitStatus } from 'src/common/interface/bat-ho';
-import {
-  mapPawnResponse,
-  mapTransactionHistoryResponse,
-} from 'src/common/utils/map';
-import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { PaymentStatusHistory } from 'src/common/interface/history';
+import { PawnQuery } from 'src/common/interface/query';
+import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import {
   calculateInterestToTodayPawn,
   calculateLateAndBadPaymentPawn,
 } from 'src/common/utils/calculate';
-import { InitPeriodTypeData } from 'src/common/constant/init-data';
+import {
+  mapPawnResponse,
+  mapTransactionHistoryResponse,
+} from 'src/common/utils/map';
+import { convertPostgresDate, formatDate } from 'src/common/utils/time';
+import { LogActionService } from 'src/log-action/log-action.service';
+import { LoggerServerService } from 'src/logger/logger-server.service';
+import { User } from 'src/user/user.entity';
+import { And, Between, Equal, ILike, IsNull, Not, Or } from 'typeorm';
+import { CreatePawnDto } from './dto/create-pawn.dto';
+import { PaymentDownRootMoneyDto } from './dto/payment-down-root-money.dto';
 import { SettlementPawnDto } from './dto/settlement-pawn.dto';
+import { UpdatePawnDto } from './dto/update-pawn.dto';
+import { PawnService } from './pawn.service';
 
 const ENTITY_LOG = 'Pawn';
 
@@ -525,6 +526,65 @@ export class PawnController {
       const id = req.params.id;
 
       const data = await this.pawnService.settlementConfirm(id, payload);
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      this.logger.error(
+        { loggerType: 'list', entity: ENTITY_LOG, serverType: 'error' },
+        error,
+      );
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Get(RouterUrl.PAWN.PAYMENT_DOWN_REQUEST)
+  async paymentDownRootMoneyRequest(@Res() res: Response, @Req() req: Request) {
+    try {
+      const id = req.params.id;
+
+      const data = await this.pawnService.paymentDownRootMoneyRequest(id);
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      this.logger.error(
+        { loggerType: 'list', entity: ENTITY_LOG, serverType: 'error' },
+        error,
+      );
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Post(RouterUrl.PAWN.SETTLEMENT_CONFIRM)
+  async paymentDownRootMoneyConfirm(
+    @Body(new BodyValidationPipe()) payload: PaymentDownRootMoneyDto,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
+    try {
+      const id = req.params.id;
+
+      const data = await this.pawnService.paymentDownRootMoneyConfirm(
+        id,
+        payload,
+      );
 
       const responseData: ResponseData = {
         message: 'success',

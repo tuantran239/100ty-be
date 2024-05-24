@@ -24,7 +24,7 @@ export class TransactionHistory extends SoftDeletableEntity {
   userId: string;
 
   @Column()
-  createAt: Date;
+  createAt: string;
 
   @Column()
   type: string;

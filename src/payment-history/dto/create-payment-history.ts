@@ -94,4 +94,9 @@ export class CreatePaymentHistoryDto {
   @IsString()
   @IsOptional()
   note?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  type?: string;
 }
