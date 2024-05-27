@@ -16,4 +16,7 @@ export enum PaymentHistoryType {
   DOWN_ROOT_MONEY = 'down_root_money',
   LOAN_MORE_MONEY = 'loan_more_money',
   OTHER_MONEY = 'other_money',
+  ROOT_MONEY = 'root_money',
+  DEDUCTION_MONEY = 'deduction_money',
+  INTEREST_MONEY = 'interest_money',
 }
