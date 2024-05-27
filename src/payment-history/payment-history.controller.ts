@@ -28,6 +28,9 @@ import { LogActionType } from 'src/common/constant/log';
 import { User } from 'src/user/user.entity';
 import { convertPostgresDate, formatDate } from 'src/common/utils/time';
 import { getSearch } from 'src/common/utils/query';
+import { DatabaseService } from 'src/database/database.service';
+import { IsNull } from 'typeorm';
+import { PaymentHistoryType } from 'src/common/interface/history';
 
 const ENTITY_LOG = 'PaymentHistory';
 
@@ -37,6 +40,7 @@ export class PaymentHistoryController {
     private logger: LoggerServerService,
     private paymentHistoryService: PaymentHistoryService,
     private logActionService: LogActionService,
+    private databaseService: DatabaseService,
   ) {}
 
   @UseGuards(JwtAuthGuard)
@@ -289,6 +293,62 @@ export class PaymentHistoryController {
     } catch (error: any) {
       this.logger.error(
         { customerMessage: 'Check and update cash payment history' },
+        null,
+      );
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(RouterUrl.PAYMENT_HISTORY.CONVERT_TYPE)
+  async convertType(@Res() res: Response) {
+    try {
+      const data = await this.databaseService.runTransaction(
+        async (repositories) => {
+          const { paymentHistoryRepository } = repositories;
+
+          const paymentHistories = await paymentHistoryRepository.find({
+            where: { type: IsNull() },
+          });
+
+          const total = paymentHistories.length;
+          let converted = 0;
+
+          await Promise.all(
+            paymentHistories.map(async (paymentHistory) => {
+              let type: string | null = null;
+              if (paymentHistory.isDeductionMoney) {
+                type = PaymentHistoryType.DEDUCTION_MONEY;
+              } else if (paymentHistory.isRootMoney) {
+                type = PaymentHistoryType.ROOT_MONEY;
+              } else {
+                type = PaymentHistoryType.INTEREST_MONEY;
+              }
+
+              await paymentHistoryRepository.update(
+                { id: paymentHistory.id },
+                { type },
+              );
+
+              converted++;
+            }),
+          );
+
+          return { result: `Converted: ${converted}/${total}` };
+        },
+      );
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      this.logger.error(
+        { customerMessage: 'Convert type payment history' },
         null,
       );
       throw new InternalServerErrorException(error.message);
