@@ -207,6 +207,8 @@ export class CashController {
           filterType: Or(
             Equal(CashFilterType.PAYMENT_CONTRACT),
             Equal(CashFilterType.RECEIPT_CONTRACT),
+            Equal(CashFilterType.LOAN_MORE_CONTRACT),
+            Equal(CashFilterType.DOWN_ROOT_MONEY),
           ),
         };
       } else if (groupId && groupId.trim().length > 0) {

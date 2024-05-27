@@ -25,6 +25,12 @@ const noteContract = (filter: string, contractId: string) => {
       return `Chi tiền phí làm hợp đồng ${contractId}`;
     case CashFilterType.PARTNER:
       return `Chi tiền cho cộng tác viên hợp đồng ${contractId}`;
+    case CashFilterType.LOAN_MORE_CONTRACT:
+      return `Chi tiền vay thêm hợp đồng ${contractId}`;
+    case CashFilterType.LOAN_MORE_CONTRACT:
+      return `Chi tiền vay thêm hợp đồng ${contractId}`;
+    case CashFilterType.DOWN_ROOT_MONEY:
+      return `Thu bớt gốc hợp đồng ${contractId}`;
     default:
       return `Tiền hợp đồng ${contractId}`;
   }
@@ -82,6 +88,13 @@ export const createCashContractPayload = (
         type: CashType.PAYMENT,
         note: noteContract(filterCash, contract.contractId),
         filterType: CashFilterType.LOAN_MORE_CONTRACT,
+      };
+    case CashFilterType.DOWN_ROOT_MONEY:
+      return {
+        ...defaultPayload,
+        type: CashType.RECEIPT,
+        note: noteContract(filterCash, contract.contractId),
+        filterType: CashFilterType.DOWN_ROOT_MONEY,
       };
     case CashFilterType.DEDUCTION:
       return {

@@ -47,11 +47,11 @@ import {
 } from 'typeorm';
 import { PawnPaymentType } from './../common/interface/profit';
 import { CreatePawnDto } from './dto/create-pawn.dto';
+import { LoanMoreMoneyDto } from './dto/loan-more-money.dto';
+import { PaymentDownRootMoneyDto } from './dto/payment-down-root-money.dto';
 import { SettlementPawnDto } from './dto/settlement-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { Pawn } from './pawn.entity';
-import { PaymentDownRootMoneyDto } from './dto/payment-down-root-money.dto';
-import { LoanMoreMoneyDto } from './dto/loan-more-money.dto';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -452,6 +452,36 @@ export class PawnService extends BaseService<
 
   async retrieveOne(options: FindOneOptions<Pawn>): Promise<Pawn> {
     return await this.pawnRepository.findOne(options);
+  }
+
+  async updateRevenue(id: string) {
+    await this.databaseService.runTransaction(async (repositories) => {
+      const { pawnRepository } = repositories;
+
+      const pawn = await pawnRepository.findOne({
+        where: { id },
+        relations: ['paymentHistories', 'customer', 'user'],
+      });
+
+      if (pawn) {
+        const paymentHistoryMoney = pawn.paymentHistories.reduce(
+          (total, paymentHistory) => {
+            if (!paymentHistory.isRootMoney) {
+              return paymentHistory.payNeed + total;
+            }
+            return total;
+          },
+          0,
+        );
+
+        await pawnRepository.update(
+          { id: pawn.id },
+          {
+            revenueReceived: pawn.loanAmount + paymentHistoryMoney,
+          },
+        );
+      }
+    });
   }
 
   async countPawnPaymentHistory(
@@ -1127,19 +1157,31 @@ export class PawnService extends BaseService<
         where: {
           pawnId: id,
           paymentStatus: Or(Equal(PaymentStatusHistory.UNFINISH), IsNull()),
-          type: Or(
-            Not(Equal(PaymentHistoryType.DOWN_ROOT_MONEY)),
-            Not(Equal(PaymentHistoryType.LOAN_MORE_MONEY)),
-            Not(Equal(PaymentHistoryType.OTHER_MONEY)),
-          ),
         },
       });
 
-      const rootMoney = pawn.loanAmount - payload.paymentMoney;
-
-      const sortPaymentHistories = paymentHistories.sort(
-        (p1, p2) => p1.rowId - p2.rowId,
+      console.log(
+        paymentHistories.find((paymentHistory) => paymentHistory.isRootMoney)
+          ?.payNeed,
       );
+
+      const rootMoney =
+        (paymentHistories.find((paymentHistory) => paymentHistory.isRootMoney)
+          ?.payNeed ?? 0) - payload.paymentMoney;
+
+      const sortPaymentHistories = paymentHistories
+        .filter(
+          (paymentHistory) =>
+            !(
+              [
+                PaymentHistoryType.DEDUCTION_MONEY,
+                PaymentHistoryType.DOWN_ROOT_MONEY,
+                PaymentHistoryType.LOAN_MORE_MONEY,
+                PaymentHistoryType.OTHER_MONEY,
+              ] as string[]
+            ).includes(paymentHistory.type),
+        )
+        .sort((p1, p2) => p1.rowId - p2.rowId);
 
       await Promise.all(
         sortPaymentHistories.map(async (paymentHistory) => {
@@ -1165,49 +1207,37 @@ export class PawnService extends BaseService<
             await paymentHistoryRepository.update(
               { id: paymentHistory.id },
               {
-                payMoney: rootMoney,
+                payNeed: rootMoney,
+                payMoney: paymentHistory.payMoney + payload.paymentMoney,
               },
             );
           } else {
             await paymentHistoryRepository.update(
               { id: paymentHistory.id },
               {
-                payMoney: interestMoneyEachPeriod,
+                payNeed: interestMoneyEachPeriod,
               },
             );
           }
         }),
       );
 
-      const downPaymentHistory = await paymentHistoryRepository.create({
-        rowId: pawnPaymentHistories.length + 1,
-        pawnId: id,
-        payMoney: payload.paymentMoney,
-        payNeed: payload.paymentMoney,
-        startDate: convertPostgresDate(payload.paymentDate),
-        endDate: convertPostgresDate(payload.paymentDate),
-        type: PaymentHistoryType.DOWN_ROOT_MONEY,
-        paymentStatus: PaymentStatusHistory.FINISH,
-        contractType: ContractType.CAM_DO,
-        paymentMethod: pawn.paymentPeriodType,
-        contractId: pawn.contractId,
-      });
-      await paymentHistoryRepository.save(downPaymentHistory);
-
-      const ortherPaymentHistory = await paymentHistoryRepository.create({
-        rowId: pawnPaymentHistories.length + 2,
-        pawnId: id,
-        payMoney: payload.otherMoney,
-        payNeed: payload.otherMoney,
-        startDate: convertPostgresDate(payload.paymentDate),
-        endDate: convertPostgresDate(payload.paymentDate),
-        type: PaymentHistoryType.OTHER_MONEY,
-        paymentStatus: PaymentStatusHistory.FINISH,
-        contractType: ContractType.CAM_DO,
-        paymentMethod: pawn.paymentPeriodType,
-        contractId: pawn.contractId,
-      });
-      await paymentHistoryRepository.save(ortherPaymentHistory);
+      if (payload.otherMoney) {
+        const ortherPaymentHistory = await paymentHistoryRepository.create({
+          rowId: pawnPaymentHistories.length + 2,
+          pawnId: id,
+          payMoney: payload.otherMoney,
+          payNeed: payload.otherMoney,
+          startDate: convertPostgresDate(payload.paymentDate),
+          endDate: convertPostgresDate(payload.paymentDate),
+          type: PaymentHistoryType.OTHER_MONEY,
+          paymentStatus: PaymentStatusHistory.FINISH,
+          contractType: ContractType.CAM_DO,
+          paymentMethod: pawn.paymentPeriodType,
+          contractId: pawn.contractId,
+        });
+        await paymentHistoryRepository.save(ortherPaymentHistory);
+      }
 
       const newTransactionHistory = await transactionHistoryRepository.create({
         pawnId: pawn.id,
@@ -1223,17 +1253,25 @@ export class PawnService extends BaseService<
 
       await transactionHistoryRepository.save(newTransactionHistory);
 
-      const cash = await cashRepository.findOne({
-        where: {
-          contractId: pawn.contractId,
-          filterType: CashFilterType.RECEIPT_CONTRACT,
-        },
+      const newCash = await cashRepository.create({
+        ...createCashContractPayload(
+          pawn.user,
+          pawn.customer as any,
+          CashFilterType.DOWN_ROOT_MONEY,
+          {
+            id: pawn.id,
+            amount: payload.paymentMoney + payload.otherMoney,
+            date: formatDate(convertPostgresDate(payload.paymentDate)),
+            contractType: ContractType.CAM_DO,
+            contractId: pawn.contractId,
+          },
+        ),
       });
 
-      cash.amount = cash.amount + payload.otherMoney + payload.paymentMoney;
-
-      await cashRepository.save(cash);
+      await cashRepository.save(newCash);
     });
+
+    await this.updateRevenue(pawn.id);
 
     return true;
   }
@@ -1325,19 +1363,27 @@ export class PawnService extends BaseService<
         where: {
           pawnId: id,
           paymentStatus: Or(Equal(PaymentStatusHistory.UNFINISH), IsNull()),
-          type: Or(
-            Not(Equal(PaymentHistoryType.DOWN_ROOT_MONEY)),
-            Not(Equal(PaymentHistoryType.LOAN_MORE_MONEY)),
-            Not(Equal(PaymentHistoryType.OTHER_MONEY)),
-          ),
         },
       });
 
-      const rootMoney = pawn.loanAmount + payload.loanMoney;
+      const rootMoney =
+        payload.loanMoney +
+          paymentHistories.find((paymentHistory) => paymentHistory.isRootMoney)
+            ?.payNeed ?? 0;
 
-      const sortPaymentHistories = paymentHistories.sort(
-        (p1, p2) => p1.rowId - p2.rowId,
-      );
+      const sortPaymentHistories = paymentHistories
+        .filter(
+          (paymentHistory) =>
+            !(
+              [
+                PaymentHistoryType.DEDUCTION_MONEY,
+                PaymentHistoryType.DOWN_ROOT_MONEY,
+                PaymentHistoryType.LOAN_MORE_MONEY,
+                PaymentHistoryType.OTHER_MONEY,
+              ] as string[]
+            ).includes(paymentHistory.type),
+        )
+        .sort((p1, p2) => p1.rowId - p2.rowId);
 
       await Promise.all(
         sortPaymentHistories.map(async (paymentHistory) => {
@@ -1363,34 +1409,36 @@ export class PawnService extends BaseService<
             await paymentHistoryRepository.update(
               { id: paymentHistory.id },
               {
-                payMoney: rootMoney,
+                payNeed: rootMoney,
               },
             );
           } else {
             await paymentHistoryRepository.update(
               { id: paymentHistory.id },
               {
-                payMoney: interestMoneyEachPeriod,
+                payNeed: interestMoneyEachPeriod,
               },
             );
           }
         }),
       );
 
-      const ortherPaymentHistory = await paymentHistoryRepository.create({
-        rowId: pawnPaymentHistories.length + 1,
-        pawnId: id,
-        payMoney: payload.otherMoney,
-        payNeed: payload.otherMoney,
-        startDate: convertPostgresDate(payload.loanDate),
-        endDate: convertPostgresDate(payload.loanDate),
-        type: PaymentHistoryType.OTHER_MONEY,
-        paymentStatus: null,
-        contractType: ContractType.CAM_DO,
-        paymentMethod: pawn.paymentPeriodType,
-        contractId: pawn.contractId,
-      });
-      await paymentHistoryRepository.save(ortherPaymentHistory);
+      if (payload.otherMoney > 0) {
+        const ortherPaymentHistory = await paymentHistoryRepository.create({
+          rowId: pawnPaymentHistories.length + 1,
+          pawnId: id,
+          payMoney: payload.otherMoney,
+          payNeed: payload.otherMoney,
+          startDate: convertPostgresDate(payload.loanDate),
+          endDate: convertPostgresDate(payload.loanDate),
+          type: PaymentHistoryType.OTHER_MONEY,
+          paymentStatus: null,
+          contractType: ContractType.CAM_DO,
+          paymentMethod: pawn.paymentPeriodType,
+          contractId: pawn.contractId,
+        });
+        await paymentHistoryRepository.save(ortherPaymentHistory);
+      }
 
       const newTransactionHistory = await transactionHistoryRepository.create({
         pawnId: pawn.id,
@@ -1423,6 +1471,8 @@ export class PawnService extends BaseService<
 
       await cashRepository.save(newCash);
     });
+
+    await this.updateRevenue(pawn.id);
 
     return true;
   }
