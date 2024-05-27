@@ -4,6 +4,7 @@ import { CASH_CODE_PREFIX } from 'src/cash/cash.controller';
 import { CashFilterType, CashType, ContractType } from 'src/common/interface';
 import { DebitStatus } from 'src/common/interface/bat-ho';
 import {
+  PaymentHistoryType,
   PaymentStatusHistory,
   TransactionHistoryType,
 } from 'src/common/interface/history';
@@ -531,6 +532,7 @@ export class BatHoService extends BaseService<
         payNeed: numOfDay * moneyLoan,
         paymentStatus: null,
         contractType: ContractType.BAT_HO,
+        type: PaymentHistoryType.INTEREST_MONEY,
       });
 
       index++;
@@ -547,6 +549,7 @@ export class BatHoService extends BaseService<
         paymentHistory.payDate = convertPostgresDate(formatDate(new Date()));
         paymentHistory.payMoney = moneyLoan;
         paymentHistory.isDeductionMoney = true;
+        paymentHistory.type = PaymentHistoryType.DEDUCTION_MONEY;
         paymentHistories[i - 1] = { ...paymentHistory };
       }
     }

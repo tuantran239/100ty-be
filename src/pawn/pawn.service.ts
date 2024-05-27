@@ -549,6 +549,7 @@ export class PawnService extends BaseService<
           paymentStatus: null,
           contractType: ContractType.CAM_DO,
           isRootMoney: true,
+          type: PaymentHistoryType.ROOT_MONEY,
         });
         paymentHistories.push({
           rowId: index,
@@ -562,6 +563,7 @@ export class PawnService extends BaseService<
           payNeed: interestMoneyEachPeriod,
           paymentStatus: null,
           contractType: ContractType.CAM_DO,
+          type: PaymentHistoryType.INTEREST_MONEY,
         });
       } else {
         paymentHistories.push({
@@ -576,6 +578,7 @@ export class PawnService extends BaseService<
           payNeed: interestMoneyEachPeriod,
           paymentStatus: null,
           contractType: ContractType.CAM_DO,
+          type: PaymentHistoryType.INTEREST_MONEY,
         });
       }
 
