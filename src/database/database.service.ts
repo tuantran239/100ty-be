@@ -13,6 +13,7 @@ import { Role } from 'src/role/entities/role.entity';
 import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
 import { User } from 'src/user/user.entity';
 import { DataSource, Repository } from 'typeorm';
+import { DeleteDataDto } from './dto/delete-data.dto';
 
 export interface DataSourceRepository {
   batHoRepository: Repository<BatHo>;
@@ -94,5 +95,35 @@ export class DatabaseService {
 
   getRepositories() {
     return this.repositories;
+  }
+
+  async deleteData(payload: DeleteDataDto) {
+    const { repository, id } = payload;
+
+    const repositoryDatabase = this.repositories[
+      `${repository}Repository`
+    ] as Repository<any>;
+
+    let total = 0;
+    let deleted = 0;
+
+    if (repositoryDatabase) {
+      if (id) {
+        const result = await repositoryDatabase.delete({ id });
+        total = 1;
+        deleted = result.affected ?? 0;
+      } else {
+        const records = await repositoryDatabase.find();
+        total = records.length;
+        await Promise.all(
+          records.map(async (record) => {
+            const result = await repositoryDatabase.delete({ id: record.id });
+            deleted += result.affected ?? 0;
+          }),
+        );
+      }
+    }
+
+    return { result: `Deleted: ${deleted}/${total}` };
   }
 }
