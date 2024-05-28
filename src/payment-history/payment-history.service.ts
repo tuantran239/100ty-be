@@ -13,7 +13,11 @@ import {
   getContentTransactionHistory,
   getNoteTransactionHistory,
 } from 'src/common/utils/history';
-import { convertPostgresDate, formatDate } from 'src/common/utils/time';
+import {
+  convertPostgresDate,
+  formatDate,
+  getDateLocal,
+} from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import { CreateTransactionHistoryDto } from 'src/transaction-history/dto/create-transaction-history';
 import { User } from 'src/user/user.entity';
@@ -86,6 +90,9 @@ export class PaymentHistoryService extends BaseService<
           relations,
         });
 
+        const contractId =
+          paymentHistory.batHo?.contractId ?? paymentHistory.pawn?.contractId;
+
         if (paymentHistoryFind.contractType === ContractType.BAT_HO) {
           if (paymentHistory.batHo?.maturityDate) {
             throw new Error('Hợp đồng này đã đáo hạn');
@@ -124,6 +131,9 @@ export class PaymentHistoryService extends BaseService<
           if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
             cash.amount = cash.amount - paymentHistory.payMoney;
             await cashRepository.save(cash);
+            await transactionHistoryRepository.delete({
+              paymentHistoryId: paymentHistory.id,
+            });
           }
 
           return { result, paymentHistory };
@@ -147,33 +157,28 @@ export class PaymentHistoryService extends BaseService<
             type: TransactionHistoryType.PAYMENT,
             content: getContentTransactionHistory(
               TransactionHistoryType.PAYMENT,
+              contractId,
             ),
             moneyAdd: payload.customerPaymentAmount,
             note: getNoteTransactionHistory(
               TransactionHistoryType.PAYMENT,
               formatDate(paymentHistory.startDate),
             ),
+            createAt: getDateLocal(new Date()),
+            paymentHistoryId: paymentHistory.id,
           };
+
+          const newTransactionHistory =
+            await transactionHistoryRepository.create(
+              payloadTransactionHistory,
+            );
+
+          await transactionHistoryRepository.save(newTransactionHistory);
         } else if (payload.paymentStatus == PaymentStatusHistory.UNFINISH) {
-          payloadTransactionHistory = {
-            ...payloadTransactionHistory,
-            type: TransactionHistoryType.CANCEL,
-            content: getContentTransactionHistory(
-              TransactionHistoryType.CANCEL,
-            ),
-            moneySub: payload.customerPaymentAmount,
-            note: getNoteTransactionHistory(
-              TransactionHistoryType.PAYMENT,
-              formatDate(paymentHistory.startDate),
-            ),
-          };
+          await transactionHistoryRepository.delete({
+            paymentHistoryId: paymentHistory.id,
+          });
         }
-
-        const newTransactionHistory = await transactionHistoryRepository.create(
-          payloadTransactionHistory,
-        );
-
-        await transactionHistoryRepository.save(newTransactionHistory);
 
         if (payload.paymentStatus == PaymentStatusHistory.FINISH) {
           cash.amount = cash.amount + payload.customerPaymentAmount;

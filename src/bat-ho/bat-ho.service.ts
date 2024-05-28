@@ -145,6 +145,10 @@ export class BatHoService extends BaseService<
           userId,
         );
 
+        const deductionPaymentHistories = paymentHistories.filter(
+          (paymentHistory) => paymentHistory.isDeductionMoney,
+        );
+
         const newPaymentHistories = await Promise.all(
           paymentHistories.map(async (paymentHistory) => {
             let newPaymentHistory =
@@ -226,17 +230,43 @@ export class BatHoService extends BaseService<
             userId,
             batHoId: newBatHo.id,
             contractId: newBatHo.contractId,
-            type: TransactionHistoryType.CREATE_CONTRACT,
+            type: TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
             content: getContentTransactionHistory(
-              TransactionHistoryType.CREATE_CONTRACT,
+              TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
+              newBatHo.contractId,
             ),
-            moneySub: newBatHo.revenueReceived,
+            moneySub: newBatHo.fundedAmount,
             moneyAdd: 0,
             otherMoney: 0,
+            createAt: convertPostgresDate(newBatHo.loanDate),
           },
         );
 
         await transactionHistoryRepository.save(newTransactionHistory);
+
+        await Promise.all(
+          deductionPaymentHistories.map(async (paymentHistory) => {
+            const newDeductionTransactionHistory =
+              await transactionHistoryRepository.create({
+                userId,
+                batHoId: newBatHo.id,
+                contractId: newBatHo.contractId,
+                type: TransactionHistoryType.DEDUCTION_MONEY,
+                content: getContentTransactionHistory(
+                  TransactionHistoryType.DEDUCTION_MONEY,
+                  newBatHo.contractId,
+                ),
+                moneySub: 0,
+                moneyAdd: paymentHistory.payMoney,
+                otherMoney: 0,
+                createAt: convertPostgresDate(newBatHo.loanDate),
+              });
+
+            await transactionHistoryRepository.save(
+              newDeductionTransactionHistory,
+            );
+          }),
+        );
 
         return newBatHo;
       },
@@ -340,6 +370,10 @@ export class BatHoService extends BaseService<
             batHo.userId,
           );
 
+          const deductionPaymentHistories = paymentHistories.filter(
+            (paymentHistory) => paymentHistory.isDeductionMoney,
+          );
+
           const newPaymentHistories = await Promise.all(
             paymentHistories.map(async (paymentHistory) => {
               let newPaymentHistory =
@@ -382,16 +416,42 @@ export class BatHoService extends BaseService<
               userId: batHo.userId,
               batHoId: batHo.id,
               contractId: batHo.contractId,
-              type: TransactionHistoryType.CREATE_CONTRACT,
+              type: TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
               content: getContentTransactionHistory(
-                TransactionHistoryType.CREATE_CONTRACT,
+                TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
+                batHo.contractId,
               ),
-              moneySub: batHo.revenueReceived,
+              moneySub: batHo.fundedAmount,
               moneyAdd: 0,
               otherMoney: 0,
+              createAt: batHo.loanDate,
             });
 
           await transactionHistoryRepository.save(newTransactionHistory);
+
+          await Promise.all(
+            deductionPaymentHistories.map(async (paymentHistory) => {
+              const newDeductionTransactionHistory =
+                await transactionHistoryRepository.create({
+                  userId: batHo.userId,
+                  batHoId: batHo.id,
+                  contractId: batHo.contractId,
+                  type: TransactionHistoryType.DEDUCTION_MONEY,
+                  content: getContentTransactionHistory(
+                    TransactionHistoryType.DEDUCTION_MONEY,
+                    batHo.contractId,
+                  ),
+                  moneySub: 0,
+                  moneyAdd: paymentHistory.payMoney,
+                  otherMoney: 0,
+                  createAt: batHo.loanDate,
+                });
+
+              await transactionHistoryRepository.save(
+                newDeductionTransactionHistory,
+              );
+            }),
+          );
         }
 
         await this.batHoRepository.save({

@@ -208,3 +208,7 @@ export const getTodayNotTimeZone = () => {
     `${today.getFullYear()}-${convertPrefixTime(today.getMonth() + 1)}-${convertPrefixTime(today.getDate())}`,
   );
 };
+
+export const getDateLocal = (date: Date) => {
+  return `${date.getFullYear()}-${convertPrefixTime(date.getMonth() + 1)}-${convertPrefixTime(date.getDate())}`;
+};

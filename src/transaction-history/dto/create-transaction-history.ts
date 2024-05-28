@@ -24,6 +24,11 @@ export class CreateTransactionHistoryDto {
 
   @ApiProperty()
   @IsString()
+  @IsOptional()
+  paymentHistoryId?: string;
+
+  @ApiProperty()
+  @IsString()
   @IsNotEmpty()
   type: string;
 
@@ -51,4 +56,9 @@ export class CreateTransactionHistoryDto {
   @IsString()
   @IsOptional()
   note?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  createAt?: string;
 }

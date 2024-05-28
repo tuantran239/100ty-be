@@ -28,6 +28,7 @@ import {
   convertPostgresDate,
   countFromToDate,
   formatDate,
+  getDateLocal,
   getTodayNotTimeZone,
 } from 'src/common/utils/time';
 import { ContractService } from 'src/contract/contract.service';
@@ -230,13 +231,15 @@ export class PawnService extends BaseService<
             userId,
             pawnId: newPawn.id,
             contractId: newPawn.contractId,
-            type: TransactionHistoryType.CREATE_CONTRACT,
+            type: TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
             content: getContentTransactionHistory(
-              TransactionHistoryType.CREATE_CONTRACT,
+              TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
+              newPawn.contractId,
             ),
             moneySub: newPawn.loanAmount,
             moneyAdd: 0,
             otherMoney: 0,
+            createAt: newPawn.loanDate,
           },
         );
 
@@ -378,13 +381,15 @@ export class PawnService extends BaseService<
               userId: pawn.userId,
               pawnId: pawn.id,
               contractId: pawn.contractId,
-              type: TransactionHistoryType.CREATE_CONTRACT,
+              type: TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
               content: getContentTransactionHistory(
-                TransactionHistoryType.CREATE_CONTRACT,
+                TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
+                pawn.contractId,
               ),
               moneySub: pawn.loanAmount,
               moneyAdd: 0,
               otherMoney: 0,
+              createAt: pawn.loanDate,
             });
 
           await transactionHistoryRepository.save(newTransactionHistory);
@@ -1048,11 +1053,17 @@ export class PawnService extends BaseService<
         pawnId: pawn.id,
         userId: pawn.user?.id,
         contractId: pawn.contractId,
-        type: TransactionHistoryType.PAYMENT,
-        content: `Tất toán hợp đồng ${pawn.contractId}`,
+        type: TransactionHistoryType.SETTLEMENT_CONTRACT,
+        content: getContentTransactionHistory(
+          TransactionHistoryType.SETTLEMENT_CONTRACT,
+          pawn.contractId,
+        ),
         moneyAdd: settlementMoney + feeServiceTotal,
         moneySub: 0,
         otherMoney: 0,
+        createAt: getDateLocal(
+          new Date(convertPostgresDate(payload.paymentDate)),
+        ),
       });
 
       await transactionHistoryRepository.save(newTransactionHistory);
@@ -1247,11 +1258,17 @@ export class PawnService extends BaseService<
         userId: pawn.user?.id,
         contractId: pawn.contractId,
         type: TransactionHistoryType.PAYMENT_DOWN_ROOT_MONEY,
-        content: `Trả bớt gốc hợp đồng ${pawn.contractId}`,
+        content: getContentTransactionHistory(
+          TransactionHistoryType.PAYMENT_DOWN_ROOT_MONEY,
+          pawn.contractId,
+        ),
         moneyAdd: payload.paymentMoney,
         moneySub: 0,
         otherMoney: payload.otherMoney,
         note: payload.note,
+        createAt: getDateLocal(
+          new Date(convertPostgresDate(payload.paymentDate)),
+        ),
       });
 
       await transactionHistoryRepository.save(newTransactionHistory);
@@ -1448,11 +1465,15 @@ export class PawnService extends BaseService<
         userId: pawn.user?.id,
         contractId: pawn.contractId,
         type: TransactionHistoryType.LOAN_MORE_MONEY,
-        content: `Vay thêm hợp đồng ${pawn.contractId}`,
+        content: getContentTransactionHistory(
+          TransactionHistoryType.LOAN_MORE_MONEY,
+          pawn.contractId,
+        ),
         moneyAdd: 0,
         moneySub: payload.loanMoney,
         otherMoney: payload.otherMoney,
         note: payload.note,
+        createAt: getDateLocal(new Date(convertPostgresDate(payload.loanDate))),
       });
 
       await transactionHistoryRepository.save(newTransactionHistory);
