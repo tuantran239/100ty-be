@@ -1,6 +1,7 @@
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { ServiceFee } from './bat-ho';
 import { Customer } from 'src/customer/customer.entity';
+import { ExtendedPeriodHistory } from 'src/extended-period-history/extended-period-history.entity';
 
 export enum PawnPaymentPeriodType {
   DAY = 'day',
@@ -103,4 +104,10 @@ export interface LoanMoreMoney {
   transactionHistories: LoanMoreMoneyHistory[];
   contractInfo: LoanMoreMoneyContractInfo;
   customer: Customer | any;
+}
+
+export interface PawnExtendPeriod {
+  paymentHistories: PaymentHistory[];
+  histories: ExtendedPeriodHistory[];
+  contractId: string;
 }

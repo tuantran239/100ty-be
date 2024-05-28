@@ -10,6 +10,7 @@ import {
 import {
   LoanMoreMoney,
   LoanMoreMoneyHistory,
+  PawnExtendPeriod,
   PawnInterestType,
   PawnPaymentPeriodType,
   PaymentDownRootMoney,
@@ -53,6 +54,7 @@ import { PaymentDownRootMoneyDto } from './dto/payment-down-root-money.dto';
 import { SettlementPawnDto } from './dto/settlement-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { Pawn } from './pawn.entity';
+import { ExtendedPeriodConfirmDto } from './dto/extended-period-confirm.dto';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -1494,6 +1496,136 @@ export class PawnService extends BaseService<
       });
 
       await cashRepository.save(newCash);
+    });
+
+    await this.updateRevenue(pawn.id);
+
+    return true;
+  }
+
+  async extendedPeriodRequest(id: string) {
+    const pawn = await this.pawnRepository.findOne({
+      where: { id },
+      relations: ['paymentHistories', 'extendedPeriodHistories'],
+    });
+
+    if (!pawn) {
+      throw new Error('Không tìm thấy hợp đồng');
+    }
+
+    const { paymentHistories, extendedPeriodHistories } = pawn;
+
+    const extendedPeriod: PawnExtendPeriod = {
+      paymentHistories,
+      histories: extendedPeriodHistories,
+      contractId: pawn.contractId,
+    };
+
+    return extendedPeriod;
+  }
+
+  async extendedPeriodConfirm(id: string, payload: ExtendedPeriodConfirmDto) {
+    const pawn = await this.pawnRepository.findOne({
+      where: { id },
+      relations: [
+        'paymentHistories',
+        'customer',
+        'user',
+        'extendedPeriodHistories',
+      ],
+    });
+
+    if (!pawn) {
+      throw new Error('Không tìm thấy hợp đồng');
+    }
+
+    await this.databaseService.runTransaction(async (repositories) => {
+      const {
+        extendedPeriodHistory,
+        pawnRepository,
+        paymentHistoryRepository,
+      } = repositories;
+
+      const { paymentHistories } = pawn;
+
+      const paymentHistoryRootMoney = paymentHistories.find(
+        (paymentHistory) =>
+          paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
+      );
+
+      const newNumOfPayment = payload.periodNumber + pawn.numOfPayment;
+
+      const clonePawn = { ...pawn, numOfPayment: newNumOfPayment } as Pawn;
+
+      const newPaymentHistories = await this.countPawnPaymentHistory(
+        clonePawn,
+        clonePawn.user.id,
+      );
+
+      const newPaymentHistoryRootMoney = newPaymentHistories.find(
+        (paymentHistory) =>
+          paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
+      );
+
+      for (let i = 1; i < newPaymentHistories.length; i++) {
+        if (i <= pawn.numOfPayment) {
+          continue;
+        }
+
+        const newPaymentHistory = newPaymentHistories[i];
+
+        if (
+          newPaymentHistory.type !== PaymentHistoryType.ROOT_MONEY &&
+          newPaymentHistory.endDate !== newPaymentHistoryRootMoney.endDate
+        ) {
+          const newExtendedPaymentHistory =
+            await paymentHistoryRepository.create(newPaymentHistory);
+          await paymentHistoryRepository.save(newExtendedPaymentHistory);
+        } else {
+          if (newPaymentHistory.type === PaymentHistoryType.ROOT_MONEY) {
+            await paymentHistoryRepository.update(
+              {
+                id: paymentHistoryRootMoney.id,
+              },
+              {
+                startDate: newPaymentHistory.startDate,
+                endDate: newPaymentHistory.endDate,
+              },
+            );
+          } else {
+            const paymentHistoryInterestRootMoney = paymentHistories.find(
+              (paymentHistory) =>
+                paymentHistory.type === PaymentHistoryType.INTEREST_MONEY &&
+                formatDate(paymentHistory.endDate) ==
+                  formatDate(paymentHistoryRootMoney.endDate),
+            );
+
+            await paymentHistoryRepository.update(
+              {
+                id: paymentHistoryInterestRootMoney?.id,
+              },
+              {
+                startDate: newPaymentHistory.startDate,
+                endDate: newPaymentHistory.endDate,
+              },
+            );
+          }
+        }
+      }
+
+      await pawnRepository.update(
+        { id: pawn.id },
+        { numOfPayment: newNumOfPayment },
+      );
+
+      const newExtendedPeriod = await extendedPeriodHistory.create({
+        pawnId: pawn.id,
+        periodNumber: payload.periodNumber,
+        extendedDate: convertPostgresDate(payload.extendedDate),
+        reason: payload.reason,
+      });
+
+      await extendedPeriodHistory.save(newExtendedPeriod);
     });
 
     await this.updateRevenue(pawn.id);
