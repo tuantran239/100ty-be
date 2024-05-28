@@ -10,6 +10,13 @@ import {
 import { UpdateTransactionHistoryDto } from './dto/update-transaction-history';
 import { TransactionHistory } from './transaction-history.entity';
 import { CreateTransactionHistoryDto } from './dto/create-transaction-history';
+import { DatabaseService } from 'src/database/database.service';
+import {
+  PaymentStatusHistory,
+  TransactionHistoryType,
+} from 'src/common/interface/history';
+import { getContentTransactionHistory } from 'src/common/utils/history';
+import { getDateLocal } from 'src/common/utils/time';
 
 @Injectable()
 export class TransactionHistoryService extends BaseService<
@@ -19,7 +26,10 @@ export class TransactionHistoryService extends BaseService<
 > {
   protected manager: EntityManager;
   private transactionHistoryRepository: Repository<TransactionHistory>;
-  constructor(private dataSource: DataSource) {
+  constructor(
+    private dataSource: DataSource,
+    private databaseService: DatabaseService,
+  ) {
     super();
     this.manager = this.dataSource.manager;
     this.transactionHistoryRepository =
@@ -97,5 +107,86 @@ export class TransactionHistoryService extends BaseService<
         }
       }),
     );
+  }
+
+  async convertTransactionPaymentHistory() {
+    let total = 0;
+    let updated = 0;
+
+    await this.databaseService.runTransaction(async (repositories) => {
+      const { batHoRepository, transactionHistoryRepository } = repositories;
+
+      const contracts = await batHoRepository.find({
+        relations: ['paymentHistories', 'user'],
+      });
+
+      total = contracts.reduce(
+        (total, contract) => total + contract.paymentHistories?.length ?? 0,
+        0,
+      );
+
+      total += contracts.length;
+
+      await Promise.all(
+        contracts.map(async (contract) => {
+          const paymentHistories = contract.paymentHistories ?? [];
+
+          await transactionHistoryRepository.delete({ batHoId: contract.id });
+
+          const transactionNewContract =
+            await transactionHistoryRepository.create({
+              userId: contract.user.id,
+              batHoId: contract.id,
+              contractId: contract.contractId,
+              type: TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
+              content: getContentTransactionHistory(
+                TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
+                contract.contractId,
+              ),
+              moneySub: contract.fundedAmount,
+              moneyAdd: 0,
+              otherMoney: 0,
+              createAt: contract.loanDate,
+            });
+
+          await transactionHistoryRepository.save(transactionNewContract);
+          updated++;
+
+          await Promise.all(
+            paymentHistories.map(async (paymentHistory) => {
+              if (
+                paymentHistory.paymentStatus === PaymentStatusHistory.FINISH
+              ) {
+                const type = paymentHistory.isDeductionMoney
+                  ? TransactionHistoryType.DEDUCTION_MONEY
+                  : TransactionHistoryType.PAYMENT;
+
+                const transactionNewContract =
+                  await transactionHistoryRepository.create({
+                    userId: contract.user.id,
+                    batHoId: contract.id,
+                    contractId: contract.contractId,
+                    type,
+                    content: getContentTransactionHistory(
+                      type,
+                      contract.contractId,
+                    ),
+                    moneySub: 0,
+                    moneyAdd: paymentHistory.payMoney,
+                    otherMoney: 0,
+                    createAt: getDateLocal(new Date(paymentHistory.updated_at)),
+                    paymentHistoryId: paymentHistory.id,
+                  });
+
+                await transactionHistoryRepository.save(transactionNewContract);
+                updated++;
+              }
+            }),
+          );
+        }),
+      );
+    });
+
+    return { result: `updated: ${updated}/${total}` };
   }
 }

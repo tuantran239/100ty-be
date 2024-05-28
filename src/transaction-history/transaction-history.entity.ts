@@ -2,6 +2,7 @@ import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Pawn } from 'src/pawn/pawn.entity';
+import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { User } from 'src/user/user.entity';
 import {
   BeforeInsert,
@@ -33,6 +34,9 @@ export class TransactionHistory extends SoftDeletableEntity {
   contractId: string;
 
   @Column()
+  paymentHistoryId: string;
+
+  @Column()
   otherMoney: number;
 
   @Column()
@@ -56,6 +60,10 @@ export class TransactionHistory extends SoftDeletableEntity {
   @OneToOne(() => User)
   @JoinColumn()
   user: User;
+
+  @OneToOne(() => PaymentHistory)
+  @JoinColumn()
+  paymentHistory: PaymentHistory;
 
   @BeforeInsert()
   private beforeInsert(): void {
