@@ -2,6 +2,7 @@ import { AssetType } from 'src/asset-type/entities/asset-type.entity';
 import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Customer } from 'src/customer/customer.entity';
+import { ExtendedPeriodHistory } from 'src/extended-period-history/extended-period-history.entity';
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
 import { User } from 'src/user/user.entity';
@@ -89,6 +90,12 @@ export class Pawn extends SoftDeletableEntity {
 
   @OneToMany(() => PaymentHistory, (paymentHistory) => paymentHistory.pawn)
   paymentHistories: PaymentHistory[];
+
+  @OneToMany(
+    () => ExtendedPeriodHistory,
+    (extendedPeriodHistory) => extendedPeriodHistory.pawn,
+  )
+  extendedPeriodHistories: ExtendedPeriodHistory[];
 
   @Column({ type: 'jsonb', nullable: true })
   serviceFee: any;

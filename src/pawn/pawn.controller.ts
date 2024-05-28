@@ -42,6 +42,7 @@ import { SettlementPawnDto } from './dto/settlement-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { PawnService } from './pawn.service';
 import { LoanMoreMoneyDto } from './dto/loan-more-money.dto';
+import { ExtendedPeriodConfirmDto } from './dto/extended-period-confirm.dto';
 
 const ENTITY_LOG = 'Pawn';
 
@@ -308,8 +309,12 @@ export class PawnController {
 
       const paymentHistories = pawn.paymentHistories ?? [];
 
-      const paymentHistoriesResponse: any[] = paymentHistories.map(
-        (paymentHistory) => ({
+      const paymentHistoriesResponse: any[] = paymentHistories
+        .sort(
+          (p1, p2) =>
+            new Date(p1.endDate).getTime() - new Date(p2.endDate).getTime(),
+        )
+        .map((paymentHistory) => ({
           id: paymentHistory.id,
           rowId: paymentHistory.rowId,
           paymentStatus: paymentHistory.paymentStatus,
@@ -324,8 +329,7 @@ export class PawnController {
           isDeductionMoney: paymentHistory.isDeductionMoney,
           isRootMoney: paymentHistory.isRootMoney,
           paymentDate: formatDate(paymentHistory.endDate),
-        }),
-      );
+        }));
 
       let paidDuration = 0;
 
@@ -642,6 +646,62 @@ export class PawnController {
       const id = req.params.id;
 
       const data = await this.pawnService.loanMoreMoneyConfirm(id, payload);
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      this.logger.error(
+        { loggerType: 'list', entity: ENTITY_LOG, serverType: 'error' },
+        error,
+      );
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Get(RouterUrl.PAWN.EXTENDED_PERIOD_REQUEST)
+  async extendedPeriodRequest(@Res() res: Response, @Req() req: Request) {
+    try {
+      const id = req.params.id;
+
+      const data = await this.pawnService.extendedPeriodRequest(id);
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      this.logger.error(
+        { loggerType: 'list', entity: ENTITY_LOG, serverType: 'error' },
+        error,
+      );
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Post(RouterUrl.PAWN.EXTENDED_PERIOD_CONFIRM)
+  async extendedPeriodConfirm(
+    @Body(new BodyValidationPipe()) payload: ExtendedPeriodConfirmDto,
+    @Res() res: Response,
+    @Req() req: Request,
+  ) {
+    try {
+      const id = req.params.id;
+
+      const data = await this.pawnService.extendedPeriodConfirm(id, payload);
 
       const responseData: ResponseData = {
         message: 'success',

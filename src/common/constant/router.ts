@@ -92,6 +92,8 @@ interface PawnRouter extends BaseRouter {
   PAYMENT_DOWN_CONFIRM: string;
   LOAN_MORE_REQUEST: string;
   LOAN_MORE_CONFIRM: string;
+  EXTENDED_PERIOD_REQUEST: string;
+  EXTENDED_PERIOD_CONFIRM: string;
 }
 
 const PAWN: PawnRouter = {
@@ -111,6 +113,8 @@ const PAWN: PawnRouter = {
   PAYMENT_DOWN_CONFIRM: '/payment-down/confirm/:id',
   LOAN_MORE_REQUEST: '/loan-more/request/:id',
   LOAN_MORE_CONFIRM: '/loan-more/confirm/:id',
+  EXTENDED_PERIOD_REQUEST: '/extended-period/request/:id',
+  EXTENDED_PERIOD_CONFIRM: '/extended-period/confirm/:id',
 };
 
 interface PaymentHistoryRouter extends BaseRouter {
