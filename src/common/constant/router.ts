@@ -223,6 +223,11 @@ const CONTRACT: ContractRouter = {
   UPDATE_STATUS: '/update-status',
 };
 
+const DATABASE = {
+  ROOT: `${API_URL}/database`,
+  DELETE: '/delete',
+};
+
 const RouterUrl = {
   USER,
   AUTH,
@@ -240,6 +245,7 @@ const RouterUrl = {
   ASSET_TYPE,
   PAWN,
   CONTRACT,
+  DATABASE,
 };
 
 export default RouterUrl;
