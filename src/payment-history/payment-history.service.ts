@@ -3,6 +3,7 @@ import { CASH_CODE_PREFIX } from 'src/cash/cash.controller';
 import { Cash } from 'src/cash/cash.entity';
 import { CashFilterType, CashType, ContractType } from 'src/common/interface';
 import {
+  PaymentHistoryType,
   PaymentStatusHistory,
   TransactionHistoryType,
 } from 'src/common/interface/history';
@@ -93,13 +94,20 @@ export class PaymentHistoryService extends BaseService<
         const contractId =
           paymentHistory.batHo?.contractId ?? paymentHistory.pawn?.contractId;
 
+        const canNotChangeList = [
+          PaymentHistoryType.DEDUCTION_MONEY,
+          PaymentHistoryType.OTHER_MONEY_DOWN_ROOT,
+        ] as string[];
+
+        if (canNotChangeList.includes(paymentHistory.type)) {
+          throw new Error(
+            'Khoản tiền này đã được đóng trước, không thể thay đổi.',
+          );
+        }
+
         if (paymentHistoryFind.contractType === ContractType.BAT_HO) {
           if (paymentHistory.batHo?.maturityDate) {
             throw new Error('Hợp đồng này đã đáo hạn');
-          }
-
-          if (paymentHistory.isDeductionMoney) {
-            throw new Error('Không thể thay đổi ngày cắt');
           }
         } else if (paymentHistoryFind.contractType === ContractType.CAM_DO) {
           if (paymentHistory.pawn?.settlementDate) {
