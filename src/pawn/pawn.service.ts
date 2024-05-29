@@ -841,14 +841,22 @@ export class PawnService extends BaseService<
 
     const interestMoneyTotal = totalDayToToday * interestMoneyOneDay;
 
+    const rootPaymentHistory = paymentHistories.find(
+      (paymentHistory) => paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
+    );
+
     const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
-      if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
+      if (
+        paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
+        paymentHistory.type !== PaymentHistoryType.OTHER_MONEY_DOWN_ROOT
+      ) {
         return total + paymentHistory.payMoney;
       }
       return total;
     }, 0);
 
-    const settlementMoney = loanAmount + interestMoneyTotal - moneyPaid;
+    const settlementMoney =
+      rootPaymentHistory?.payNeed + interestMoneyTotal - moneyPaid;
 
     const settlementPawn: SettlementPawn = {
       paymentHistories: paymentHistories.map((paymentHistory) => ({
