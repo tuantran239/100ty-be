@@ -1,7 +1,6 @@
-import { PaymentHistory } from 'src/payment-history/payment-history.entity';
-import { ServiceFee } from './bat-ho';
 import { Customer } from 'src/customer/customer.entity';
 import { ExtendedPeriodHistory } from 'src/extended-period-history/extended-period-history.entity';
+import { ServiceFee } from './bat-ho';
 
 export enum PawnPaymentPeriodType {
   DAY = 'day',
@@ -47,7 +46,7 @@ export interface SettlementPawnInfo {
 }
 
 export interface SettlementPawn {
-  paymentHistories: PaymentHistory[];
+  paymentHistories: any[];
   contractInfo: SettlementPawnContractInfo;
   settlementInfo: SettlementPawnInfo;
 }
@@ -73,7 +72,7 @@ export interface PaymentDownRootContractInfo {
 }
 
 export interface PaymentDownRootMoney {
-  paymentHistories: PaymentHistory[];
+  paymentHistories: any[];
   transactionHistories: PaymentDownRootMoneyHistory[];
   contractInfo: PaymentDownRootContractInfo;
   customer: Customer | any;
@@ -100,14 +99,14 @@ export interface LoanMoreMoneyContractInfo {
 }
 
 export interface LoanMoreMoney {
-  paymentHistories: PaymentHistory[];
+  paymentHistories: any[];
   transactionHistories: LoanMoreMoneyHistory[];
   contractInfo: LoanMoreMoneyContractInfo;
   customer: Customer | any;
 }
 
 export interface PawnExtendPeriod {
-  paymentHistories: PaymentHistory[];
+  paymentHistories: any[];
   histories: ExtendedPeriodHistory[];
   contractId: string;
 }

@@ -851,7 +851,10 @@ export class PawnService extends BaseService<
     const settlementMoney = loanAmount + interestMoneyTotal - moneyPaid;
 
     const settlementPawn: SettlementPawn = {
-      paymentHistories,
+      paymentHistories: paymentHistories.map((paymentHistory) => ({
+        ...paymentHistory,
+        paymentDate: paymentHistory.endDate,
+      })),
       contractInfo: {
         contractId: pawn.contractId,
         loanAmount,
@@ -1118,7 +1121,10 @@ export class PawnService extends BaseService<
       }));
 
     const paymentDownRootMoney: PaymentDownRootMoney = {
-      paymentHistories,
+      paymentHistories: paymentHistories.map((paymentHistory) => ({
+        ...paymentHistory,
+        paymentDate: paymentHistory.endDate,
+      })),
       transactionHistories: [...transactionHistoriesMap],
       contractInfo: {
         contractId: pawn.contractId,
@@ -1193,7 +1199,8 @@ export class PawnService extends BaseService<
                 PaymentHistoryType.DEDUCTION_MONEY,
                 PaymentHistoryType.DOWN_ROOT_MONEY,
                 PaymentHistoryType.LOAN_MORE_MONEY,
-                PaymentHistoryType.OTHER_MONEY,
+                PaymentHistoryType.OTHER_MONEY_DOWN_ROOT,
+                PaymentHistoryType.OTHER_MONEY_LOAN_MORE,
               ] as string[]
             ).includes(paymentHistory.type),
         )
@@ -1246,7 +1253,7 @@ export class PawnService extends BaseService<
           payNeed: payload.otherMoney,
           startDate: convertPostgresDate(payload.paymentDate),
           endDate: convertPostgresDate(payload.paymentDate),
-          type: PaymentHistoryType.OTHER_MONEY,
+          type: PaymentHistoryType.OTHER_MONEY_DOWN_ROOT,
           paymentStatus: PaymentStatusHistory.FINISH,
           contractType: ContractType.CAM_DO,
           paymentMethod: pawn.paymentPeriodType,
@@ -1333,7 +1340,10 @@ export class PawnService extends BaseService<
       }));
 
     const paymentDownRootMoney: LoanMoreMoney = {
-      paymentHistories,
+      paymentHistories: paymentHistories.map((paymentHistory) => ({
+        ...paymentHistory,
+        paymentDate: paymentHistory.endDate,
+      })),
       transactionHistories: [...transactionHistoriesMap],
       contractInfo: {
         contractId: pawn.contractId,
@@ -1401,7 +1411,8 @@ export class PawnService extends BaseService<
                 PaymentHistoryType.DEDUCTION_MONEY,
                 PaymentHistoryType.DOWN_ROOT_MONEY,
                 PaymentHistoryType.LOAN_MORE_MONEY,
-                PaymentHistoryType.OTHER_MONEY,
+                PaymentHistoryType.OTHER_MONEY_DOWN_ROOT,
+                PaymentHistoryType.OTHER_MONEY_LOAN_MORE,
               ] as string[]
             ).includes(paymentHistory.type),
         )
@@ -1453,7 +1464,7 @@ export class PawnService extends BaseService<
           payNeed: payload.otherMoney,
           startDate: convertPostgresDate(payload.loanDate),
           endDate: convertPostgresDate(payload.loanDate),
-          type: PaymentHistoryType.OTHER_MONEY,
+          type: PaymentHistoryType.OTHER_MONEY_LOAN_MORE,
           paymentStatus: null,
           contractType: ContractType.CAM_DO,
           paymentMethod: pawn.paymentPeriodType,
@@ -1516,7 +1527,10 @@ export class PawnService extends BaseService<
     const { paymentHistories, extendedPeriodHistories } = pawn;
 
     const extendedPeriod: PawnExtendPeriod = {
-      paymentHistories,
+      paymentHistories: paymentHistories.map((paymentHistory) => ({
+        ...paymentHistory,
+        paymentDate: paymentHistory.endDate,
+      })),
       histories: extendedPeriodHistories,
       contractId: pawn.contractId,
     };
@@ -1567,8 +1581,8 @@ export class PawnService extends BaseService<
           paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
       );
 
-      for (let i = 1; i < newPaymentHistories.length; i++) {
-        if (i <= pawn.numOfPayment) {
+      for (let i = 0; i < newPaymentHistories.length; i++) {
+        if (i <= pawn.numOfPayment - 1) {
           continue;
         }
 
@@ -1590,6 +1604,7 @@ export class PawnService extends BaseService<
               {
                 startDate: newPaymentHistory.startDate,
                 endDate: newPaymentHistory.endDate,
+                rowId: newPaymentHistory.rowId,
               },
             );
           } else {
@@ -1607,6 +1622,7 @@ export class PawnService extends BaseService<
               {
                 startDate: newPaymentHistory.startDate,
                 endDate: newPaymentHistory.endDate,
+                rowId: newPaymentHistory.rowId,
               },
             );
           }
