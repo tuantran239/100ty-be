@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { CashType } from 'src/common/interface';
 import { BaseService } from 'src/common/service/base.service';
 import { convertPostgresDate } from 'src/common/utils/time';
 import {
@@ -77,38 +76,5 @@ export class CashService extends BaseService<
 
   retrieveOne(options: FindOneOptions<Cash>): Promise<Cash> {
     return this.cashRepository.findOne(options);
-  }
-
-  async getTotalCash(): Promise<{
-    receipt: { number: number; total: number };
-    payment: { number: number; total: number };
-  }> {
-    const totalReceipt = (await this.cashRepository
-      .createQueryBuilder('cash')
-      .where(`cash.type=:type`, { type: CashType.RECEIPT })
-      .andWhere(`deleted_at is null`)
-      .andWhere(`"isDeductionMoney" is null`)
-      .select(`COUNT(cash.id)`, 'number')
-      .addSelect('SUM(cash.amount)', 'total')
-      .getRawOne()) as { number: number; total: number };
-
-    const totalPayment = (await this.cashRepository
-      .createQueryBuilder('cash')
-      .where(`cash.type=:type`, { type: CashType.PAYMENT })
-      .andWhere(`deleted_at is null`)
-      .select(`COUNT(cash.id)`, 'number')
-      .addSelect('SUM(cash.amount)', 'total')
-      .getRawOne()) as { number: number; total: number };
-
-    return {
-      receipt: {
-        number: parseInt((totalReceipt.number ?? 0) + ''),
-        total: parseInt((totalReceipt.total ?? 0) + ''),
-      },
-      payment: {
-        number: parseInt((totalPayment.number ?? 0) + ''),
-        total: parseInt((totalPayment.total ?? 0) + ''),
-      },
-    };
   }
 }

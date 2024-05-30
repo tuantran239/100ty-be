@@ -757,61 +757,6 @@ export class BatHoService extends BaseService<
     });
   }
 
-  async separateDeductionCashBatHo() {
-    return await this.databaseService.runTransaction(async (repositories) => {
-      const { batHoRepository, cashRepository } = repositories;
-
-      const batHos = await batHoRepository.find({
-        relations: ['customer', 'user', 'paymentHistories'],
-      });
-
-      await Promise.all(
-        batHos.map(async (batHo) => {
-          const cash = await cashRepository.findOne({
-            where: {
-              isContract: true,
-              batHoId: batHo.id,
-              type: CashType.RECEIPT,
-            },
-          });
-
-          const deductionMoney = batHo.paymentHistories.reduce(
-            (total, paymentHistory) => {
-              if (paymentHistory.isDeductionMoney === true) {
-                return total + paymentHistory.payMoney;
-              }
-              return total;
-            },
-            0,
-          );
-
-          const newCashDeduction = await cashRepository.create({
-            staff: batHo?.user?.fullName ?? batHo?.user?.username,
-            traders:
-              getFullName(
-                batHo?.customer?.firstName,
-                batHo?.customer?.lastName,
-              ) ?? '',
-            type: CashType.RECEIPT,
-            createAt: convertPostgresDate(formatDate(batHo.loanDate)),
-            code: generatePrefixNumberId(CASH_CODE_PREFIX),
-            batHoId: batHo.id,
-            isContract: true,
-            contractType: ContractType.BAT_HO,
-            isDeductionMoney: true,
-            amount: deductionMoney,
-          });
-
-          await cashRepository.save(newCashDeduction);
-
-          cash.amount = cash.amount - deductionMoney;
-
-          await cashRepository.save(cash);
-        }),
-      );
-    });
-  }
-
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
   async handleUpdateBatHoDebitStatus() {
     this.logger.log(
