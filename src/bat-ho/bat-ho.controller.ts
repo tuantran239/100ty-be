@@ -20,7 +20,6 @@ import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import {
   CashFilterType,
-  ContractType,
   ResponseData,
   RoleId,
   RoleName,
@@ -29,10 +28,7 @@ import { DebitStatus } from 'src/common/interface/bat-ho';
 import { PaymentStatusHistory } from 'src/common/interface/history';
 import { BatHoQuery } from 'src/common/interface/query';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import {
-  createCashContractPayload,
-  createPaymentHistoriesCash,
-} from 'src/common/utils/cash-payload';
+import { calculateLateAndBadPaymentIcloud } from 'src/common/utils/calculate';
 import {
   mapBatHoResponse,
   mapTransactionHistoryResponse,
@@ -48,8 +44,6 @@ import { CreateBatHoDto } from './dto/create-bat-ho.dto';
 import { ReverseBatHoDto } from './dto/reverse-bat-ho.dto';
 import { SettlementBatHoDto } from './dto/settlement-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
-import { getBatHoStatus } from 'src/common/utils/status';
-import { calculateLateAndBadPaymentIcloud } from 'src/common/utils/calculate';
 
 export const BAT_HO_CODE_PREFIX = 'bh';
 const ENTITY_LOG = 'BatHo';
@@ -333,100 +327,6 @@ export class BatHoController {
     }
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.BAT_HO.RETRIEVE)
-  async getBatHo(@Res() res: Response, @Req() req: Request) {
-    try {
-      const id = req.params.id;
-
-      const batHo = await this.batHoService.retrieveOne({
-        where: [{ id }, { contractId: id }],
-        relations: [
-          'paymentHistories',
-          'customer',
-          'transactionHistories',
-          'transactionHistories.user',
-          'user',
-          'device',
-          'hostServer',
-        ],
-      });
-
-      if (!batHo) {
-        throw new NotFoundException('Không tìm thấy hợp đồng');
-      }
-
-      const paymentHistories = batHo.paymentHistories ?? [];
-
-      const paymentHistoriesResponse: any[] = paymentHistories.map(
-        (paymentHistory) => ({
-          id: paymentHistory.id,
-          rowId: paymentHistory.rowId,
-          paymentStatus: paymentHistory.paymentStatus,
-          startDate: formatDate(paymentHistory.startDate),
-          endDate: formatDate(paymentHistory.endDate),
-          totalPaymentAmount: paymentHistory.payNeed,
-          customerPaymentAmount: paymentHistory.payMoney,
-          payDate: formatDate(paymentHistory.payDate),
-        }),
-      );
-
-      let paidDuration = 0;
-
-      const moneyPaidNumber = paymentHistories.reduce(
-        (total, paymentHistory) => {
-          if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
-            paidDuration = paidDuration + 1;
-            return (total += paymentHistory.payMoney);
-          }
-          return total;
-        },
-        0,
-      );
-
-      batHo.paymentHistories = undefined;
-
-      const transactionHistories = batHo.transactionHistories ?? [];
-
-      const moneyLoan = parseInt(
-        (batHo.revenueReceived / batHo.loanDurationDays).toString(),
-      );
-
-      const responseData: ResponseData = {
-        message: 'success',
-        data: {
-          ...batHo,
-          loanDate: formatDate(batHo.loanDate),
-          moneyPaid: moneyPaidNumber,
-          moneyMustPay: batHo.revenueReceived - moneyPaidNumber,
-          interest:
-            batHo.revenueReceived -
-            batHo.fundedAmount -
-            batHo.deductionDays * moneyLoan -
-            batHo.serviceFee.value,
-          paymentHistories: [...paymentHistoriesResponse],
-          transactionHistories: transactionHistories.map(
-            (transactionHistory) => ({
-              ...(mapTransactionHistoryResponse(transactionHistory) as any)
-                ?.transactionHistory,
-            }),
-          ),
-        },
-        error: null,
-        statusCode: 200,
-      };
-
-      return res.status(200).send(responseData);
-    } catch (error: any) {
-      this.logger.error(
-        { loggerType: 'get', entity: ENTITY_LOG, serverType: 'error' },
-        error,
-      );
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
   @UseGuards(JwtAuthGuard)
   @Delete(RouterUrl.BAT_HO.DELETE)
   async deleteBatHo(@Res() res: Response, @Req() req: Request) {
@@ -434,31 +334,6 @@ export class BatHoController {
       const id = req.params.id;
 
       const result = await this.batHoService.delete(id);
-
-      const responseData: ResponseData = {
-        message: 'success',
-        data: { batHo: result },
-        error: null,
-        statusCode: 200,
-      };
-
-      return res.status(200).send(responseData);
-    } catch (error: any) {
-      this.logger.error(
-        { loggerType: 'delete', entity: ENTITY_LOG, serverType: 'error' },
-        error,
-      );
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Delete(RouterUrl.BAT_HO.REMOVE)
-  async removeBatHo(@Res() res: Response, @Req() req: Request) {
-    try {
-      const id = req.params.id;
-
-      const result = await this.batHoService.remove(id);
 
       const responseData: ResponseData = {
         message: 'success',
@@ -586,31 +461,6 @@ export class BatHoController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(RouterUrl.BAT_HO.CLOSE)
-  async closeBatHo(@Res() res: Response, @Req() req: Request) {
-    try {
-      const id = req.params.id;
-
-      const result = await this.batHoService.update(id, {
-        debitStatus: DebitStatus.COMPLETED as string,
-      });
-
-      await this.batHoService.delete(id);
-
-      const responseData: ResponseData = {
-        message: 'success',
-        data: { batHo: result },
-        error: null,
-        statusCode: 200,
-      };
-
-      return res.status(200).send(responseData);
-    } catch (error) {
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
   @Post(RouterUrl.BAT_HO.CHECK_UPDATE)
   async checkAndUpdateCash(@Res() res: Response) {
     try {
@@ -714,210 +564,6 @@ export class BatHoController {
       return res.status(200).send(responseData);
     } catch (error: any) {
       this.logger.error({ customerMessage: 'Reverse bat ho' }, null);
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('group-cash')
-  async groupCashBatHo(@Res() res: Response) {
-    try {
-      await this.batHoService.groupCashBatHo();
-
-      const responseData: ResponseData = {
-        message: 'success',
-        data: null,
-        error: null,
-        statusCode: 200,
-      };
-
-      return res.status(200).send(responseData);
-    } catch (error: any) {
-      this.logger.error({ customerMessage: 'Group cash bat ho ' }, null);
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('separate-deduction-cash')
-  async separateDeductionCashBatHo(@Res() res: Response) {
-    try {
-      await this.batHoService.separateDeductionCashBatHo();
-
-      const responseData: ResponseData = {
-        message: 'success',
-        data: null,
-        error: null,
-        statusCode: 200,
-      };
-
-      return res.status(200).send(responseData);
-    } catch (error: any) {
-      this.logger.error(
-        { customerMessage: 'Separate deduction cash bat ho ' },
-        null,
-      );
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('/convert-receipt-cash')
-  async convertReceiptCash(@Res() res: Response) {
-    try {
-      await this.databaseService.runTransaction(async (repositories) => {
-        const { batHoRepository, cashRepository } = repositories;
-
-        const batHos = await batHoRepository.find({
-          relations: ['user', 'customer', 'paymentHistories'],
-        });
-
-        for (let i = 0; i < batHos.length; i++) {
-          const batHo = batHos[i];
-
-          const receiptCash = await cashRepository.findOne({
-            where: {
-              batHoId: batHo.id,
-              filterType: CashFilterType.RECEIPT_CONTRACT,
-            },
-          });
-
-          if (!receiptCash) {
-            const newCashReceipt = await cashRepository.create({
-              ...createCashContractPayload(
-                batHo.user,
-                batHo.customer,
-                CashFilterType.RECEIPT_CONTRACT,
-                {
-                  id: batHo.id,
-                  amount: 0,
-                  date: formatDate(batHo.loanDate),
-                  contractType: ContractType.BAT_HO,
-                  contractId: batHo.contractId,
-                },
-              ),
-              paymentHistories: createPaymentHistoriesCash(
-                batHo.paymentHistories,
-              ),
-              contractId: batHo.contractId,
-              contractStatus: batHo.debitStatus,
-            });
-
-            await cashRepository.save(newCashReceipt);
-          }
-        }
-      });
-
-      const responseData: ResponseData = {
-        message: 'success',
-        data: null,
-        error: null,
-        statusCode: 200,
-      };
-
-      return res.status(200).send(responseData);
-    } catch (error: any) {
-      this.logger.error({ customerMessage: 'Convert receipt cash' }, null);
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('/update-status')
-  async updateStatus(@Res() res: Response) {
-    try {
-      await this.databaseService.runTransaction(async (repositories) => {
-        const {
-          batHoRepository,
-          customerRepository,
-          cashRepository,
-          paymentHistoryRepository,
-        } = repositories;
-
-        const batHos = await batHoRepository.find({
-          where: {
-            deleted_at: IsNull(),
-          },
-          relations: ['paymentHistories'],
-        });
-
-        await Promise.all(
-          batHos.map(async (batHo) => {
-            const customer = await customerRepository.findOne({
-              where: { id: batHo.customerId },
-            });
-
-            const status = getBatHoStatus(batHo.paymentHistories ?? []);
-
-            if (
-              status == DebitStatus.BAD_DEBIT ||
-              status == DebitStatus.RISK_DEBIT
-            ) {
-              const debtMoney = batHo.paymentHistories.reduce(
-                (total, paymentHistory) => {
-                  if (
-                    paymentHistory.paymentStatus != PaymentStatusHistory.FINISH
-                  ) {
-                    return total + paymentHistory.payNeed;
-                  }
-                  return total;
-                },
-                0,
-              );
-
-              await customerRepository.update(customer.id, {
-                debtMoney,
-                isDebt: true,
-              });
-            } else {
-              await customerRepository.update(customer.id, {
-                debtMoney: 0,
-                isDebt: false,
-              });
-            }
-
-            await batHoRepository.update(
-              { id: batHo.id },
-              { debitStatus: status },
-            );
-
-            const findPaymentHistories = await paymentHistoryRepository.find({
-              where: { batHoId: batHo.id },
-            });
-
-            const cash = await cashRepository.findOne({
-              where: {
-                batHoId: batHo.id,
-                filterType: CashFilterType.RECEIPT_CONTRACT,
-              },
-            });
-
-            if (cash) {
-              cash.contractStatus = status;
-
-              cash.paymentHistories = createPaymentHistoriesCash(
-                findPaymentHistories ?? [],
-              );
-
-              await cashRepository.save(cash);
-            }
-          }),
-        );
-      });
-
-      const responseData: ResponseData = {
-        message: 'success',
-        data: null,
-        error: null,
-        statusCode: 200,
-      };
-
-      return res.status(200).send(responseData);
-    } catch (error: any) {
-      this.logger.error(
-        { customerMessage: 'Separate deduction cash bat ho ' },
-        null,
-      );
       throw new InternalServerErrorException(error.message);
     }
   }
