@@ -15,10 +15,12 @@ import { JwtService } from '@nestjs/jwt';
 import { ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import IConfig, { JWTConfig } from 'src/common/config/config.interface';
+import { LogActionType } from 'src/common/constant/log';
 import RouterUrl from 'src/common/constant/router';
 import { ResponseData } from 'src/common/interface';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { mapUserResponse } from 'src/common/utils/map';
+import { LogActionService } from 'src/log-action/log-action.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
 import { RoleService } from 'src/role/role.service';
 import { UserService } from 'src/user/user.service';
@@ -26,10 +28,6 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { InitRoleData } from 'src/common/constant/data';
-import { LogActionService } from 'src/log-action/log-action.service';
-import { LogActionType } from 'src/common/constant/log';
-import axios from 'axios';
 
 @ApiTags('Auth')
 @Controller(RouterUrl.AUTH.ROOT)
@@ -57,7 +55,7 @@ export class AuthController {
       );
 
       const user = await this.authService.login(payload);
-      
+
       this.logger.log(
         { customerMessage: 'Login', serverType: 'request' },
         { msg: `Retrieved user: ${JSON.stringify(user)}` },
@@ -84,17 +82,6 @@ export class AuthController {
         { token },
       );
 
-      const userRole = user?.roles[0];
-
-      const roleData = InitRoleData.find((role) => role.name == userRole.name);
-
-      const permissionData = await axios.get(roleData.link, { timeout: 15000 });
-      const permissions = permissionData.data;
-      this.logger.log(
-        { customerMessage: 'Login', serverType: 'request' },
-        { msg: `Retrieved roles: ${JSON.stringify(permissions)}` },
-      );
-
       this.logActionService.create({
         userId: user.id,
         action: LogActionType.LOGIN,
@@ -106,7 +93,11 @@ export class AuthController {
         error: null,
         data: {
           token,
-          ...mapUserResponse(user, user?.roles ?? [], permissions ?? null),
+          ...mapUserResponse(
+            user,
+            user?.roles ?? [],
+            user.roles[0]?.permissions ?? null,
+          ),
         },
         message: 'success',
         statusCode: 200,
@@ -172,16 +163,13 @@ export class AuthController {
         throw new BadRequestException('Không tìm thấy người dùng');
       }
 
-      const userRole = user?.roles[0];
-
-      const roleData = InitRoleData.find((role) => role.name == userRole.name);
-
-      const permissionData = await axios.get(roleData.link, { timeout: 5000 });
-      const permissions = permissionData.data;
-
       const responseData: ResponseData = {
         error: null,
-        data: mapUserResponse(user, user?.roles ?? [], permissions ?? null),
+        data: mapUserResponse(
+          user,
+          user?.roles ?? [],
+          user.roles[0]?.permissions ?? null,
+        ),
         message: 'success',
         statusCode: 200,
       };
