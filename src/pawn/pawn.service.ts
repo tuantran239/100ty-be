@@ -55,6 +55,7 @@ import { SettlementPawnDto } from './dto/settlement-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { Pawn } from './pawn.entity';
 import { ExtendedPeriodConfirmDto } from './dto/extended-period-confirm.dto';
+import { calculateInterestToTodayPawn } from 'src/common/utils/calculate';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -1655,6 +1656,40 @@ export class PawnService extends BaseService<
     await this.updateRevenue(pawn.id);
 
     return true;
+  }
+
+  calculateTotalPricePawn(listPawn: Pawn[]) {
+    let totalLoanAmount = 0;
+    let totalMoneyPaid = 0;
+    let totalMoneyToToday = 0;
+
+    for (let i = 0; i < listPawn.length; i++) {
+      const pawn = listPawn[i];
+      const { paymentHistories } = pawn;
+
+      totalLoanAmount += pawn.loanAmount;
+
+      const moneyPaidNumber = paymentHistories.reduce(
+        (total, paymentHistory) => {
+          if (
+            paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
+            paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
+          ) {
+            return (total += paymentHistory.payMoney);
+          }
+          return total;
+        },
+        0,
+      );
+
+      totalMoneyPaid += moneyPaidNumber;
+
+      const { interestMoneyToday } = calculateInterestToTodayPawn(pawn);
+
+      totalMoneyToToday += interestMoneyToday;
+    }
+
+    return { totalLoanAmount, totalMoneyPaid, totalMoneyToToday };
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
