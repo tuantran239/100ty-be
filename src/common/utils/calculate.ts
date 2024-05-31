@@ -1,7 +1,7 @@
 import { Pawn } from 'src/pawn/pawn.entity';
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { DebitStatus } from '../interface/bat-ho';
-import { PaymentStatusHistory } from '../interface/history';
+import { PaymentHistoryType, PaymentStatusHistory } from '../interface/history';
 import { PawnInterestType } from '../interface/pawn';
 import { convertPostgresDate, formatDate } from './time';
 import { Cash } from 'src/cash/cash.entity';
@@ -205,7 +205,10 @@ export const calculateInterestToTodayPawn = (pawn: Pawn) => {
   const interestMoneyPaid = paymentHistories
     .filter((paymentHistory) => !paymentHistory.isRootMoney)
     .reduce((total, paymentHistory) => {
-      if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
+      if (
+        paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
+        paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
+      ) {
         return total + paymentHistory.payMoney;
       }
 

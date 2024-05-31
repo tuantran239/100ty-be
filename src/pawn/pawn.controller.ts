@@ -253,6 +253,12 @@ export class PawnController {
         order: { created_at: 'ASC' },
       });
 
+      const listPawnData = await this.pawnService.listAndCount({
+        relations: ['customer', 'paymentHistories', 'user', 'assetType'],
+        where: [...where],
+        order: { created_at: 'ASC' },
+      });
+
       const list_pawn: any[] = [];
 
       for (let i = 0; i < data[0].length; i++) {
@@ -266,9 +272,13 @@ export class PawnController {
         }
       }
 
+      const totalMoney = this.pawnService.calculateTotalPricePawn(
+        listPawnData[0] as any[],
+      );
+
       const responseData: ResponseData = {
         message: 'success',
-        data: { list_pawn, total: data[1] },
+        data: { list_pawn, total: data[1], totalMoney },
         error: null,
         statusCode: 200,
       };
