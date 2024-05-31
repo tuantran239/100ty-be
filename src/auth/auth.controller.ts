@@ -1,3 +1,4 @@
+/* eslint-disable prettier/prettier */
 import {
   BadRequestException,
   Body,
@@ -28,6 +29,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { InitRoleData } from 'src/common/constant/data';
 import { LogActionService } from 'src/log-action/log-action.service';
 import { LogActionType } from 'src/common/constant/log';
+import axios from 'axios';
 
 @ApiTags('Auth')
 @Controller(RouterUrl.AUTH.ROOT)
@@ -55,6 +57,11 @@ export class AuthController {
       );
 
       const user = await this.authService.login(payload);
+      
+      this.logger.log(
+        { customerMessage: 'Login', serverType: 'request' },
+        { msg: `Retrieved user: ${JSON.stringify(user)}` },
+      );
 
       if (!user) {
         throw new BadRequestException('Không tìm thấy người dùng');
@@ -67,6 +74,10 @@ export class AuthController {
             this.configService.get<JWTConfig>('jwtConfig').secret ?? 'secret',
         },
       );
+      this.logger.log(
+        { customerMessage: 'Login', serverType: 'request' },
+        { msg: `Gen token: ${JSON.stringify(token)}` },
+      );
 
       this.logger.log(
         { customerMessage: 'Login', serverType: 'response' },
@@ -77,9 +88,12 @@ export class AuthController {
 
       const roleData = InitRoleData.find((role) => role.name == userRole.name);
 
-      const permissionData = await fetch(roleData.link, { method: 'GET' });
-
-      const permissions = await permissionData.json();
+      const permissionData = await axios.get(roleData.link, { timeout: 15000 });
+      const permissions = permissionData.data;
+      this.logger.log(
+        { customerMessage: 'Login', serverType: 'request' },
+        { msg: `Retrieved roles: ${JSON.stringify(permissions)}` },
+      );
 
       this.logActionService.create({
         userId: user.id,
@@ -162,9 +176,8 @@ export class AuthController {
 
       const roleData = InitRoleData.find((role) => role.name == userRole.name);
 
-      const permissionData = await fetch(roleData.link, { method: 'GET' });
-
-      const permissions = await permissionData.json();
+      const permissionData = await axios.get(roleData.link, { timeout: 5000 });
+      const permissions = permissionData.data;
 
       const responseData: ResponseData = {
         error: null,
