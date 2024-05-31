@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InitRoleData } from 'src/common/constant/data';
 import { BaseService } from 'src/common/service/base.service';
-import { UpdateUserDto } from 'src/user/dto/update-user.dto';
 import {
   DataSource,
   DeleteResult,
@@ -11,6 +10,7 @@ import {
   Repository,
 } from 'typeorm';
 import { CreateRoleDto } from './dto/create-role.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 import { Role } from './entities/role.entity';
 import { UserRole } from './entities/user-role.entity';
 
@@ -18,7 +18,7 @@ import { UserRole } from './entities/user-role.entity';
 export class RoleService extends BaseService<
   Role,
   CreateRoleDto,
-  UpdateUserDto
+  UpdateRoleDto
 > {
   protected manager: EntityManager;
   private roleRepository: Repository<Role>;
@@ -138,9 +138,17 @@ export class RoleService extends BaseService<
     throw new Error('Method not implemented.');
   }
 
-  update(id: string, payload: UpdateUserDto): Promise<any> {
-    console.log(id, payload);
-    throw new Error('Method not implemented.');
+  async update(id: string, payload: UpdateRoleDto): Promise<any> {
+    const role = await this.roleRepository.findOne({ where: { id } });
+
+    if (!role) {
+      throw new Error('Role not found');
+    }
+
+    return await this.roleRepository.update(
+      { id },
+      { permissions: payload.permissions },
+    );
   }
 
   delete(id: string): Promise<DeleteResult> {
