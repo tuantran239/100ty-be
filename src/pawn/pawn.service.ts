@@ -509,7 +509,7 @@ export class PawnService extends BaseService<
       id,
     } = pawn;
 
-    let duration = numOfPayment + 1;
+    let duration = numOfPayment;
     let skip = 0;
     let index = 1;
 
