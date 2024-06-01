@@ -12,6 +12,12 @@ export const dataBaseSourceOptions: DataSourceOptions = {
   synchronize: false,
   migrations: ['dist/db/migrations/*{.ts,.js}'],
   entities: ['dist/src/common/database/base.entity.js'],
+  extra: {
+    poolSize: 20,
+    connectionTimeoutMillis: 5000,
+    query_timeout: 2000,
+    statement_timeout: 2000,
+  },
 };
 
 export const dataSourceOptions: DataSourceOptions = {
@@ -24,6 +30,12 @@ export const dataSourceOptions: DataSourceOptions = {
   synchronize: false,
   migrations: ['dist/db/migrations/*{.ts,.js}'],
   entities: ['dist/**/*.entity{.ts,.js}'],
+  extra: {
+    poolSize: 20,
+    connectionTimeoutMillis: 5000,
+    query_timeout: 2000,
+    statement_timeout: 2000,
+  },
 };
 
 export default new DataSource(dataBaseSourceOptions);

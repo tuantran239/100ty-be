@@ -27,6 +27,8 @@ export class AuthService {
       relations: ['roles'],
     });
 
+    console.log(user);
+
     if (!user) {
       throw new BadRequestException(
         this.i18n.t('errors.auth.username_email_not_match', {
