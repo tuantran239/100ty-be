@@ -6,12 +6,14 @@ import IConfig, { JWTConfig } from 'src/common/config/config.interface';
 
 import 'dotenv/config';
 import { UserService } from 'src/user/user.service';
+import { CacheService } from 'src/cache/cache.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly configService: ConfigService<IConfig>,
     private userService: UserService,
+    private cacheService: CacheService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -21,10 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const user = await this.userService.retrieveOne({
-      where: { id: payload.userId },
-      relations: ['roles'],
-    });
+    const user = await this.cacheService.getUser(payload.username);
 
     if (!user) {
       throw new Error(`Người dùng không tồn tại.`);
