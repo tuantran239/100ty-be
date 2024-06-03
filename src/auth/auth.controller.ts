@@ -28,6 +28,8 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { CacheService } from 'src/cache/cache.service';
+import { User } from 'src/user/user.entity';
 
 @ApiTags('Auth')
 @Controller(RouterUrl.AUTH.ROOT)
@@ -40,6 +42,7 @@ export class AuthController {
     private roleService: RoleService,
     private logger: LoggerServerService,
     private logActionService: LogActionService,
+    private cacheService: CacheService,
   ) {}
 
   @Post(RouterUrl.AUTH.LOGIN)
@@ -184,6 +187,10 @@ export class AuthController {
   @Post(RouterUrl.AUTH.LOGOUT)
   async logout(@Res() res: Response, @Req() req) {
     try {
+      const me = req.user as User;
+
+      await this.cacheService.removeUser(me?.username ?? '');
+
       const responseData: ResponseData = {
         error: null,
         data: req.user,

@@ -15,10 +15,14 @@ import { ResponseData } from 'src/common/interface';
 import { RoleService } from './role.service';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { CacheService } from 'src/cache/cache.service';
 
 @Controller(RouterUrl.ROLE.ROOT)
 export class RoleController {
-  constructor(private roleService: RoleService) {}
+  constructor(
+    private roleService: RoleService,
+    private cacheService: CacheService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Get(RouterUrl.ROLE.LIST)
@@ -50,6 +54,8 @@ export class RoleController {
       const id = req.params.id;
 
       const roles = await this.roleService.update(id, payload);
+
+      await this.cacheService.deleteUser();
 
       const responseData: ResponseData = {
         message: 'success',

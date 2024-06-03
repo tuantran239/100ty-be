@@ -6,7 +6,7 @@ export const getContentTransactionHistory = (
 ) => {
   switch (type) {
     case TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT:
-      return `Giải ngân hợp hợp đồng mới ${contractId}`;
+      return `Giải ngân hợp đồng mới ${contractId}`;
     case TransactionHistoryType.PAYMENT:
       return `Đóng tiền lãi hợp đồng ${contractId}`;
     case TransactionHistoryType.DEDUCTION_MONEY:

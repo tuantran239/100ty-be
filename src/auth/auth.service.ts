@@ -8,6 +8,7 @@ import { I18nContext, I18nService } from 'nestjs-i18n';
 import { RegisterDto } from './dto/register.dto';
 import { RoleService } from 'src/role/role.service';
 import { RoleName } from 'src/common/interface';
+import { CacheService } from 'src/cache/cache.service';
 
 @Injectable()
 export class AuthService {
@@ -15,6 +16,7 @@ export class AuthService {
     private userService: UserService,
     private readonly i18n: I18nService,
     private roleService: RoleService,
+    private cacheService: CacheService,
   ) {}
 
   async hashPassword() {}
@@ -22,12 +24,16 @@ export class AuthService {
   async login(payload: LoginDto): Promise<User> {
     const { username, password } = payload;
 
-    const user = await this.userService.retrieveOne({
-      where: [{ username: username }, { username }],
-      relations: ['roles'],
-    });
+    let user: User | undefined = undefined;
 
-    console.log(user);
+    user = await this.cacheService.getUser(username);
+
+    if (!user) {
+      user = await this.userService.retrieveOne({
+        where: [{ username: username }, { username }],
+        relations: ['roles'],
+      });
+    }
 
     if (!user) {
       throw new BadRequestException(
@@ -46,6 +52,8 @@ export class AuthService {
         }),
       );
     }
+
+    await this.cacheService.setUser(user);
 
     return user;
   }
