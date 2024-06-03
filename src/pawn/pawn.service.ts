@@ -23,7 +23,10 @@ import {
   createPaymentHistoriesCash,
 } from 'src/common/utils/cash-payload';
 import { getFullName } from 'src/common/utils/get-full-name';
-import { getContentTransactionHistory } from 'src/common/utils/history';
+import {
+  calculateTotalMoneyPaymentHistory,
+  getContentTransactionHistory,
+} from 'src/common/utils/history';
 import {
   calculateTotalDayRangeDate,
   convertPostgresDate,
@@ -852,6 +855,10 @@ export class PawnService extends BaseService<
     const settlementMoney =
       rootPaymentHistory?.payNeed + interestMoneyTotal - moneyPaid;
 
+    const totalMoney = calculateTotalMoneyPaymentHistory(
+      paymentHistories ?? [],
+    );
+
     const settlementPawn: SettlementPawn = {
       paymentHistories: paymentHistories.map((paymentHistory) => ({
         ...paymentHistory,
@@ -879,6 +886,7 @@ export class PawnService extends BaseService<
         ),
         serviceFee: (pawn.serviceFee ?? []) as ServiceFee[],
       },
+      totalMoney,
     };
 
     return settlementPawn;
@@ -945,6 +953,10 @@ export class PawnService extends BaseService<
 
     const settlementMoney = loanAmount + interestMoneyTotal - moneyPaid;
 
+    const totalMoney = calculateTotalMoneyPaymentHistory(
+      paymentHistories ?? [],
+    );
+
     const settlementPawn: SettlementPawn = {
       paymentHistories,
       contractInfo: {
@@ -969,6 +981,7 @@ export class PawnService extends BaseService<
         ),
         serviceFee: (pawn.serviceFee ?? []) as ServiceFee[],
       },
+      totalMoney,
     };
 
     return settlementPawn;
@@ -1122,6 +1135,10 @@ export class PawnService extends BaseService<
         note: transactionHistory.note,
       }));
 
+    const totalMoney = calculateTotalMoneyPaymentHistory(
+      paymentHistories ?? [],
+    );
+
     const paymentDownRootMoney: PaymentDownRootMoney = {
       paymentHistories: paymentHistories.map((paymentHistory) => ({
         ...paymentHistory,
@@ -1143,6 +1160,7 @@ export class PawnService extends BaseService<
         interestMoney: pawn.interestMoney,
       },
       customer: pawn.customer ?? {},
+      totalMoney,
     };
 
     return paymentDownRootMoney;
@@ -1342,6 +1360,10 @@ export class PawnService extends BaseService<
         note: transactionHistory.note,
       }));
 
+    const totalMoney = calculateTotalMoneyPaymentHistory(
+      paymentHistories ?? [],
+    );
+
     const paymentDownRootMoney: LoanMoreMoney = {
       paymentHistories: paymentHistories.map((paymentHistory) => ({
         ...paymentHistory,
@@ -1363,6 +1385,7 @@ export class PawnService extends BaseService<
         interestMoney: pawn.interestMoney,
       },
       customer: pawn.customer ?? {},
+      totalMoney,
     };
 
     return paymentDownRootMoney;
@@ -1535,6 +1558,10 @@ export class PawnService extends BaseService<
 
     const { paymentHistories, extendedPeriodHistories } = pawn;
 
+    const totalMoney = calculateTotalMoneyPaymentHistory(
+      paymentHistories ?? [],
+    );
+
     const extendedPeriod: PawnExtendPeriod = {
       paymentHistories: paymentHistories.map((paymentHistory) => ({
         ...paymentHistory,
@@ -1542,6 +1569,7 @@ export class PawnService extends BaseService<
       })),
       histories: extendedPeriodHistories,
       contractId: pawn.contractId,
+      totalMoney,
     };
 
     return extendedPeriod;
