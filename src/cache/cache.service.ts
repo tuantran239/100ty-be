@@ -11,23 +11,25 @@ export class CacheService {
   async setUser(userInput: User) {
     const key = 'user';
 
-    const users = ((await this.cacheManager.get(key)) as any[]) ?? [];
+    const users = await this.cacheManager.get(key);
+
+    const usersArr = (users as any[]) ?? [];
 
     if (users) {
-      const existUser = users.find(
+      const existUser = usersArr.find(
         (user) => JSON.parse(user).id === userInput.id,
       );
       if (!existUser) {
         await this.cacheManager.set(
           key,
-          users.push(JSON.stringify(userInput)),
+          usersArr.push(JSON.stringify(userInput)),
           CacheTime.AUTH,
         );
       }
     } else {
       await this.cacheManager.set(
         key,
-        [JSON.stringify(userInput)],
+        [...[JSON.stringify(userInput)]],
         CacheTime.AUTH,
       );
     }
@@ -38,7 +40,9 @@ export class CacheService {
 
     const users = ((await this.cacheManager.get(key)) as any[]) ?? [];
 
-    const usersData = users.map((user) => JSON.parse(user));
+    const usersArr = (users as any[]) ?? [];
+
+    const usersData = usersArr.map((user) => JSON.parse(user));
 
     return usersData.find((user) => user.username === username);
   }
@@ -53,12 +57,14 @@ export class CacheService {
 
     const users = ((await this.cacheManager.get(key)) as any[]) ?? [];
 
-    const existUserIndex = users.findIndex(
+    const usersArr = (users as any[]) ?? [];
+
+    const existUserIndex = usersArr.findIndex(
       (user) => JSON.parse(user).username === username,
     );
 
     if (existUserIndex !== -1) {
-      users[existUserIndex] = undefined;
+      usersArr[existUserIndex] = undefined;
       await this.cacheManager.set(key, users, CacheTime.AUTH);
     }
   }
