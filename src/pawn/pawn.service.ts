@@ -1389,6 +1389,7 @@ export class PawnService extends BaseService<
         paymentHistoryRepository,
         transactionHistoryRepository,
         cashRepository,
+        pawnRepository,
       } = repositories;
 
       const paymentHistories = await paymentHistoryRepository.find({
@@ -1507,6 +1508,11 @@ export class PawnService extends BaseService<
       });
 
       await cashRepository.save(newCash);
+
+      await pawnRepository.update(
+        { id: pawn.id },
+        { loanAmount: pawn.loanAmount + payload.loanMoney },
+      );
     });
 
     await this.updateRevenue(pawn.id);
