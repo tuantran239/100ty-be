@@ -43,6 +43,7 @@ import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { PawnService } from './pawn.service';
 import { LoanMoreMoneyDto } from './dto/loan-more-money.dto';
 import { ExtendedPeriodConfirmDto } from './dto/extended-period-confirm.dto';
+import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
 
 const ENTITY_LOG = 'Pawn';
 
@@ -319,6 +320,10 @@ export class PawnController {
 
       const paymentHistories = pawn.paymentHistories ?? [];
 
+      const totalMoney = calculateTotalMoneyPaymentHistory(
+        paymentHistories ?? [],
+      );
+
       const paymentHistoriesResponse: any[] = paymentHistories
         .sort(
           (p1, p2) =>
@@ -386,6 +391,7 @@ export class PawnController {
           totalInterestMoney: pawn.revenueReceived - pawn.loanAmount,
           interestDayToday,
           interestMoneyToday,
+          totalMoney,
         },
         error: null,
         statusCode: 200,

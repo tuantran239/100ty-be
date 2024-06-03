@@ -1,4 +1,8 @@
-import { TransactionHistoryType } from '../interface/history';
+import {
+  PaymentStatusHistory,
+  TransactionHistoryType,
+} from '../interface/history';
+import { TotalMoneyPaymentHistory } from '../interface/pawn';
 
 export const getContentTransactionHistory = (
   type: string,
@@ -27,4 +31,30 @@ export const getNoteTransactionHistory = (type: string, startDate?: string) => {
     return `${startDate}`;
   }
   return '';
+};
+
+export const calculateTotalMoneyPaymentHistory = (
+  paymentHistories: any[],
+): TotalMoneyPaymentHistory => {
+  const totalMoney: TotalMoneyPaymentHistory = {
+    totalMoneyMustPay: 0,
+    totalMoneyPaid: 0,
+  };
+
+  totalMoney.totalMoneyMustPay = paymentHistories.reduce(
+    (total, paymentHistory) => total + paymentHistory.payNeed,
+    0,
+  );
+
+  totalMoney.totalMoneyPaid = paymentHistories.reduce(
+    (total, paymentHistory) => {
+      if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
+        return total + paymentHistory.payMoney;
+      }
+      return total;
+    },
+    0,
+  );
+
+  return totalMoney;
 };

@@ -24,6 +24,11 @@ export enum AssetTypeStatus {
   OFF = 'off',
 }
 
+export interface TotalMoneyPaymentHistory {
+  totalMoneyPaid: number;
+  totalMoneyMustPay: number;
+}
+
 export interface SettlementPawnContractInfo {
   contractId: string;
   loanAmount: number;
@@ -49,6 +54,7 @@ export interface SettlementPawn {
   paymentHistories: any[];
   contractInfo: SettlementPawnContractInfo;
   settlementInfo: SettlementPawnInfo;
+  totalMoney: TotalMoneyPaymentHistory;
 }
 
 export interface PaymentDownRootMoneyHistory {
@@ -76,6 +82,7 @@ export interface PaymentDownRootMoney {
   transactionHistories: PaymentDownRootMoneyHistory[];
   contractInfo: PaymentDownRootContractInfo;
   customer: Customer | any;
+  totalMoney: TotalMoneyPaymentHistory;
 }
 
 export interface LoanMoreMoneyHistory {
@@ -103,10 +110,12 @@ export interface LoanMoreMoney {
   transactionHistories: LoanMoreMoneyHistory[];
   contractInfo: LoanMoreMoneyContractInfo;
   customer: Customer | any;
+  totalMoney: TotalMoneyPaymentHistory;
 }
 
 export interface PawnExtendPeriod {
   paymentHistories: any[];
   histories: ExtendedPeriodHistory[];
   contractId: string;
+  totalMoney: TotalMoneyPaymentHistory;
 }

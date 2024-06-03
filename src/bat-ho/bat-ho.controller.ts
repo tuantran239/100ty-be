@@ -44,6 +44,7 @@ import { CreateBatHoDto } from './dto/create-bat-ho.dto';
 import { ReverseBatHoDto } from './dto/reverse-bat-ho.dto';
 import { SettlementBatHoDto } from './dto/settlement-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
+import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
 
 export const BAT_HO_CODE_PREFIX = 'bh';
 const ENTITY_LOG = 'BatHo';
@@ -378,6 +379,10 @@ export class BatHoController {
 
       const paymentHistories = batHo.paymentHistories ?? [];
 
+      const totalMoney = calculateTotalMoneyPaymentHistory(
+        paymentHistories ?? [],
+      );
+
       const paymentHistoriesResponse: any[] = paymentHistories.map(
         (paymentHistory) => ({
           id: paymentHistory.id,
@@ -445,6 +450,7 @@ export class BatHoController {
           latePaymentDay,
           latePaymentMoney,
           badDebitMoney,
+          totalMoney,
         },
         error: null,
         statusCode: 200,
