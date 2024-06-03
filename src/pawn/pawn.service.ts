@@ -183,10 +183,14 @@ export class PawnService extends BaseService<
           0,
         );
 
+        const lastPaymentHistory =
+          newPaymentHistories[newPaymentHistories.length - 1];
+
         await pawnRepository.update(
           { id: newPawn.id },
           {
             revenueReceived,
+            finishDate: lastPaymentHistory.endDate,
           },
         );
 
