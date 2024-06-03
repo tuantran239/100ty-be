@@ -47,6 +47,9 @@ export class Pawn extends SoftDeletableEntity {
   loanDate: string;
 
   @Column()
+  finishDate: string;
+
+  @Column()
   settlementDate?: string;
 
   @Column()

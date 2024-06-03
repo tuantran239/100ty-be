@@ -11,7 +11,7 @@ export class CacheService {
   async setUser(userInput: User) {
     const key = 'user';
 
-    const users = (await this.cacheManager.get(key)) as any[];
+    const users = ((await this.cacheManager.get(key)) as any[]) ?? [];
 
     if (users) {
       const existUser = users.find(
