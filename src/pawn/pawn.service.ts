@@ -504,6 +504,8 @@ export class PawnService extends BaseService<
     let skip = 0;
     let index = 1;
 
+    console.log(numOfPayment);
+
     const methodType =
       paymentPeriodType === PawnPaymentPeriodType.MOTH ||
       paymentPeriodType === PawnPaymentPeriodType.REGULAR_MOTH
@@ -1173,6 +1175,7 @@ export class PawnService extends BaseService<
         paymentHistoryRepository,
         transactionHistoryRepository,
         cashRepository,
+        pawnRepository,
       } = repositories;
 
       const paymentHistories = await paymentHistoryRepository.find({
@@ -1181,11 +1184,6 @@ export class PawnService extends BaseService<
           paymentStatus: Or(Equal(PaymentStatusHistory.UNFINISH), IsNull()),
         },
       });
-
-      console.log(
-        paymentHistories.find((paymentHistory) => paymentHistory.isRootMoney)
-          ?.payNeed,
-      );
 
       const rootMoney =
         (paymentHistories.find((paymentHistory) => paymentHistory.isRootMoney)
@@ -1298,6 +1296,11 @@ export class PawnService extends BaseService<
       });
 
       await cashRepository.save(newCash);
+
+      await pawnRepository.update(
+        { id: pawn.id },
+        { loanAmount: pawn.loanAmount - payload.paymentMoney },
+      );
     });
 
     await this.updateRevenue(pawn.id);
@@ -1587,12 +1590,18 @@ export class PawnService extends BaseService<
           paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
       );
 
-      for (let i = 0; i < newPaymentHistories.length; i++) {
-        if (i <= pawn.numOfPayment - 1) {
+      const sortNewPaymentHistories = newPaymentHistories.sort(
+        (p1, p2) => p1.rowId - p2.rowId,
+      );
+
+      const countNumOfPayment = pawn.numOfPayment - 1;
+
+      for (let i = 0; i < sortNewPaymentHistories.length; i++) {
+        if (i < countNumOfPayment) {
           continue;
         }
 
-        const newPaymentHistory = newPaymentHistories[i];
+        const newPaymentHistory = sortNewPaymentHistories[i];
 
         if (
           newPaymentHistory.type !== PaymentHistoryType.ROOT_MONEY &&
