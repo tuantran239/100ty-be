@@ -108,8 +108,16 @@ export class CustomerController {
         where.push({ ...query, personalID: getSearch(search, 'both') });
         where.push({ ...query, phoneNumber: getSearch(search, 'both') });
       } else if (search && search.trim().length > 0) {
-        where.push({ ...query, firstName: getSearch(search, 'both') });
-        where.push({ ...query, lastName: getSearch(search, 'both') });
+        const nameSplit = search.split(' ');
+
+        for (let i = 0; i < nameSplit.length; i++) {
+          const name = nameSplit[i];
+          where.push({
+            ...query,
+            firstName: getSearch(name, 'both'),
+          });
+          where.push({ ...query, lastName: getSearch(name, 'both') });
+        }
       } else {
         where.push({ ...query });
       }
