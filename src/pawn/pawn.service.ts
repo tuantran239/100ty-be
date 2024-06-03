@@ -140,19 +140,6 @@ export class PawnService extends BaseService<
           throw new BadRequestException('Mã hợp đồng đã tồn tại.');
         }
 
-        const pawnNotCompleted = await pawnRepository.findOne({
-          where: {
-            customerId: payloadData.customerId,
-            debitStatus: Not(DebitStatus.COMPLETED),
-          },
-        });
-
-        if (pawnNotCompleted) {
-          throw new BadRequestException(
-            'Khách hàng còn hợp đồng chưa trả hết.',
-          );
-        }
-
         let newPawn = await pawnRepository.create({
           ...payloadData,
           userId,

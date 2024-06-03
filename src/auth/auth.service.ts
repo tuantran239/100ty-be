@@ -31,6 +31,9 @@ export class AuthService {
       relations: ['roles'],
     });
 
+    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>> query user >>>>>>>>>>>>>>>');
+    console.log(user);
+
     if (!user) {
       throw new BadRequestException(
         this.i18n.t('errors.auth.username_email_not_match', {
@@ -38,6 +41,8 @@ export class AuthService {
         }),
       );
     }
+
+    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>> user exist >>>>>>>>>>>>>>>');
 
     const isMatchPassword = await bcrypt.compare(password, user.password);
 
@@ -48,6 +53,8 @@ export class AuthService {
         }),
       );
     }
+
+    console.log('>>>>>>>>>>>>>>>>>>>>>>>>>>>>> password match >>>>>>>>>>>>>>>');
 
     return user;
   }
