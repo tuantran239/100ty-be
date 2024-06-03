@@ -26,14 +26,10 @@ export class AuthService {
 
     let user: User | undefined = undefined;
 
-    user = await this.cacheService.getUser(username);
-
-    if (!user) {
-      user = await this.userService.retrieveOne({
-        where: [{ username: username }, { username }],
-        relations: ['roles'],
-      });
-    }
+    user = await this.userService.retrieveOne({
+      where: [{ username: username }, { username }],
+      relations: ['roles'],
+    });
 
     if (!user) {
       throw new BadRequestException(
@@ -52,8 +48,6 @@ export class AuthService {
         }),
       );
     }
-
-    await this.cacheService.setUser(user);
 
     return user;
   }

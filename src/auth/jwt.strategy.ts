@@ -23,7 +23,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const user = await this.cacheService.getUser(payload.username);
+    const user = await this.userService.retrieveOne({
+      where: { id: payload.userId },
+      relations: ['roles'],
+    });
 
     if (!user) {
       throw new Error(`Người dùng không tồn tại.`);

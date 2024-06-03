@@ -55,8 +55,6 @@ export class RoleController {
 
       const roles = await this.roleService.update(id, payload);
 
-      await this.cacheService.deleteUser();
-
       const responseData: ResponseData = {
         message: 'success',
         data: { roles },

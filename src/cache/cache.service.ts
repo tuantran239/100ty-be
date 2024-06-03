@@ -13,16 +13,16 @@ export class CacheService {
 
     const users = await this.cacheManager.get(key);
 
-    const usersArr = (users as any[]) ?? [];
+    const usersArr = typeof users === 'number' ? [] : (users as any[]);
 
     if (users) {
-      const existUser = usersArr.find(
+      const existUser = usersArr?.find(
         (user) => JSON.parse(user).id === userInput.id,
       );
       if (!existUser) {
         await this.cacheManager.set(
           key,
-          usersArr.push(JSON.stringify(userInput)),
+          usersArr?.push(JSON.stringify(userInput)),
           CacheTime.AUTH,
         );
       }
@@ -40,11 +40,11 @@ export class CacheService {
 
     const users = ((await this.cacheManager.get(key)) as any[]) ?? [];
 
-    const usersArr = (users as any[]) ?? [];
+    const usersArr = typeof users === 'number' ? [] : (users as any[]);
 
-    const usersData = usersArr.map((user) => JSON.parse(user));
+    const usersData = usersArr?.map((user) => JSON.parse(user));
 
-    return usersData.find((user) => user.username === username);
+    return usersData?.find((user) => user.username === username);
   }
 
   async deleteUser() {
@@ -57,9 +57,9 @@ export class CacheService {
 
     const users = ((await this.cacheManager.get(key)) as any[]) ?? [];
 
-    const usersArr = (users as any[]) ?? [];
+    const usersArr = typeof users === 'number' ? [] : (users as any[]);
 
-    const existUserIndex = usersArr.findIndex(
+    const existUserIndex = usersArr?.findIndex(
       (user) => JSON.parse(user).username === username,
     );
 
