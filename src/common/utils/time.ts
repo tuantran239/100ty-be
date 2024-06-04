@@ -198,7 +198,9 @@ export const calculateTotalDayRangeDate = (startDate: Date, endDate: Date) => {
 
   const timeOneDay = 24 * 60 * 60 * 1000;
 
-  return Math.round((endDateTime - startDateTime) / timeOneDay);
+  const rangeDay = Math.round((endDateTime - startDateTime) / timeOneDay);
+
+  return rangeDay === 0 ? 1 : rangeDay;
 };
 
 export const getTodayNotTimeZone = () => {
