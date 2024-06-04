@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
@@ -31,7 +36,7 @@ export class DatabaseTokenGuard implements CanActivate {
 
       return isMatch;
     } catch (error) {
-      throw new Error(error.message);
+      throw new InternalServerErrorException(error.message);
     }
   }
 }

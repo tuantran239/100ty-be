@@ -832,7 +832,7 @@ export class PawnService extends BaseService<
     const today = getTodayNotTimeZone();
 
     const totalDayToToday = calculateTotalDayRangeDate(
-      new Date(loanDate),
+      new Date(new Date(loanDate).setHours(0, 0, 0, 0)),
       today,
     );
 
@@ -1026,7 +1026,7 @@ export class PawnService extends BaseService<
     );
 
     const totalDayToToday = calculateTotalDayRangeDate(
-      new Date(paymentDate),
+      new Date(convertPostgresDate(paymentDate)),
       today,
     );
 
@@ -1043,6 +1043,8 @@ export class PawnService extends BaseService<
     }, 0);
 
     const settlementMoneyExpected = loanAmount + interestMoneyTotal - moneyPaid;
+
+    console.log(settlementMoneyExpected);
 
     if (settlementMoney < settlementMoneyExpected) {
       throw new Error(`Số tiền đóng không được nhỏ hơn số tiền còn phải thu`);

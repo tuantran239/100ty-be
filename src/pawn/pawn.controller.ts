@@ -44,6 +44,7 @@ import { PawnService } from './pawn.service';
 import { LoanMoreMoneyDto } from './dto/loan-more-money.dto';
 import { ExtendedPeriodConfirmDto } from './dto/extended-period-confirm.dto';
 import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
+import { ContractCompleteGuard } from 'src/common/guard/contract-completed.guard';
 
 const ENTITY_LOG = 'Pawn';
 
@@ -535,7 +536,7 @@ export class PawnController {
     }
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(RouterUrl.PAWN.SETTLEMENT_CONFIRM)
   async settlementConfirm(
@@ -591,7 +592,7 @@ export class PawnController {
     }
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(RouterUrl.PAWN.PAYMENT_DOWN_CONFIRM)
   async paymentDownRootMoneyConfirm(
@@ -650,7 +651,7 @@ export class PawnController {
     }
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(RouterUrl.PAWN.LOAN_MORE_CONFIRM)
   async loanMoreMoneyConfirm(
@@ -706,7 +707,7 @@ export class PawnController {
     }
   }
 
-  @UseGuards(JwtAuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(RouterUrl.PAWN.EXTENDED_PERIOD_CONFIRM)
   async extendedPeriodConfirm(
