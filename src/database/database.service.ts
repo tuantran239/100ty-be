@@ -15,6 +15,7 @@ import { User } from 'src/user/user.entity';
 import { DataSource, Repository } from 'typeorm';
 import { DeleteDataDto } from './dto/delete-data.dto';
 import { ExtendedPeriodHistory } from 'src/extended-period-history/extended-period-history.entity';
+import { LogAction } from 'src/log-action/log-action.entity';
 
 export interface DataSourceRepository {
   batHoRepository: Repository<BatHo>;
@@ -31,6 +32,7 @@ export interface DataSourceRepository {
   assetTypeRepository: Repository<AssetType>;
   assetPropertyRepository: Repository<AssetProperty>;
   extendedPeriodHistory: Repository<ExtendedPeriodHistory>;
+  logAction: Repository<LogAction>;
 }
 
 @Injectable()
@@ -58,6 +60,7 @@ export class DatabaseService {
       extendedPeriodHistory: this.dataSource.manager.getRepository(
         ExtendedPeriodHistory,
       ),
+      logAction: this.dataSource.manager.getRepository(LogAction),
     };
   }
 
@@ -87,6 +90,7 @@ export class DatabaseService {
       extendedPeriodHistory: queryRunner.manager.getRepository(
         ExtendedPeriodHistory,
       ),
+      logAction: queryRunner.manager.getRepository(LogAction),
     };
 
     try {

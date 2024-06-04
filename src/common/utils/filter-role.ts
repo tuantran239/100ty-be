@@ -9,7 +9,7 @@ export const filterRole = (me: User) => {
   if (role.id === RoleId.ADMIN) {
     user = [{ id: me.id }, { managerId: me.id }];
   } else if (role.id === RoleId.USER) {
-    user = { id: user.id };
+    user = { id: me.id };
   }
 
   return user;

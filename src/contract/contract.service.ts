@@ -10,10 +10,10 @@ import {
 } from 'src/common/utils/calculate';
 import { createPaymentHistoriesCash } from 'src/common/utils/cash-payload';
 import { getBatHoStatus, getPawnStatus } from 'src/common/utils/status';
-import { formatDate } from 'src/common/utils/time';
+import { calculateRangeTime, formatDate } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import { Pawn } from 'src/pawn/pawn.entity';
-import { DataSource, Equal, FindManyOptions, IsNull } from 'typeorm';
+import { Between, DataSource, Equal, FindManyOptions, IsNull } from 'typeorm';
 
 @Injectable()
 export class ContractService {
@@ -22,15 +22,12 @@ export class ContractService {
     private databaseService: DatabaseService,
   ) {}
 
-  async listContractIcloud(
-    options: FindManyOptions<BatHo>,
-  ): Promise<Contract[]> {
-    const { batHoRepository } = this.databaseService.getRepositories();
+  private mapContractData({ icloud, pawn }: { icloud?: BatHo; pawn?: Pawn }) {
+    let contract: Contract;
 
-    const iClouds = await batHoRepository.find(options);
-
-    const icloudContracts = iClouds.map((icloud) => {
+    if (icloud) {
       const paymentHistories = icloud.paymentHistories ?? [];
+
       const { latePaymentDay, latePaymentMoney, badDebitMoney } =
         calculateLateAndBadPaymentIcloud(
           paymentHistories ?? [],
@@ -54,8 +51,8 @@ export class ContractService {
         0,
       );
 
-      return {
-        paymentHistories,
+      contract = {
+        paymentHistories: paymentHistories ?? [],
         customer: icloud.customer,
         user: icloud.user,
         contractId: icloud.contractId,
@@ -73,18 +70,8 @@ export class ContractService {
         contractType: ContractType.BAT_HO,
         disbursementMoney: icloud.fundedAmount,
         deductionMoney,
-      } as Contract;
-    });
-
-    return icloudContracts;
-  }
-
-  async listContractPawn(options: FindManyOptions<Pawn>): Promise<Contract[]> {
-    const { pawnRepository } = this.databaseService.getRepositories();
-
-    const pawns = await pawnRepository.find(options);
-
-    const pawnContracts = pawns.map((pawn) => {
+      };
+    } else if (pawn) {
       const paymentHistories = pawn.paymentHistories ?? [];
       const { latePaymentPeriod, latePaymentMoney, badDebitMoney } =
         calculateLateAndBadPaymentPawn(
@@ -109,7 +96,7 @@ export class ContractService {
         0,
       );
 
-      return {
+      contract = {
         paymentHistories,
         customer: pawn.customer,
         user: pawn.user,
@@ -128,7 +115,33 @@ export class ContractService {
         contractType: ContractType.CAM_DO,
         deductionMoney,
         disbursementMoney: pawn.loanAmount,
-      } as Contract;
+      };
+    }
+
+    return contract;
+  }
+
+  async listContractIcloud(
+    options: FindManyOptions<BatHo>,
+  ): Promise<Contract[]> {
+    const { batHoRepository } = this.databaseService.getRepositories();
+
+    const iClouds = await batHoRepository.find(options);
+
+    const icloudContracts = iClouds.map((icloud) => {
+      return this.mapContractData({ icloud });
+    });
+
+    return icloudContracts;
+  }
+
+  async listContractPawn(options: FindManyOptions<Pawn>): Promise<Contract[]> {
+    const { pawnRepository } = this.databaseService.getRepositories();
+
+    const pawns = await pawnRepository.find(options);
+
+    const pawnContracts = pawns.map((pawn) => {
+      return this.mapContractData({ pawn });
     });
 
     return pawnContracts;
@@ -379,5 +392,86 @@ export class ContractService {
     }
 
     return { updated: `${updated}/${total}` };
+  }
+
+  async listNewContractToday() {
+    const today = new Date();
+
+    const relations = [
+      'paymentHistories',
+      'transactionHistories',
+      'user',
+      'customer',
+    ];
+
+    const { fromDate, toDate } = calculateRangeTime(
+      {
+        day: today.getDate(),
+        month: today.getMonth() + 1,
+        year: today.getFullYear(),
+      },
+      'day',
+    );
+
+    return await this.listContract(undefined, {
+      where: { created_at: Between(fromDate, toDate) },
+      relations,
+    });
+  }
+
+  async summarizeContractAmounts(options?: FindManyOptions<any>) {
+    const relations = [
+      'paymentHistories',
+      'transactionHistories',
+      'user',
+      'customer',
+    ];
+
+    const contracts = await this.listContract(undefined, {
+      ...options,
+      relations,
+    });
+
+    const disbursementMoneyTotal = contracts.reduce(
+      (total, contract) => total + contract.disbursementMoney,
+      0,
+    );
+
+    return { disbursementMoneyTotal };
+  }
+
+  async listContractMustReceiptRangeTime(
+    fromDate: string,
+    toDate: string,
+    user?: any,
+  ) {
+    const relations = [
+      'paymentHistories',
+      'transactionHistories',
+      'user',
+      'customer',
+    ];
+
+    const pawnContracts = await this.listContractPawn({
+      where: {
+        user,
+        paymentHistories: {
+          endDate: Between(fromDate, toDate),
+        },
+      },
+      relations,
+    });
+
+    const icloudContracts = await this.listContractIcloud({
+      where: {
+        user,
+        paymentHistories: {
+          startDate: Between(fromDate, toDate),
+        },
+      },
+      relations,
+    });
+
+    return [...pawnContracts, ...icloudContracts];
   }
 }

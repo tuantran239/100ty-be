@@ -79,3 +79,67 @@ export interface StatisticContractBaseQuery {
   search?: string;
   day?: number;
 }
+
+export interface OverViewHomeToday {
+  date: string;
+  transactionsToday: number;
+  loanToday: {
+    contracts: number;
+    amount: number;
+  };
+  loanReceiptToday: {
+    contracts: number;
+    amount: number;
+  };
+  expectedReceiptToday: {
+    contracts: number;
+    amount: number;
+  };
+  remainingFunds: number;
+}
+
+export interface TableStatisticsNewHomePreview {
+  total: {
+    contracts: number;
+    loanAmount: number;
+    interestReceipt: number;
+    interestMonth: number;
+  };
+  details: Array<{
+    key: string;
+    label: string;
+    contracts: number;
+    loanAmount: {
+      amount: number;
+      percent: number;
+    };
+    interestReceipt: {
+      amount: number;
+      percent: number;
+    };
+    interestMonth: number;
+  }>;
+}
+
+export interface PieChartStatisticsNewHomePreview {
+  expectedInterest: Array<{
+    key: string;
+    label: string;
+    amount: number;
+    percent: number;
+  }>;
+
+  profitRate: Array<{
+    key: string;
+    label: string;
+    amount: number;
+    percent: number;
+  }>;
+}
+
+export interface StatisticNewHomePreview {
+  overview: OverViewHomeToday;
+  tableStatistics: TableStatisticsNewHomePreview;
+  pieChartStatistics: PieChartStatisticsNewHomePreview;
+  contractAwaitingApproval: number;
+}

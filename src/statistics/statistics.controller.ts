@@ -137,6 +137,28 @@ export class StatisticsController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @Get(RouterUrl.STATISTICS.NEW_HOME_PREVIEW)
+  async newHomePreview(@Res() res: Response, @Req() req) {
+    try {
+      const user = req?.user as User;
+
+      const data = await this.statisticsService.statisticNewHomePreview(user);
+
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(RouterUrl.STATISTICS.STATISTICS_CONTRACT)
   async statisticsContract(@Res() res: Response, @Req() req) {
