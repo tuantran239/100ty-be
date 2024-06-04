@@ -13,7 +13,11 @@ import {
 } from 'src/common/interface';
 import { DebitStatus } from 'src/common/interface/bat-ho';
 import { Contract } from 'src/common/interface/contract';
-import { PaymentStatusHistory } from 'src/common/interface/history';
+import {
+  PaymentHistoryType,
+  PaymentStatusHistory,
+  TransactionHistoryType,
+} from 'src/common/interface/history';
 import {
   ProfitChartDetail,
   ProfitChartDetailItem,
@@ -24,10 +28,14 @@ import {
   ContractHomePreviewResponses,
   HomePreview,
   HomePreviewContractResponse,
+  OverViewHomeToday,
+  PieChartStatisticsNewHomePreview,
   ServiceFeeDetail,
   ServiceFeeItemStatistics,
   ServiceFeeStatisticsResponse,
+  StatisticNewHomePreview,
   StatisticsOverview,
+  TableStatisticsNewHomePreview,
 } from 'src/common/interface/statistics';
 import { calculatePercent, calculateProfit } from 'src/common/utils/calculate';
 import { getFullName } from 'src/common/utils/get-full-name';
@@ -35,6 +43,7 @@ import {
   calculateRangeDate,
   calculateRangeTime,
   convertPrefixTime,
+  formatDate,
   getTotalDayInMonth,
 } from 'src/common/utils/time';
 import { ContractService } from 'src/contract/contract.service';
@@ -1074,6 +1083,334 @@ export class StatisticsService {
           ],
         },
       ],
+    };
+  }
+
+  async statisticNewHomePreview(me: User): Promise<StatisticNewHomePreview> {
+    const user = filterRole(me);
+
+    const { transactionHistoryRepository, cashRepository } =
+      this.databaseService.getRepositories();
+
+    const today = new Date();
+
+    const { fromDate, toDate } = calculateRangeTime(
+      {
+        day: today.getDate(),
+        month: today.getMonth() + 1,
+        year: today.getFullYear(),
+      },
+      'day',
+    );
+
+    const transactionHistoriesToday = await transactionHistoryRepository.find({
+      where: { created_at: Between(fromDate, toDate), user },
+    });
+
+    const rangeDateToday = calculateRangeDate(
+      {
+        day: today.getDate(),
+        month: today.getMonth() + 1,
+        year: today.getFullYear(),
+      },
+      'day',
+    );
+
+    const listContractsToday =
+      await this.contractService.listContractMustReceiptRangeTime(
+        rangeDateToday.fromDate,
+        rangeDateToday.toDate,
+        user,
+      );
+
+    const transactionsToday = transactionHistoriesToday.length;
+
+    const loanToday = transactionHistoriesToday.reduce(
+      (loan, transactionHistory) => {
+        if (
+          transactionHistory.type ===
+          TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT
+        ) {
+          loan.amount += transactionHistory.moneySub;
+          loan.contracts += 1;
+        }
+        return loan;
+      },
+      {
+        contracts: 0,
+        amount: 0,
+      },
+    );
+
+    const loanReceiptToday = transactionHistoriesToday.reduce(
+      (loan, transactionHistory) => {
+        if (transactionHistory.type === TransactionHistoryType.PAYMENT) {
+          loan.amount += transactionHistory.moneySub;
+          loan.contracts += 1;
+        }
+        return loan;
+      },
+      {
+        contracts: 0,
+        amount: 0,
+      },
+    );
+
+    const expectedReceiptToday = listContractsToday.reduce(
+      (loan, contract) => {
+        loan.amount += contract.paymentHistories[0]?.payNeed ?? 0;
+        loan.contracts += 1;
+        return loan;
+      },
+      {
+        contracts: 0,
+        amount: 0,
+      },
+    );
+
+    const cashes = await cashRepository.find({
+      where: {
+        user,
+        deleted_at: IsNull(),
+      },
+      relations: ['group'],
+    });
+
+    const { disbursementMoneyTotal } =
+      await this.contractService.summarizeContractAmounts({
+        where: { user },
+      });
+
+    const fundTotal = cashes.reduce((total, cash) => {
+      if (cash.filterType === CashFilterType.INIT) {
+        total += cash.amount;
+      }
+      return total;
+    }, 0);
+
+    const paymentOrtherTotal = cashes.reduce((total, cash) => {
+      if (cash.type === CashType.PAYMENT && !cash.isContract) {
+        return total + cash.amount;
+      }
+      return total;
+    }, 0);
+
+    const overview: OverViewHomeToday = {
+      date: formatDate(today),
+      transactionsToday,
+      loanToday,
+      remainingFunds: fundTotal - disbursementMoneyTotal - paymentOrtherTotal,
+      loanReceiptToday,
+      expectedReceiptToday,
+    };
+
+    const listContracts = await this.contractService.listContract(undefined, {
+      where: { user },
+    });
+
+    const rangeDateMonth = calculateRangeDate(
+      { month: today.getMonth() + 1, year: today.getFullYear() },
+      'month',
+    );
+
+    const listContractsInMonth =
+      await this.contractService.listContractMustReceiptRangeTime(
+        rangeDateMonth.fromDate,
+        rangeDateMonth.toDate,
+        user,
+      );
+
+    const loanAmountTotal = listContracts.reduce(
+      (total, contract) => contract.disbursementMoney + total,
+      0,
+    );
+
+    const interestTotal = listContracts.reduce(
+      (total, contract) => contract.interestMoney + total,
+      0,
+    );
+
+    const tablePawnDetails = listContracts
+      .filter((contract) => contract.contractType === ContractType.CAM_DO)
+      .reduce(
+        (detail, contract) => {
+          detail.contracts += 1;
+          const loanAmountAmount =
+            contract.loanAmount + detail.loanAmount.amount;
+          const loanAmountPercent = calculatePercent(
+            loanAmountAmount,
+            loanAmountTotal,
+          );
+
+          detail.loanAmount = {
+            amount: loanAmountAmount,
+            percent: loanAmountPercent,
+          };
+
+          const interestAmount =
+            contract.interestMoney + detail.interestReceipt.amount;
+
+          const interestAmountPercent = calculatePercent(
+            interestAmount,
+            interestTotal,
+          );
+
+          detail.interestReceipt = {
+            amount: interestAmount,
+            percent: interestAmountPercent,
+          };
+
+          return detail;
+        },
+        {
+          key: ContractType.CAM_DO,
+          label: 'Cầm đồ',
+          contracts: 0,
+          loanAmount: {
+            amount: 0,
+            percent: 0,
+          },
+          interestReceipt: {
+            amount: 0,
+            percent: 0,
+          },
+          interestMonth: listContractsInMonth.reduce((total, contract) => {
+            if (contract.contractType === ContractType.CAM_DO) {
+              total += contract.paymentHistories.reduce(
+                (sum, paymentHistory) => {
+                  if (
+                    paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
+                  ) {
+                    sum += paymentHistory.payNeed;
+                  }
+                  return sum;
+                },
+                0,
+              );
+            }
+            return total;
+          }, 0),
+        },
+      );
+
+    const tableIcloudDetails = listContracts
+      .filter((contract) => contract.contractType === ContractType.BAT_HO)
+      .reduce(
+        (detail, contract) => {
+          detail.contracts += 1;
+          const loanAmountAmount =
+            contract.loanAmount + detail.loanAmount.amount;
+          const loanAmountPercent = calculatePercent(
+            loanAmountAmount,
+            loanAmountTotal,
+          );
+
+          detail.loanAmount = {
+            amount: loanAmountAmount,
+            percent: loanAmountPercent,
+          };
+
+          const interestAmount =
+            contract.interestMoney + detail.interestReceipt.amount;
+
+          const interestAmountPercent = calculatePercent(
+            interestAmount,
+            interestTotal,
+          );
+
+          detail.interestReceipt = {
+            amount: interestAmount,
+            percent: interestAmountPercent,
+          };
+
+          return detail;
+        },
+        {
+          key: ContractType.BAT_HO,
+          label: 'Icloud',
+          contracts: 0,
+          loanAmount: {
+            amount: 0,
+            percent: 0,
+          },
+          interestReceipt: {
+            amount: 0,
+            percent: 0,
+          },
+          interestMonth: listContractsInMonth.reduce((total, contract) => {
+            if (contract.contractType === ContractType.CAM_DO) {
+              total += contract.paymentHistories.reduce(
+                (sum, paymentHistory) => {
+                  if (
+                    paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
+                  ) {
+                    sum += paymentHistory.payNeed;
+                  }
+                  return sum;
+                },
+                0,
+              );
+            }
+            return total;
+          }, 0),
+        },
+      );
+
+    const tableStatistics: TableStatisticsNewHomePreview = {
+      total: {
+        contracts: tableIcloudDetails.contracts + tablePawnDetails.contracts,
+        loanAmount:
+          tableIcloudDetails.loanAmount.amount +
+          tablePawnDetails.loanAmount.amount,
+        interestReceipt:
+          tableIcloudDetails.interestReceipt.amount +
+          tablePawnDetails.interestReceipt.amount,
+        interestMonth:
+          tableIcloudDetails.interestMonth + tablePawnDetails.interestMonth,
+      },
+      details: [{ ...tableIcloudDetails }, { ...tablePawnDetails }],
+    };
+
+    const expectedInterest = [
+      {
+        key: 'reciepted',
+        label: 'Đã thu',
+        amount: 0,
+        percent: 0,
+      },
+      {
+        key: 'notReceipt',
+        label: 'Chưa thu',
+        amount: 0,
+        percent: 0,
+      },
+    ];
+
+    const profitRate = [
+      {
+        key: 'pawn',
+        label: 'Cầm đồ',
+        amount: 0,
+        percent: 0,
+      },
+      {
+        key: 'icloud',
+        label: 'Icloud',
+        amount: 0,
+        percent: 0,
+      },
+    ];
+
+    const pieChartStatistics: PieChartStatisticsNewHomePreview = {
+      expectedInterest,
+      profitRate,
+    };
+
+    return {
+      overview,
+      contractAwaitingApproval: 0,
+      tableStatistics,
+      pieChartStatistics,
     };
   }
 }
