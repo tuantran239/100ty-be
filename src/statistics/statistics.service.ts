@@ -14,7 +14,6 @@ import {
 import { DebitStatus } from 'src/common/interface/bat-ho';
 import { Contract } from 'src/common/interface/contract';
 import {
-  PaymentHistoryType,
   PaymentStatusHistory,
   TransactionHistoryType,
 } from 'src/common/interface/history';
@@ -38,6 +37,7 @@ import {
   TableStatisticsNewHomePreview,
 } from 'src/common/interface/statistics';
 import { calculatePercent, calculateProfit } from 'src/common/utils/calculate';
+import { filterRole } from 'src/common/utils/filter-role';
 import { getFullName } from 'src/common/utils/get-full-name';
 import {
   calculateRangeDate,
@@ -60,7 +60,6 @@ import {
   Repository,
 } from 'typeorm';
 import { StatisticsContractQueryDto } from './dto/statistics-contract-query.dto';
-import { filterRole } from 'src/common/utils/filter-role';
 
 @Injectable()
 export class StatisticsService {
@@ -1116,8 +1115,8 @@ export class StatisticsService {
       'day',
     );
 
-    const listContractsToday =
-      await this.contractService.listContractMustReceiptRangeTime(
+    const summarizeToday =
+      await this.contractService.summarizeContractRangeTime(
         rangeDateToday.fromDate,
         rangeDateToday.toDate,
         user,
@@ -1156,17 +1155,12 @@ export class StatisticsService {
       },
     );
 
-    const expectedReceiptToday = listContractsToday.reduce(
-      (loan, contract) => {
-        loan.amount += contract.paymentHistories[0]?.payNeed ?? 0;
-        loan.contracts += 1;
-        return loan;
-      },
-      {
-        contracts: 0,
-        amount: 0,
-      },
-    );
+    const expectedReceiptToday = {
+      contracts: summarizeToday.allContract.total,
+      amount:
+        summarizeToday.allContract.summarizeDetail.expected.interestMoney +
+        summarizeToday.allContract.summarizeDetail.expected.rootMoney,
+    };
 
     const cashes = await cashRepository.find({
       where: {
@@ -1176,19 +1170,19 @@ export class StatisticsService {
       relations: ['group'],
     });
 
-    const { disbursementMoneyTotal } =
+    const { allContract, details } =
       await this.contractService.summarizeContractAmounts({
         where: { user },
       });
 
     const fundTotal = cashes.reduce((total, cash) => {
-      if (cash.filterType === CashFilterType.INIT) {
+      if (cash.groupId === GroupCashId.INIT) {
         total += cash.amount;
       }
       return total;
     }, 0);
 
-    const paymentOrtherTotal = cashes.reduce((total, cash) => {
+    const paymentOtherTotal = cashes.reduce((total, cash) => {
       if (cash.type === CashType.PAYMENT && !cash.isContract) {
         return total + cash.amount;
       }
@@ -1199,207 +1193,122 @@ export class StatisticsService {
       date: formatDate(today),
       transactionsToday,
       loanToday,
-      remainingFunds: fundTotal - disbursementMoneyTotal - paymentOrtherTotal,
+      remainingFunds:
+        fundTotal -
+        allContract.summarizeDetail.loan.disbursementMoney -
+        paymentOtherTotal,
       loanReceiptToday,
       expectedReceiptToday,
     };
-
-    const listContracts = await this.contractService.listContract(undefined, {
-      where: { user },
-    });
 
     const rangeDateMonth = calculateRangeDate(
       { month: today.getMonth() + 1, year: today.getFullYear() },
       'month',
     );
 
-    const listContractsInMonth =
-      await this.contractService.listContractMustReceiptRangeTime(
+    const summarizeMonth =
+      await this.contractService.summarizeContractRangeTime(
         rangeDateMonth.fromDate,
         rangeDateMonth.toDate,
         user,
       );
 
-    const loanAmountTotal = listContracts.reduce(
-      (total, contract) => contract.disbursementMoney + total,
-      0,
-    );
+    const tableDetails: Array<{
+      key: string;
+      label: string;
+      contracts: number;
+      loanAmount: {
+        amount: number;
+        percent: number;
+      };
+      interestReceipt: {
+        amount: number;
+        percent: number;
+      };
+      interestMonth: number;
+    }> = [];
 
-    const interestTotal = listContracts.reduce(
-      (total, contract) => contract.interestMoney + total,
-      0,
-    );
-
-    const tablePawnDetails = listContracts
-      .filter((contract) => contract.contractType === ContractType.CAM_DO)
-      .reduce(
-        (detail, contract) => {
-          detail.contracts += 1;
-          const loanAmountAmount =
-            contract.loanAmount + detail.loanAmount.amount;
-          const loanAmountPercent = calculatePercent(
-            loanAmountAmount,
-            loanAmountTotal,
-          );
-
-          detail.loanAmount = {
-            amount: loanAmountAmount,
-            percent: loanAmountPercent,
-          };
-
-          const interestAmount =
-            contract.interestMoney + detail.interestReceipt.amount;
-
-          const interestAmountPercent = calculatePercent(
-            interestAmount,
-            interestTotal,
-          );
-
-          detail.interestReceipt = {
-            amount: interestAmount,
-            percent: interestAmountPercent,
-          };
-
-          return detail;
+    for (let i = 0; i < details.length; i++) {
+      const contractDetail = details[i];
+      tableDetails.push({
+        key: contractDetail.contractType,
+        label: contractDetail.label,
+        contracts: contractDetail.total,
+        loanAmount: {
+          amount: contractDetail.summarizeDetail.loan.disbursementMoney,
+          percent: calculatePercent(
+            contractDetail.summarizeDetail.loan.disbursementMoney,
+            allContract.summarizeDetail.loan.disbursementMoney,
+          ),
         },
-        {
-          key: ContractType.CAM_DO,
-          label: 'Cầm đồ',
-          contracts: 0,
-          loanAmount: {
-            amount: 0,
-            percent: 0,
-          },
-          interestReceipt: {
-            amount: 0,
-            percent: 0,
-          },
-          interestMonth: listContractsInMonth.reduce((total, contract) => {
-            if (contract.contractType === ContractType.CAM_DO) {
-              total += contract.paymentHistories.reduce(
-                (sum, paymentHistory) => {
-                  if (
-                    paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
-                  ) {
-                    sum += paymentHistory.payNeed;
-                  }
-                  return sum;
-                },
-                0,
-              );
-            }
-            return total;
-          }, 0),
+        interestReceipt: {
+          amount: contractDetail.summarizeDetail.receipt.interestMoney,
+          percent: calculatePercent(
+            contractDetail.summarizeDetail.receipt.interestMoney,
+            allContract.summarizeDetail.receipt.interestMoney,
+          ),
         },
-      );
-
-    const tableIcloudDetails = listContracts
-      .filter((contract) => contract.contractType === ContractType.BAT_HO)
-      .reduce(
-        (detail, contract) => {
-          detail.contracts += 1;
-          const loanAmountAmount =
-            contract.loanAmount + detail.loanAmount.amount;
-          const loanAmountPercent = calculatePercent(
-            loanAmountAmount,
-            loanAmountTotal,
-          );
-
-          detail.loanAmount = {
-            amount: loanAmountAmount,
-            percent: loanAmountPercent,
-          };
-
-          const interestAmount =
-            contract.interestMoney + detail.interestReceipt.amount;
-
-          const interestAmountPercent = calculatePercent(
-            interestAmount,
-            interestTotal,
-          );
-
-          detail.interestReceipt = {
-            amount: interestAmount,
-            percent: interestAmountPercent,
-          };
-
-          return detail;
-        },
-        {
-          key: ContractType.BAT_HO,
-          label: 'Icloud',
-          contracts: 0,
-          loanAmount: {
-            amount: 0,
-            percent: 0,
-          },
-          interestReceipt: {
-            amount: 0,
-            percent: 0,
-          },
-          interestMonth: listContractsInMonth.reduce((total, contract) => {
-            if (contract.contractType === ContractType.CAM_DO) {
-              total += contract.paymentHistories.reduce(
-                (sum, paymentHistory) => {
-                  if (
-                    paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
-                  ) {
-                    sum += paymentHistory.payNeed;
-                  }
-                  return sum;
-                },
-                0,
-              );
-            }
-            return total;
-          }, 0),
-        },
-      );
+        interestMonth:
+          summarizeMonth.details.find(
+            (detail) => detail.contractType === contractDetail.contractType,
+          )?.summarizeDetail?.receipt?.interestMoney ?? 0,
+      });
+    }
 
     const tableStatistics: TableStatisticsNewHomePreview = {
       total: {
-        contracts: tableIcloudDetails.contracts + tablePawnDetails.contracts,
-        loanAmount:
-          tableIcloudDetails.loanAmount.amount +
-          tablePawnDetails.loanAmount.amount,
-        interestReceipt:
-          tableIcloudDetails.interestReceipt.amount +
-          tablePawnDetails.interestReceipt.amount,
+        contracts: allContract.summarizeDetail.contractInDebit.contracts,
+        loanAmount: allContract.summarizeDetail.contractInDebit.amount,
+        interestReceipt: allContract.summarizeDetail.receipt.interestMoney,
         interestMonth:
-          tableIcloudDetails.interestMonth + tablePawnDetails.interestMonth,
+          summarizeMonth.allContract.summarizeDetail.receipt.interestMoney,
       },
-      details: [{ ...tableIcloudDetails }, { ...tablePawnDetails }],
+      details: tableDetails,
     };
 
     const expectedInterest = [
       {
         key: 'reciepted',
         label: 'Đã thu',
-        amount: 0,
-        percent: 0,
+        amount: allContract.summarizeDetail.receipt.interestMoney,
+        percent: calculatePercent(
+          allContract.summarizeDetail.receipt.interestMoney,
+          allContract.summarizeDetail.expected.interestMoney,
+        ),
       },
       {
         key: 'notReceipt',
         label: 'Chưa thu',
-        amount: 0,
-        percent: 0,
+        amount:
+          allContract.summarizeDetail.expected.interestMoney -
+          allContract.summarizeDetail.receipt.interestMoney,
+        percent: calculatePercent(
+          allContract.summarizeDetail.expected.interestMoney -
+            allContract.summarizeDetail.receipt.interestMoney,
+          allContract.summarizeDetail.expected.interestMoney,
+        ),
       },
     ];
 
-    const profitRate = [
-      {
-        key: 'pawn',
-        label: 'Cầm đồ',
-        amount: 0,
-        percent: 0,
-      },
-      {
-        key: 'icloud',
-        label: 'Icloud',
-        amount: 0,
-        percent: 0,
-      },
-    ];
+    const profitRate: Array<{
+      key: string;
+      label: string;
+      amount: number;
+      percent: number;
+    }> = [];
+
+    for (let i = 0; i < details.length; i++) {
+      const detailContract = details[i];
+      profitRate.push({
+        key: detailContract.contractType,
+        label: detailContract.label,
+        amount: detailContract.summarizeDetail.expected.interestMoney,
+        percent: calculatePercent(
+          detailContract.summarizeDetail.expected.interestMoney,
+          allContract.summarizeDetail.expected.interestMoney,
+        ),
+      });
+    }
 
     const pieChartStatistics: PieChartStatisticsNewHomePreview = {
       expectedInterest,

@@ -1,18 +1,37 @@
 import { Injectable } from '@nestjs/common';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
+import { ContractInitLabel } from 'src/common/constant/contract';
 import { CashFilterType, ContractType } from 'src/common/interface';
 import { DebitStatus } from 'src/common/interface/bat-ho';
-import { Contract } from 'src/common/interface/contract';
-import { PaymentStatusHistory } from 'src/common/interface/history';
 import {
+  Contract,
+  SummarizeContract,
+  SummarizeContractAmountDetail,
+  SummarizeContractRangeTime,
+  SummarizeContractType,
+} from 'src/common/interface/contract';
+import {
+  PaymentHistoryType,
+  PaymentStatusHistory,
+  TransactionHistoryType,
+} from 'src/common/interface/history';
+import {
+  calculateInterestMoneyOfOneDay,
   calculateLateAndBadPaymentIcloud,
   calculateLateAndBadPaymentPawn,
+  calculateMoneyBadDebit,
+  calculateMoneyCompleted,
+  calculateMoneyInDebit,
+  calculateReduceTotal,
 } from 'src/common/utils/calculate';
 import { createPaymentHistoriesCash } from 'src/common/utils/cash-payload';
+import { mapUniqueArray } from 'src/common/utils/map';
 import { getBatHoStatus, getPawnStatus } from 'src/common/utils/status';
 import { calculateRangeTime, formatDate } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import { Pawn } from 'src/pawn/pawn.entity';
+import { PaymentHistory } from 'src/payment-history/payment-history.entity';
+import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
 import { Between, DataSource, Equal, FindManyOptions, IsNull } from 'typeorm';
 
 @Injectable()
@@ -22,11 +41,156 @@ export class ContractService {
     private databaseService: DatabaseService,
   ) {}
 
+  private mapSummarizeContract(
+    paymentHistories: PaymentHistory[],
+    transactionHistories: TransactionHistory[],
+  ): SummarizeContract {
+    const expectedInterestMoney = paymentHistories.reduce(
+      (total, paymentHistory) => {
+        if (paymentHistory.type === PaymentHistoryType.INTEREST_MONEY) {
+          total += paymentHistory.payNeed;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const expectedRootMoney = paymentHistories.reduce(
+      (total, paymentHistory) => {
+        if (paymentHistory.type === PaymentHistoryType.ROOT_MONEY) {
+          total += paymentHistory.payNeed;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const loanDisbursementMoney = transactionHistories.reduce(
+      (total, transactionHistory) => {
+        if (
+          transactionHistory.type ===
+          TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT
+        ) {
+          total += transactionHistory.moneySub;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const loanMoreMoney = transactionHistories.reduce(
+      (total, transactionHistory) => {
+        if (
+          transactionHistory.type === TransactionHistoryType.LOAN_MORE_MONEY
+        ) {
+          total += transactionHistory.moneySub;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const loanOtherMoney = transactionHistories.reduce(
+      (total, transactionHistory) => {
+        if (
+          transactionHistory.type === TransactionHistoryType.LOAN_MORE_MONEY
+        ) {
+          total += transactionHistory.otherMoney;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const receiptInterestMoney = paymentHistories.reduce(
+      (total, paymentHistory) => {
+        if (
+          paymentHistory.type === PaymentHistoryType.INTEREST_MONEY &&
+          paymentHistory.paymentStatus === PaymentStatusHistory.FINISH
+        ) {
+          total += paymentHistory.payMoney;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const receiptDeductionMoney = paymentHistories.reduce(
+      (total, paymentHistory) => {
+        if (
+          paymentHistory.type === PaymentHistoryType.DEDUCTION_MONEY &&
+          paymentHistory.paymentStatus === PaymentStatusHistory.FINISH
+        ) {
+          total += paymentHistory.payMoney;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const receiptDownRootMoney = transactionHistories.reduce(
+      (total, transactionHistory) => {
+        if (
+          transactionHistory.type ===
+          TransactionHistoryType.PAYMENT_DOWN_ROOT_MONEY
+        ) {
+          total += transactionHistory.moneyAdd;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const receiptMoney = paymentHistories.reduce((total, paymentHistory) => {
+      if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
+        total += paymentHistory.payMoney;
+      }
+      return total;
+    }, 0);
+
+    const receiptOtherMoney = paymentHistories.reduce(
+      (total, paymentHistory) => {
+        if (
+          paymentHistory.type === PaymentHistoryType.OTHER_MONEY_DOWN_ROOT ||
+          (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
+            paymentHistory.type === PaymentHistoryType.OTHER_MONEY_LOAN_MORE)
+        ) {
+          total += paymentHistory.payMoney;
+        }
+        return total;
+      },
+      0,
+    );
+
+    const summarizeContract: SummarizeContract = {
+      expected: {
+        interestMoney: expectedInterestMoney,
+        rootMoney: expectedRootMoney,
+        interestMoneyOneDay: 0,
+      },
+      loan: {
+        disbursementMoney: loanDisbursementMoney,
+        otherMoney: loanOtherMoney,
+        moreMoney: loanMoreMoney,
+      },
+      receipt: {
+        interestMoney: receiptInterestMoney,
+        downRootMoney: receiptDownRootMoney,
+        otherMoney: receiptOtherMoney,
+        deductionMoney: receiptDeductionMoney,
+        receiptMoney: receiptMoney,
+      },
+    };
+
+    return summarizeContract;
+  }
+
   private mapContractData({ icloud, pawn }: { icloud?: BatHo; pawn?: Pawn }) {
     let contract: Contract;
 
     if (icloud) {
       const paymentHistories = icloud.paymentHistories ?? [];
+      const transactionHistories = icloud.transactionHistories ?? [];
 
       const { latePaymentDay, latePaymentMoney, badDebitMoney } =
         calculateLateAndBadPaymentIcloud(
@@ -51,6 +215,14 @@ export class ContractService {
         0,
       );
 
+      const summarize = this.mapSummarizeContract(
+        paymentHistories,
+        transactionHistories,
+      );
+
+      summarize.expected.interestMoneyOneDay =
+        paymentHistories[0]?.payNeed ?? 0;
+
       contract = {
         paymentHistories: paymentHistories ?? [],
         customer: icloud.customer,
@@ -70,9 +242,13 @@ export class ContractService {
         contractType: ContractType.BAT_HO,
         disbursementMoney: icloud.fundedAmount,
         deductionMoney,
+        summarize,
+        settlementDate: icloud.maturityDate,
       };
     } else if (pawn) {
       const paymentHistories = pawn.paymentHistories ?? [];
+      const transactionHistories = pawn.transactionHistories ?? [];
+
       const { latePaymentPeriod, latePaymentMoney, badDebitMoney } =
         calculateLateAndBadPaymentPawn(
           paymentHistories ?? [],
@@ -96,6 +272,20 @@ export class ContractService {
         0,
       );
 
+      const summarize = this.mapSummarizeContract(
+        paymentHistories,
+        transactionHistories,
+      );
+
+      const interestMoneyOneDay = calculateInterestMoneyOfOneDay(
+        pawn.loanAmount,
+        pawn.interestMoney,
+        pawn.paymentPeriod,
+        pawn.interestType,
+      );
+
+      summarize.expected.interestMoneyOneDay = interestMoneyOneDay;
+
       contract = {
         paymentHistories,
         customer: pawn.customer,
@@ -115,6 +305,8 @@ export class ContractService {
         contractType: ContractType.CAM_DO,
         deductionMoney,
         disbursementMoney: pawn.loanAmount,
+        summarize,
+        settlementDate: pawn.settlementDate,
       };
     }
 
@@ -419,6 +611,99 @@ export class ContractService {
     });
   }
 
+  private mapToSummarizeContractType(contracts: Contract[]) {
+    const listContractInDebit = contracts.filter(
+      (contract) => contract.debitStatus === DebitStatus.IN_DEBIT,
+    );
+
+    const listContractBadDebit = contracts.filter(
+      (contract) => contract.debitStatus === DebitStatus.BAD_DEBIT,
+    );
+
+    const listContractCompleted = contracts.filter(
+      (contract) => contract.debitStatus === DebitStatus.COMPLETED,
+    );
+
+    const contractInDebit = {
+      contracts: listContractInDebit.length ?? 0,
+      amount: listContractInDebit.reduce((total, contract) => {
+        return total + calculateMoneyInDebit(contract.paymentHistories ?? []);
+      }, 0),
+    };
+
+    const contractBadDebit = {
+      contracts: listContractBadDebit.length ?? 0,
+      amount: listContractBadDebit.reduce((total, contract) => {
+        return total + calculateMoneyBadDebit(contract.paymentHistories ?? []);
+      }, 0),
+    };
+
+    const contractCompleted = {
+      contracts: listContractCompleted.length ?? 0,
+      amount: listContractCompleted.reduce((total, contract) => {
+        return total + calculateMoneyCompleted(contract);
+      }, 0),
+    };
+
+    const expected = {
+      interestMoney: calculateReduceTotal(
+        contracts,
+        'summarize.expected.interestMoney',
+      ),
+      rootMoney: calculateReduceTotal(
+        contracts,
+        'summarize.expected.rootMoney',
+      ),
+      interestMoneyOneDay: calculateReduceTotal(
+        contracts,
+        'summarize.expected.interestMoneyOneDay',
+      ),
+    };
+
+    const loan = {
+      disbursementMoney: calculateReduceTotal(
+        contracts,
+        'summarize.loan.disbursementMoney',
+      ),
+      otherMoney: calculateReduceTotal(contracts, 'summarize.loan.otherMoney'),
+      moreMoney: calculateReduceTotal(contracts, 'summarize.loan.moreMoney'),
+    };
+
+    const receipt = {
+      interestMoney: calculateReduceTotal(
+        contracts,
+        'summarize.receipt.interestMoney',
+      ),
+      downRootMoney: calculateReduceTotal(
+        contracts,
+        'summarize.receipt.downRootMoney',
+      ),
+      otherMoney: calculateReduceTotal(
+        contracts,
+        'summarize.receipt.otherMoney',
+      ),
+      deductionMoney: calculateReduceTotal(
+        contracts,
+        'summarize.receipt.deductionMoney',
+      ),
+      receiptMoney: calculateReduceTotal(
+        contracts,
+        'summarize.receipt.receiptMoney',
+      ),
+    };
+
+    const summarizeContractType: SummarizeContractType = {
+      contractBadDebit,
+      contractInDebit,
+      contractCompleted,
+      expected,
+      loan,
+      receipt,
+    };
+
+    return summarizeContractType;
+  }
+
   async summarizeContractAmounts(options?: FindManyOptions<any>) {
     const relations = [
       'paymentHistories',
@@ -432,46 +717,128 @@ export class ContractService {
       relations,
     });
 
-    const disbursementMoneyTotal = contracts.reduce(
-      (total, contract) => total + contract.disbursementMoney,
-      0,
-    );
+    const allContract = {
+      total: contracts.length,
+      summarizeDetail: this.mapToSummarizeContractType(contracts),
+    };
 
-    return { disbursementMoneyTotal };
+    const details: SummarizeContractAmountDetail[] = [];
+
+    const valuesContractType = Object.values(ContractType);
+
+    for (let i = 0; i < valuesContractType.length; i++) {
+      const value = valuesContractType[i];
+
+      const summarizeDetail = this.mapToSummarizeContractType(
+        contracts.filter(
+          (contract) => contract.contractType === valuesContractType[i],
+        ),
+      );
+
+      details.push({
+        label: ContractInitLabel[value],
+        contractType: value,
+        summarizeDetail,
+        total: contracts.filter(
+          (contract) => contract.contractType === valuesContractType[i],
+        ).length,
+      });
+    }
+
+    return { allContract, details };
   }
 
-  async listContractMustReceiptRangeTime(
+  async summarizeContractRangeTime(
     fromDate: string,
     toDate: string,
     user?: any,
   ) {
-    const relations = [
-      'paymentHistories',
-      'transactionHistories',
-      'user',
-      'customer',
+    const { paymentHistoryRepository, transactionHistoryRepository } =
+      this.databaseService.getRepositories();
+
+    const paymentHistories = await paymentHistoryRepository.find({
+      where: [
+        {
+          endDate: Between(fromDate, toDate),
+          user,
+          contractType: ContractType.CAM_DO,
+        },
+        {
+          startDate: Between(fromDate, toDate),
+          user,
+          contractType: ContractType.BAT_HO,
+        },
+      ],
+    });
+
+    const transactionHistories = await transactionHistoryRepository.find({
+      where: { user, createdAt: Between(fromDate, toDate) },
+    });
+
+    const listContractId = [
+      ...paymentHistories.map((paymentHistory) => paymentHistory.contractId),
+      ...transactionHistories.map(
+        (transactionHistory) => transactionHistory.contractId,
+      ),
     ];
 
-    const pawnContracts = await this.listContractPawn({
-      where: {
-        user,
-        paymentHistories: {
-          endDate: Between(fromDate, toDate),
-        },
-      },
-      relations,
-    });
+    const allContract = {
+      total: mapUniqueArray<string>(listContractId).length ?? 0,
+      summarizeDetail: this.mapSummarizeContract(
+        paymentHistories,
+        transactionHistories,
+      ),
+    };
 
-    const icloudContracts = await this.listContractIcloud({
-      where: {
-        user,
-        paymentHistories: {
-          startDate: Between(fromDate, toDate),
-        },
-      },
-      relations,
-    });
+    const details: Array<{
+      label: string;
+      contractType: string;
+      summarizeDetail: SummarizeContract;
+      total: number;
+    }> = [];
 
-    return [...pawnContracts, ...icloudContracts];
+    const valuesContractType = Object.values(ContractType);
+
+    for (let i = 0; i < valuesContractType.length; i++) {
+      const value = valuesContractType[i];
+
+      const paymentHistoriesType = paymentHistories.filter(
+        (paymentHistory) =>
+          paymentHistory.contractType === valuesContractType[i],
+      );
+
+      const transactionHistoriesType = transactionHistories.filter(
+        (transactionHistory) =>
+          transactionHistory.contractType === valuesContractType[i],
+      );
+
+      const summarizeDetail = this.mapSummarizeContract(
+        paymentHistoriesType,
+        transactionHistoriesType,
+      );
+
+      const listContractIdType = [
+        ...paymentHistoriesType.map(
+          (paymentHistory) => paymentHistory.contractId,
+        ),
+        ...transactionHistoriesType.map(
+          (transactionHistory) => transactionHistory.contractId,
+        ),
+      ];
+
+      details.push({
+        label: ContractInitLabel[value],
+        contractType: value,
+        summarizeDetail,
+        total: mapUniqueArray<string>(listContractIdType).length ?? 0,
+      });
+    }
+
+    const summarizeContractRangeTime: SummarizeContractRangeTime = {
+      allContract,
+      details,
+    };
+
+    return summarizeContractRangeTime;
   }
 }

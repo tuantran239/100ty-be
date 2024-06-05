@@ -20,6 +20,7 @@ import {
   convertPostgresDate,
   countFromToDate,
   formatDate,
+  getDateLocal,
 } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
@@ -239,6 +240,8 @@ export class BatHoService extends BaseService<
             moneyAdd: 0,
             otherMoney: 0,
             createAt: convertPostgresDate(newBatHo.loanDate),
+            createdAt: convertPostgresDate(newBatHo.loanDate),
+            contractType: ContractType.BAT_HO,
           },
         );
 
@@ -260,6 +263,8 @@ export class BatHoService extends BaseService<
                 moneyAdd: paymentHistory.payMoney,
                 otherMoney: 0,
                 createAt: convertPostgresDate(newBatHo.loanDate),
+                createdAt: convertPostgresDate(newBatHo.loanDate),
+                contractType: ContractType.BAT_HO,
               });
 
             await transactionHistoryRepository.save(
@@ -425,6 +430,8 @@ export class BatHoService extends BaseService<
               moneyAdd: 0,
               otherMoney: 0,
               createAt: batHo.loanDate,
+              createdAt: batHo.loanDate,
+              contractType: ContractType.BAT_HO,
             });
 
           await transactionHistoryRepository.save(newTransactionHistory);
@@ -445,6 +452,8 @@ export class BatHoService extends BaseService<
                   moneyAdd: paymentHistory.payMoney,
                   otherMoney: 0,
                   createAt: batHo.loanDate,
+                  createdAt: batHo.loanDate,
+                  contractType: ContractType.BAT_HO,
                 });
 
               await transactionHistoryRepository.save(
@@ -629,8 +638,12 @@ export class BatHoService extends BaseService<
 
   async settlementBatHo(batHoId: string, payload: SettlementBatHoDto) {
     await this.databaseService.runTransaction(async (repositories) => {
-      const { batHoRepository, paymentHistoryRepository, cashRepository } =
-        repositories;
+      const {
+        batHoRepository,
+        paymentHistoryRepository,
+        cashRepository,
+        transactionHistoryRepository,
+      } = repositories;
 
       const batHo = await batHoRepository.findOne({
         where: [{ id: batHoId }, { contractId: batHoId }],
@@ -643,7 +656,7 @@ export class BatHoService extends BaseService<
 
       const paymentHistories = await paymentHistoryRepository.find({
         where: {
-          paymentStatus: Or(Equal(false), IsNull()),
+          paymentStatus: Or(Equal(PaymentStatusHistory.UNFINISH), IsNull()),
           batHoId: batHo.id,
         },
       });
@@ -659,6 +672,31 @@ export class BatHoService extends BaseService<
           });
         }),
       );
+
+      const settlementMoney = paymentHistories.reduce(
+        (total, paymentHistory) => total + paymentHistory.payNeed,
+        0,
+      );
+
+      console.log(settlementMoney);
+
+      const newTransactionHistory = await transactionHistoryRepository.create({
+        userId: batHo.user.id,
+        batHoId: batHo.id,
+        contractId: batHo.contractId,
+        type: TransactionHistoryType.SETTLEMENT_CONTRACT,
+        content: getContentTransactionHistory(
+          TransactionHistoryType.SETTLEMENT_CONTRACT,
+          batHo.contractId,
+        ),
+        moneySub: 0,
+        moneyAdd: settlementMoney,
+        otherMoney: 0,
+        createAt: getDateLocal(new Date(payload.payDate)),
+        createdAt: getDateLocal(new Date(payload.payDate)),
+      });
+
+      await transactionHistoryRepository.save(newTransactionHistory);
 
       await batHoRepository.update(batHo.id, {
         debitStatus: DebitStatus.COMPLETED,

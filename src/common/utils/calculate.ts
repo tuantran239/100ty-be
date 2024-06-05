@@ -3,12 +3,19 @@ import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { DebitStatus } from '../interface/bat-ho';
 import { PaymentHistoryType, PaymentStatusHistory } from '../interface/history';
 import { PawnInterestType } from '../interface/pawn';
-import { convertPostgresDate, formatDate } from './time';
+import {
+  calculateTotalDayRangeDate,
+  convertPostgresDate,
+  formatDate,
+  getTodayNotTimeZone,
+} from './time';
 import { Cash } from 'src/cash/cash.entity';
-import { CashType } from '../interface';
+import { CashType, ContractType } from '../interface';
 import { GroupCashId } from '../constant/group-cash';
 import { ProfitCash, ProfitData } from '../interface/profit';
-import { ContractInit } from '../constant/contract';
+import { ContractInitLabel } from '../constant/contract';
+import { Contract } from '../interface/contract';
+import { getValueNestedField } from './type';
 
 export const isLastPaymentHistoryUnFinish = (
   paymentHistory: PaymentHistory,
@@ -259,7 +266,7 @@ export const calculateProfit = (
 
     if (receiptContractIndex === -1) {
       receiptDetails.push({
-        label: ContractInit[contractType],
+        label: ContractInitLabel[contractType],
         key: contractType,
         value: paymentHistory.payMoney,
       });
@@ -331,5 +338,127 @@ export const calculateProfit = (
 };
 
 export const calculatePercent = (partialValue, totalValue) => {
-  return parseFloat(((100 * partialValue) / totalValue).toFixed(2));
+  const percent = parseFloat(((100 * partialValue) / totalValue).toFixed(2));
+  return Number.isNaN(percent) ? 0 : percent;
 };
+
+interface ConditionCalculateTotal {
+  filedCondition: string;
+  type: '===' | '>=' | '<=';
+  valueCompare: any;
+}
+
+export function calculateTotal<T extends Record<string, any>>(
+  list: Array<T>,
+  condition: ConditionCalculateTotal,
+  filedAmount: string,
+) {
+  let total = 0;
+  switch (condition.type) {
+    case '===':
+      total = list.reduce((sum, item) => {
+        if (item[condition.filedCondition] === condition.valueCompare) {
+          total += (item[filedAmount] as number) ?? 0;
+        }
+        return sum;
+      }, 0);
+      break;
+    default:
+      total = 0;
+  }
+  return total;
+}
+
+export const calculateSettlementMoney = (payload: {
+  settlementDate?: string;
+  loanDate: string;
+  paymentHistories: PaymentHistory[];
+  interestMoneyOneDay: number;
+}) => {
+  const { settlementDate, loanDate, paymentHistories, interestMoneyOneDay } =
+    payload;
+
+  const today = settlementDate
+    ? new Date(settlementDate)
+    : getTodayNotTimeZone();
+
+  const totalDayToToday = calculateTotalDayRangeDate(
+    new Date(new Date(loanDate).setHours(0, 0, 0, 0)),
+    today,
+  );
+
+  const interestMoneyTotal = totalDayToToday * interestMoneyOneDay;
+
+  const rootPaymentHistory = paymentHistories.find(
+    (paymentHistory) => paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
+  );
+
+  const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
+    if (
+      paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
+      paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
+    ) {
+      return total + paymentHistory.payMoney;
+    }
+    return total;
+  }, 0);
+
+  return rootPaymentHistory?.payNeed + interestMoneyTotal - moneyPaid;
+};
+
+export const calculateMoneyInDebit = (paymentHistories: PaymentHistory[]) => {
+  return paymentHistories.reduce((total, paymentHistory) => {
+    if (
+      paymentHistory.paymentStatus === PaymentStatusHistory.UNFINISH ||
+      paymentHistory.paymentStatus === null
+    ) {
+      total += paymentHistory.payNeed;
+    }
+
+    return total;
+  }, 0);
+};
+
+export const calculateMoneyBadDebit = (paymentHistories: PaymentHistory[]) => {
+  return paymentHistories.reduce((total, paymentHistory) => {
+    if (
+      paymentHistory.paymentStatus === PaymentStatusHistory.UNFINISH ||
+      paymentHistory.paymentStatus === null
+    ) {
+      total += paymentHistory.payNeed;
+    }
+
+    return total;
+  }, 0);
+};
+
+export const calculateMoneyCompleted = (contract: Contract) => {
+  const paymentHistories = contract.paymentHistories ?? [];
+
+  let total = 0;
+
+  if (contract.contractType === ContractType.BAT_HO) {
+    total = paymentHistories.reduce((total, paymentHistory) => {
+      return total + paymentHistory.payNeed;
+    }, 0);
+  } else if (contract.contractType === ContractType.CAM_DO) {
+    total = calculateSettlementMoney({
+      settlementDate: contract.settlementDate,
+      loanDate: contract.loanDate,
+      paymentHistories: contract.paymentHistories ?? [],
+      interestMoneyOneDay: contract.summarize.expected.interestMoneyOneDay,
+    });
+  }
+
+  return total;
+};
+
+export const calculateReduceTotal = (
+  list: any[],
+  field: string,
+  sum?: number,
+) =>
+  list.reduce(
+    (total, item) => total + getValueNestedField(item, field, 'number') ?? 0,
+    sum ?? 0,
+  );

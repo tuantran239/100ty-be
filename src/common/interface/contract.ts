@@ -21,4 +21,63 @@ export interface Contract {
   paymentHistories: PaymentHistory[];
   customer: Customer;
   user: User;
+  summarize: SummarizeContract;
+  settlementDate?: string;
+}
+
+export interface SummarizeContract {
+  expected: {
+    interestMoney: number;
+    rootMoney: number;
+    interestMoneyOneDay: number;
+  };
+  loan: {
+    disbursementMoney: number;
+    otherMoney: number;
+    moreMoney: number;
+  };
+  receipt: {
+    interestMoney: number;
+    downRootMoney: number;
+    otherMoney: number;
+    deductionMoney: number;
+    receiptMoney: number;
+  };
+}
+
+export interface SummarizeContractType extends SummarizeContract {
+  contractInDebit: {
+    contracts: number;
+    amount: number;
+  };
+  contractBadDebit: {
+    contracts: number;
+    amount: number;
+  };
+  contractCompleted: {
+    contracts: number;
+    amount: number;
+  };
+}
+
+export interface SummarizeContractAmountDetail {
+  label: string;
+  contractType: string;
+  total: number;
+  summarizeDetail: SummarizeContractType;
+}
+
+export interface SummarizeContractAmount {
+  allContract: { total: number; summarizeDetail: SummarizeContractType };
+  details: Array<SummarizeContractAmountDetail>;
+}
+
+export interface SummarizeContractRangeTime {
+  allContract: { total: number; summarizeDetail: SummarizeContract };
+  details: Array<{
+    label: string;
+    contractType: string;
+    summarizeDetail: SummarizeContract;
+    total: number;
+  }>;
 }

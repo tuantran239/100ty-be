@@ -61,4 +61,14 @@ export class CreateTransactionHistoryDto {
   @IsString()
   @IsOptional()
   createAt?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  createdAt?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  contractType?: string;
 }

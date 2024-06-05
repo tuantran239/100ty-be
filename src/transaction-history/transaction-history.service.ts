@@ -17,6 +17,7 @@ import {
 } from 'src/common/interface/history';
 import { getContentTransactionHistory } from 'src/common/utils/history';
 import { getDateLocal } from 'src/common/utils/time';
+import { ContractType } from 'src/common/interface';
 
 @Injectable()
 export class TransactionHistoryService extends BaseService<
@@ -147,6 +148,7 @@ export class TransactionHistoryService extends BaseService<
               moneyAdd: 0,
               otherMoney: 0,
               createAt: contract.loanDate,
+              createdAt: contract.loanDate,
             });
 
           await transactionHistoryRepository.save(transactionNewContract);
@@ -176,6 +178,9 @@ export class TransactionHistoryService extends BaseService<
                     otherMoney: 0,
                     createAt: getDateLocal(new Date(paymentHistory.updated_at)),
                     paymentHistoryId: paymentHistory.id,
+                    createdAt: getDateLocal(
+                      new Date(paymentHistory.updated_at),
+                    ),
                   });
 
                 await transactionHistoryRepository.save(transactionNewContract);
@@ -183,6 +188,36 @@ export class TransactionHistoryService extends BaseService<
               }
             }),
           );
+        }),
+      );
+    });
+
+    return { result: `updated: ${updated}/${total}` };
+  }
+
+  async updateContractType() {
+    let total = 0;
+    let updated = 0;
+
+    await this.databaseService.runTransaction(async (repositories) => {
+      const { transactionHistoryRepository } = repositories;
+
+      const transactionHistories = await transactionHistoryRepository.find();
+
+      total = transactionHistories.length;
+
+      await Promise.all(
+        transactionHistories.map(async (transactionHistory) => {
+          await transactionHistoryRepository.update(
+            { id: transactionHistory.id },
+            {
+              contractType: transactionHistory.pawnId
+                ? ContractType.CAM_DO
+                : ContractType.BAT_HO,
+            },
+          );
+
+          updated++;
         }),
       );
     });

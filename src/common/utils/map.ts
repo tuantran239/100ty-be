@@ -249,3 +249,11 @@ export const mapTransactionHistoryResponse = (
   }
   return null;
 };
+
+const onlyUnique = (value, index, array) => {
+  return array.indexOf(value) === index;
+};
+
+export const mapUniqueArray = <T>(arr: T[]) => {
+  return arr.filter(onlyUnique);
+};
