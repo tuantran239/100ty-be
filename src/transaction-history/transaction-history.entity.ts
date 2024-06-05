@@ -28,6 +28,9 @@ export class TransactionHistory extends SoftDeletableEntity {
   createAt: string;
 
   @Column()
+  createdAt: string;
+
+  @Column()
   type: string;
 
   @Column()
@@ -35,6 +38,9 @@ export class TransactionHistory extends SoftDeletableEntity {
 
   @Column()
   paymentHistoryId: string;
+
+  @Column()
+  contractType: string;
 
   @Column()
   otherMoney: number;

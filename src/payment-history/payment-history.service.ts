@@ -173,7 +173,9 @@ export class PaymentHistoryService extends BaseService<
               formatDate(paymentHistory.startDate),
             ),
             createAt: getDateLocal(new Date()),
+            createdAt: getDateLocal(new Date()),
             paymentHistoryId: paymentHistory.id,
+            contractType: paymentHistory.contractType,
           };
 
           const newTransactionHistory =

@@ -50,4 +50,22 @@ export class TransactionHistoryController {
       throw new InternalServerErrorException(error.message);
     }
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('/update-contract-type')
+  async updateContractType(@Res() res: Response) {
+    try {
+      const data = await this.transactionHistoryService.updateContractType();
+      const responseData: ResponseData = {
+        message: 'success',
+        data,
+        error: null,
+        statusCode: 200,
+      };
+
+      return res.status(200).send(responseData);
+    } catch (error: any) {
+      throw new InternalServerErrorException(error.message);
+    }
+  }
 }

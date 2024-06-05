@@ -539,6 +539,10 @@ export class BatHoController {
         throw new Error('Không tìm thấy hợp đồng');
       }
 
+      if (batHo.maturityDate) {
+        throw new Error('Hợp đồng này đã đáo hạn');
+      }
+
       await this.batHoService.settlementBatHo(id, { payDate });
 
       const createBatHoPayload: CreateBatHoDto = {

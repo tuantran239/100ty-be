@@ -237,6 +237,8 @@ export class PawnService extends BaseService<
             moneyAdd: 0,
             otherMoney: 0,
             createAt: newPawn.loanDate,
+            createdAt: newPawn.loanDate,
+            contractType: ContractType.CAM_DO,
           },
         );
 
@@ -387,6 +389,8 @@ export class PawnService extends BaseService<
               moneyAdd: 0,
               otherMoney: 0,
               createAt: pawn.loanDate,
+              createdAt: pawn.loanDate,
+              contractType: ContractType.CAM_DO,
             });
 
           await transactionHistoryRepository.save(newTransactionHistory);
@@ -845,7 +849,7 @@ export class PawnService extends BaseService<
     const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
       if (
         paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
-        paymentHistory.type !== PaymentHistoryType.OTHER_MONEY_DOWN_ROOT
+        paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
       ) {
         return total + paymentHistory.payMoney;
       }
@@ -951,7 +955,12 @@ export class PawnService extends BaseService<
       return total;
     }, 0);
 
-    const settlementMoney = loanAmount + interestMoneyTotal - moneyPaid;
+    const rootPaymentHistory = paymentHistories.find(
+      (paymentHistory) => paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
+    );
+
+    const settlementMoney =
+      rootPaymentHistory.payNeed + interestMoneyTotal - moneyPaid;
 
     const totalMoney = calculateTotalMoneyPaymentHistory(
       paymentHistories ?? [],
@@ -1042,9 +1051,12 @@ export class PawnService extends BaseService<
       return total;
     }, 0);
 
-    const settlementMoneyExpected = loanAmount + interestMoneyTotal - moneyPaid;
+    const rootPaymentHistory = paymentHistories.find(
+      (paymentHistory) => paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
+    );
 
-    console.log(settlementMoneyExpected);
+    const settlementMoneyExpected =
+      rootPaymentHistory.payNeed + interestMoneyTotal - moneyPaid;
 
     if (settlementMoney < settlementMoneyExpected) {
       throw new Error(`Số tiền đóng không được nhỏ hơn số tiền còn phải thu`);
@@ -1057,8 +1069,12 @@ export class PawnService extends BaseService<
     }
 
     await this.databaseService.runTransaction(async (repositories) => {
-      const { cashRepository, transactionHistoryRepository, pawnRepository } =
-        repositories;
+      const {
+        cashRepository,
+        transactionHistoryRepository,
+        pawnRepository,
+        paymentHistoryRepository,
+      } = repositories;
 
       const cash = await cashRepository.findOne({
         where: {
@@ -1086,6 +1102,10 @@ export class PawnService extends BaseService<
         createAt: getDateLocal(
           new Date(convertPostgresDate(payload.paymentDate)),
         ),
+        createdAt: getDateLocal(
+          new Date(convertPostgresDate(payload.paymentDate)),
+        ),
+        contractType: ContractType.CAM_DO,
       });
 
       await transactionHistoryRepository.save(newTransactionHistory);
@@ -1098,6 +1118,29 @@ export class PawnService extends BaseService<
           serviceFee,
         },
       );
+
+      await paymentHistoryRepository.update(
+        { id: rootPaymentHistory.id },
+        { paymentStatus: PaymentStatusHistory.FINISH },
+      );
+
+      const interestMoneyPaymentHistory = await paymentHistoryRepository.create(
+        {
+          rowId: paymentHistories.length + 1,
+          pawnId: id,
+          payMoney: settlementMoney - rootPaymentHistory.payNeed,
+          payNeed: settlementMoney - rootPaymentHistory.payNeed,
+          startDate: convertPostgresDate(payload.paymentDate),
+          endDate: convertPostgresDate(payload.paymentDate),
+          type: PaymentHistoryType.INTEREST_MONEY,
+          paymentStatus: PaymentStatusHistory.FINISH,
+          contractType: ContractType.CAM_DO,
+          paymentMethod: pawn.paymentPeriodType,
+          contractId: pawn.contractId,
+        },
+      );
+
+      await paymentHistoryRepository.save(interestMoneyPaymentHistory);
     });
 
     return true;
@@ -1296,6 +1339,10 @@ export class PawnService extends BaseService<
         createAt: getDateLocal(
           new Date(convertPostgresDate(payload.paymentDate)),
         ),
+        createdAt: getDateLocal(
+          new Date(convertPostgresDate(payload.paymentDate)),
+        ),
+        contractType: ContractType.CAM_DO,
       });
 
       await transactionHistoryRepository.save(newTransactionHistory);
@@ -1516,6 +1563,10 @@ export class PawnService extends BaseService<
         otherMoney: payload.otherMoney,
         note: payload.note,
         createAt: getDateLocal(new Date(convertPostgresDate(payload.loanDate))),
+        createdAt: getDateLocal(
+          new Date(convertPostgresDate(payload.loanDate)),
+        ),
+        contractType: ContractType.CAM_DO,
       });
 
       await transactionHistoryRepository.save(newTransactionHistory);
