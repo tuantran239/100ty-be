@@ -42,6 +42,8 @@ export interface BatHoResponse extends Omit<BatHo, 'beforeInsert'> {
   isFinishToday: boolean;
   latePaymentMoney: number;
   badDebitMoney: number;
+  moneyPaidNumber: number;
+  moneyMustPayNumber: number;
 }
 
 export interface PawnResponse extends Omit<Pawn, 'beforeInsert'> {

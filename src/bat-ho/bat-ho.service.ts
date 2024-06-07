@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CASH_CODE_PREFIX } from 'src/cash/cash.controller';
 import { CashFilterType, CashType, ContractType } from 'src/common/interface';
-import { DebitStatus } from 'src/common/interface/bat-ho';
+import { BatHoResponse, DebitStatus } from 'src/common/interface/bat-ho';
 import {
   PaymentHistoryType,
   PaymentStatusHistory,
@@ -134,6 +134,12 @@ export class BatHoService extends BaseService<
         if (batHoNotCompleted) {
           throw new BadRequestException(
             'Khách hàng còn hợp đồng chưa trả hết.',
+          );
+        }
+
+        if (payload.loanAmount > payload.revenueReceived) {
+          throw new BadRequestException(
+            'Số tiền nhận về không thể nhỏ hơn khoản vay',
           );
         }
 
@@ -677,9 +683,6 @@ export class BatHoService extends BaseService<
         (total, paymentHistory) => total + paymentHistory.payNeed,
         0,
       );
-
-      console.log(settlementMoney);
-
       const newTransactionHistory = await transactionHistoryRepository.create({
         userId: batHo.user.id,
         batHoId: batHo.id,
@@ -793,6 +796,59 @@ export class BatHoService extends BaseService<
         }),
       );
     });
+  }
+
+  calculateTotalIcloud(listIcloud: BatHoResponse[]) {
+    const totalLoanAmount = listIcloud.reduce(
+      (total, icloud) => icloud.loanAmount + total,
+      0,
+    );
+
+    const totalDisbursement = listIcloud.reduce(
+      (total, icloud) => icloud.fundedAmount + total,
+      0,
+    );
+
+    const totalRevenueReceived = listIcloud.reduce(
+      (total, icloud) => icloud.revenueReceived + total,
+      0,
+    );
+
+    const totalMoneyPaid = listIcloud.reduce(
+      (total, icloud) => icloud.moneyPaidNumber + total,
+      0,
+    );
+
+    const totalMoneyOneDay = listIcloud.reduce(
+      (total, icloud) => icloud.moneyOneDay + total,
+      0,
+    );
+
+    const totalMoneyMustPay = listIcloud.reduce(
+      (total, icloud) => icloud.moneyMustPayNumber + total,
+      0,
+    );
+
+    const totalLateMoney = listIcloud.reduce(
+      (total, icloud) => icloud.latePaymentMoney + total,
+      0,
+    );
+
+    const totalBadMoney = listIcloud.reduce(
+      (total, icloud) => icloud.badDebitMoney + total,
+      0,
+    );
+
+    return {
+      totalLoanAmount,
+      totalMoneyPaid,
+      totalDisbursement,
+      totalRevenueReceived,
+      totalMoneyOneDay,
+      totalMoneyMustPay,
+      totalLateMoney,
+      totalBadMoney,
+    };
   }
 
   @Cron(CronExpression.EVERY_DAY_AT_1AM)
