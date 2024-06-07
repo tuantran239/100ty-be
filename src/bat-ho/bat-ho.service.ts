@@ -839,6 +839,11 @@ export class BatHoService extends BaseService<
       0,
     );
 
+    const totalDeductionMoney = listIcloud.reduce(
+      (total, icloud) => icloud.deductionDays * icloud.moneyOneDay + total,
+      0,
+    );
+
     return {
       totalLoanAmount,
       totalMoneyPaid,
@@ -848,6 +853,7 @@ export class BatHoService extends BaseService<
       totalMoneyMustPay,
       totalLateMoney,
       totalBadMoney,
+      totalDeductionMoney,
     };
   }
 
