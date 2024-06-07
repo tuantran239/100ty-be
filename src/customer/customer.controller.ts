@@ -114,15 +114,23 @@ export class CustomerController {
         for (let i = 0; i < searchResults.length; i++) {
           const { firstName, lastName } = searchResults[i];
 
-          if (firstName) {
+          if (firstName && !lastName) {
             where.push({
               ...query,
               lastName: getSearch(firstName, 'both'),
             });
           }
 
-          if (lastName) {
+          if (lastName && !firstName) {
             where.push({ ...query, firstName: getSearch(lastName, 'both') });
+          }
+
+          if (firstName && lastName) {
+            where.push({
+              ...query,
+              firstName: getSearch(lastName, 'both'),
+              lastName: getSearch(firstName, 'both'),
+            });
           }
         }
       } else {

@@ -50,10 +50,10 @@ export const getSearchName = (search: string) => {
 
   const firstSearchSplit = searchSplit
     .slice(0, searchSplit.length - 1)
-    .join('');
-  const lastearchSplit = searchSplit[searchSplit.length - 1];
+    .join(' ');
+  const lastSearchSplit = searchSplit[searchSplit.length - 1];
 
-  results.push({ firstName: firstSearchSplit, lastName: lastearchSplit });
+  results.push({ firstName: firstSearchSplit, lastName: lastSearchSplit });
   results.push({ lastName: firstSearchSplit });
 
   return results;
