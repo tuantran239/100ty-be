@@ -22,6 +22,8 @@ async function bootstrap() {
     'http://localhost:4173',
     'https://100ty.net',
     'https://dev.100ty.net',
+    'https://development.100ty.net',
+    'https://production.100ty.net'
   ];
 
   app.enableCors({
