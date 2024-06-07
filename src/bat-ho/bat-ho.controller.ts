@@ -292,7 +292,20 @@ export class BatHoController {
         order: { created_at: 'ASC' },
       });
 
+      const listIcloudData = await this.batHoService.listAndCount({
+        relations: [
+          'customer',
+          'paymentHistories',
+          'device',
+          'hostServer',
+          'user',
+        ],
+        where: [...where],
+        order: { created_at: 'ASC' },
+      });
+
       const list_bat_ho: any[] = [];
+      const list_bat_ho_total: any[] = [];
 
       for (let i = 0; i < data[0].length; i++) {
         const batHo = await this.batHoService.retrieveOne({
@@ -311,9 +324,31 @@ export class BatHoController {
         }
       }
 
+      for (let i = 0; i < listIcloudData[0].length; i++) {
+        const batHo = await this.batHoService.retrieveOne({
+          where: { id: listIcloudData[0][i].id },
+          relations: [
+            'customer',
+            'paymentHistories',
+            'device',
+            'hostServer',
+            'user',
+          ],
+        });
+
+        if (batHo) {
+          list_bat_ho_total.push({
+            ...(mapBatHoResponse(batHo) as any)?.batHo,
+          });
+        }
+      }
+
+      const totalMoney =
+        await this.batHoService.calculateTotalIcloud(list_bat_ho_total);
+
       const responseData: ResponseData = {
         message: 'success',
-        data: { list_bat_ho, total: data[1] },
+        data: { list_bat_ho, total: data[1], totalMoney },
         error: null,
         statusCode: 200,
       };

@@ -6,7 +6,7 @@ import { Role } from 'src/role/entities/role.entity';
 import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
 import { User } from 'src/user/user.entity';
 import { BatHoResponse, PawnResponse } from '../interface/bat-ho';
-import { PaymentHistoryType, PaymentStatusHistory } from '../interface/history';
+import { PaymentStatusHistory } from '../interface/history';
 import { UserResponseData } from '../interface/response';
 import { Cash } from './../../cash/cash.entity';
 import {
@@ -160,6 +160,8 @@ export const mapBatHoResponse = (
         isFinishToday,
         latePaymentMoney,
         badDebitMoney,
+        moneyPaidNumber,
+        moneyMustPayNumber: revenueReceived - moneyPaidNumber,
       },
     };
   }
@@ -177,10 +179,7 @@ export const mapPawnResponse = (
         ?.payNeed ?? 0;
 
     const moneyPaidNumber = paymentHistories.reduce((total, paymentHistory) => {
-      if (
-        paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
-        paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
-      ) {
+      if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
         return (total += paymentHistory.payMoney);
       }
       return total;

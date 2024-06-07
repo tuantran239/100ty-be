@@ -948,7 +948,7 @@ export class PawnService extends BaseService<
     const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
       if (
         paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
-        new Date(paymentHistory.endDate).setHours(0, 0, 0) < paymentDateTime
+        paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
       ) {
         return total + paymentHistory.payMoney;
       }
@@ -1044,7 +1044,7 @@ export class PawnService extends BaseService<
     const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
       if (
         paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
-        new Date(paymentHistory.endDate).setHours(0, 0, 0) < paymentDateTime
+        paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
       ) {
         return total + paymentHistory.payMoney;
       }
@@ -1057,6 +1057,8 @@ export class PawnService extends BaseService<
 
     const settlementMoneyExpected =
       rootPaymentHistory.payNeed + interestMoneyTotal - moneyPaid;
+
+    console.log(settlementMoneyExpected);
 
     if (settlementMoney < settlementMoneyExpected) {
       throw new Error(`Số tiền đóng không được nhỏ hơn số tiền còn phải thu`);
@@ -1121,7 +1123,10 @@ export class PawnService extends BaseService<
 
       await paymentHistoryRepository.update(
         { id: rootPaymentHistory.id },
-        { paymentStatus: PaymentStatusHistory.FINISH },
+        {
+          paymentStatus: PaymentStatusHistory.FINISH,
+          payMoney: rootPaymentHistory.payNeed,
+        },
       );
 
       const interestMoneyPaymentHistory = await paymentHistoryRepository.create(
@@ -1758,10 +1763,7 @@ export class PawnService extends BaseService<
 
       const moneyPaidNumber = paymentHistories.reduce(
         (total, paymentHistory) => {
-          if (
-            paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
-            paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
-          ) {
+          if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
             return (total += paymentHistory.payMoney);
           }
           return total;
