@@ -46,4 +46,9 @@ export class UpdateTransactionHistoryDto {
   @IsString()
   @IsOptional()
   note?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  createdAt?: string;
 }

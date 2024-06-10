@@ -23,7 +23,6 @@ import {
 } from 'src/common/interface';
 import { CashQuery } from 'src/common/interface/query';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import { generatePrefixNumberId } from 'src/common/utils/generated-id';
 import { mapCashResponse } from 'src/common/utils/map';
 import { convertPostgresDate, formatDate } from 'src/common/utils/time';
 import { LogActionService } from 'src/log-action/log-action.service';
@@ -34,7 +33,6 @@ import { CashService } from './cash.service';
 import { CreateCashDto } from './dto/create-cash.dto';
 import { UpdateCashDto } from './dto/update-cash.dto';
 
-export const CASH_CODE_PREFIX = 'c';
 const ENTITY_LOG = 'Cash';
 
 export const filterTypesData = {
@@ -92,14 +90,8 @@ export class CashController {
         payload,
       );
 
-      if (!payload.groupId) {
-        throw new Error('Vui lòng chọn nhóm thu chi cho phiếu');
-      }
-
       const cash = await this.cashService.create({
         ...payload,
-        code: generatePrefixNumberId(CASH_CODE_PREFIX),
-        createAt: convertPostgresDate(payload.createAt as any),
       });
 
       this.logActionService.create({

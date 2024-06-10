@@ -5,6 +5,7 @@ import { LoggerServerModule } from 'src/logger/logger-server.module';
 import { TransactionHistoryModule } from 'src/transaction-history/transaction-history.module';
 import { DatabaseModule } from 'src/database/database.module';
 import { ContractModule } from 'src/contract/contract.module';
+import { PaymentHistoryRepositoryProvider } from './payment-history.repository';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { ContractModule } from 'src/contract/contract.module';
     DatabaseModule,
   ],
   controllers: [PaymentHistoryController],
-  providers: [PaymentHistoryService],
+  providers: [PaymentHistoryService, PaymentHistoryRepositoryProvider],
   exports: [PaymentHistoryService],
 })
 export class PaymentHistoryModule {}

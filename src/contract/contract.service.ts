@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import { ContractInitLabel } from 'src/common/constant/contract';
-import { CashFilterType, ContractType } from 'src/common/interface';
+import { ContractType } from 'src/common/interface';
 import { DebitStatus } from 'src/common/interface/bat-ho';
 import {
   Contract,
@@ -24,7 +24,6 @@ import {
   calculateMoneyInDebit,
   calculateReduceTotal,
 } from 'src/common/utils/calculate';
-import { createPaymentHistoriesCash } from 'src/common/utils/cash-payload';
 import { mapUniqueArray } from 'src/common/utils/map';
 import { getBatHoStatus, getPawnStatus } from 'src/common/utils/status';
 import { calculateRangeTime, formatDate } from 'src/common/utils/time';
@@ -318,7 +317,15 @@ export class ContractService {
   ): Promise<Contract[]> {
     const { batHoRepository } = this.databaseService.getRepositories();
 
-    const iClouds = await batHoRepository.find(options);
+    const iClouds = await batHoRepository.find({
+      ...options,
+      relations: [
+        'paymentHistories',
+        'transactionHistories',
+        'customer',
+        'user',
+      ],
+    });
 
     const icloudContracts = iClouds.map((icloud) => {
       return this.mapContractData({ icloud });
@@ -330,7 +337,15 @@ export class ContractService {
   async listContractPawn(options: FindManyOptions<Pawn>): Promise<Contract[]> {
     const { pawnRepository } = this.databaseService.getRepositories();
 
-    const pawns = await pawnRepository.find(options);
+    const pawns = await pawnRepository.find({
+      ...options,
+      relations: [
+        'paymentHistories',
+        'transactionHistories',
+        'customer',
+        'user',
+      ],
+    });
 
     const pawnContracts = pawns.map((pawn) => {
       return this.mapContractData({ pawn });
@@ -410,8 +425,7 @@ export class ContractService {
 
   async updateBatHoStatus(batHoId: string) {
     await this.databaseService.runTransaction(async (repositories) => {
-      const { batHoRepository, paymentHistoryRepository, cashRepository } =
-        repositories;
+      const { batHoRepository } = repositories;
 
       const batHo = await batHoRepository.findOne({
         where: { id: batHoId },
@@ -422,24 +436,6 @@ export class ContractService {
         const status = getBatHoStatus(batHo.paymentHistories ?? []);
 
         await batHoRepository.update({ id: batHo.id }, { debitStatus: status });
-
-        const findPaymentHistories = await paymentHistoryRepository.find({
-          where: { batHoId: batHo.id },
-        });
-
-        const cash = await cashRepository.findOne({
-          where: { batHoId, filterType: CashFilterType.RECEIPT_CONTRACT },
-        });
-
-        if (cash) {
-          cash.contractStatus = status;
-
-          cash.paymentHistories = createPaymentHistoriesCash(
-            findPaymentHistories ?? [],
-          );
-
-          await cashRepository.save(cash);
-        }
       }
     });
 
@@ -468,8 +464,7 @@ export class ContractService {
 
   async updatePawnStatus(pawnId: string) {
     await this.databaseService.runTransaction(async (repositories) => {
-      const { pawnRepository, paymentHistoryRepository, cashRepository } =
-        repositories;
+      const { pawnRepository } = repositories;
 
       const pawn = await pawnRepository.findOne({
         where: { id: pawnId },
@@ -480,24 +475,6 @@ export class ContractService {
         const status = getPawnStatus(pawn.paymentHistories ?? []);
 
         await pawnRepository.update({ id: pawn.id }, { debitStatus: status });
-
-        const findPaymentHistories = await paymentHistoryRepository.find({
-          where: { pawnId: pawn.id },
-        });
-
-        const cash = await cashRepository.findOne({
-          where: { pawnId, filterType: CashFilterType.RECEIPT_CONTRACT },
-        });
-
-        if (cash) {
-          cash.contractStatus = status;
-
-          cash.paymentHistories = createPaymentHistoriesCash(
-            findPaymentHistories ?? [],
-          );
-
-          await cashRepository.save(cash);
-        }
       }
     });
 

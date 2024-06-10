@@ -1,23 +1,23 @@
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ContractType } from 'src/common/interface';
+import {
+  PaymentStatusHistory,
+  TransactionHistoryType,
+} from 'src/common/interface/history';
 import { BaseService } from 'src/common/service/base.service';
+import { getDateLocal } from 'src/common/utils/time';
+import { DatabaseService } from 'src/database/database.service';
 import {
   DataSource,
   EntityManager,
   FindManyOptions,
   FindOneOptions,
-  Repository,
 } from 'typeorm';
+import { CreateTransactionHistoryDto } from './dto/create-transaction-history';
 import { UpdateTransactionHistoryDto } from './dto/update-transaction-history';
 import { TransactionHistory } from './transaction-history.entity';
-import { CreateTransactionHistoryDto } from './dto/create-transaction-history';
-import { DatabaseService } from 'src/database/database.service';
-import {
-  PaymentStatusHistory,
-  TransactionHistoryType,
-} from 'src/common/interface/history';
-import { getContentTransactionHistory } from 'src/common/utils/history';
-import { getDateLocal } from 'src/common/utils/time';
-import { ContractType } from 'src/common/interface';
+import { TransactionHistoryRepository } from './transaction-history.repository';
 
 @Injectable()
 export class TransactionHistoryService extends BaseService<
@@ -26,38 +26,28 @@ export class TransactionHistoryService extends BaseService<
   UpdateTransactionHistoryDto
 > {
   protected manager: EntityManager;
-  private transactionHistoryRepository: Repository<TransactionHistory>;
+
   constructor(
     private dataSource: DataSource,
     private databaseService: DatabaseService,
+    @InjectRepository(TransactionHistory)
+    private readonly transactionHistoryRepository: TransactionHistoryRepository,
   ) {
     super();
     this.manager = this.dataSource.manager;
-    this.transactionHistoryRepository =
-      this.dataSource.manager.getRepository(TransactionHistory);
   }
 
   async create(
     payload: CreateTransactionHistoryDto,
   ): Promise<TransactionHistory> {
-    const newTransactionHistory =
-      await this.transactionHistoryRepository.create(payload);
-    return await this.transactionHistoryRepository.save(newTransactionHistory);
+    return this.transactionHistoryRepository.createTransactionHistory(payload);
   }
 
   async update(id: string, payload: UpdateTransactionHistoryDto): Promise<any> {
-    const transactionHistory = await this.transactionHistoryRepository.findOne({
-      where: [{ id }, { contractId: id }],
+    return this.transactionHistoryRepository.updateTransactionHistory({
+      ...payload,
+      id,
     });
-
-    if (!transactionHistory) {
-      throw new Error('Không tìm thấy lịch sử gia dịch');
-    }
-
-    return await this.transactionHistoryRepository.update(
-      { id },
-      { ...payload, updated_at: new Date() },
-    );
   }
 
   async delete(id: string): Promise<any> {
@@ -97,19 +87,6 @@ export class TransactionHistoryService extends BaseService<
     return this.transactionHistoryRepository.findOne(options);
   }
 
-  async convertData() {
-    const transactionHistories = await this.list({});
-
-    await Promise.all(
-      transactionHistories.map(async (transactionHistory) => {
-        if (transactionHistory.note?.includes('-->')) {
-          const newNote = transactionHistory.note.split('-->')[0]?.trim() ?? '';
-          await this.update(transactionHistory.id, { note: newNote });
-        }
-      }),
-    );
-  }
-
   async convertTransactionPaymentHistory() {
     let total = 0;
     let updated = 0;
@@ -134,24 +111,14 @@ export class TransactionHistoryService extends BaseService<
 
           await transactionHistoryRepository.delete({ batHoId: contract.id });
 
-          const transactionNewContract =
-            await transactionHistoryRepository.create({
-              userId: contract.user.id,
-              batHoId: contract.id,
-              contractId: contract.contractId,
-              type: TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
-              content: getContentTransactionHistory(
-                TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
-                contract.contractId,
-              ),
-              moneySub: contract.fundedAmount,
-              moneyAdd: 0,
-              otherMoney: 0,
-              createAt: contract.loanDate,
-              createdAt: contract.loanDate,
-            });
+          await transactionHistoryRepository.createPayloadAndSave({
+            contract: { icloud: contract },
+            type: TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT,
+            money: contract.fundedAmount,
+            otherMoney: 0,
+            createdAt: contract.loanDate,
+          });
 
-          await transactionHistoryRepository.save(transactionNewContract);
           updated++;
 
           await Promise.all(
@@ -163,27 +130,15 @@ export class TransactionHistoryService extends BaseService<
                   ? TransactionHistoryType.DEDUCTION_MONEY
                   : TransactionHistoryType.PAYMENT;
 
-                const transactionNewContract =
-                  await transactionHistoryRepository.create({
-                    userId: contract.user.id,
-                    batHoId: contract.id,
-                    contractId: contract.contractId,
-                    type,
-                    content: getContentTransactionHistory(
-                      type,
-                      contract.contractId,
-                    ),
-                    moneySub: 0,
-                    moneyAdd: paymentHistory.payMoney,
-                    otherMoney: 0,
-                    createAt: getDateLocal(new Date(paymentHistory.updated_at)),
-                    paymentHistoryId: paymentHistory.id,
-                    createdAt: getDateLocal(
-                      new Date(paymentHistory.updated_at),
-                    ),
-                  });
+                await transactionHistoryRepository.createPayloadAndSave({
+                  contract: { icloud: contract },
+                  type,
+                  money: paymentHistory.payMoney,
+                  otherMoney: 0,
+                  createdAt: getDateLocal(new Date(paymentHistory.updated_at)),
+                  paymentHistoryId: paymentHistory.id,
+                });
 
-                await transactionHistoryRepository.save(transactionNewContract);
                 updated++;
               }
             }),

@@ -5,10 +5,9 @@ import { UserService } from 'src/user/user.service';
 import { LoginDto } from './dto/login.dto';
 
 import { I18nContext, I18nService } from 'nestjs-i18n';
-import { RegisterDto } from './dto/register.dto';
-import { RoleService } from 'src/role/role.service';
 import { RoleName } from 'src/common/interface';
-import { CacheService } from 'src/cache/cache.service';
+import { RoleService } from 'src/role/role.service';
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -16,7 +15,6 @@ export class AuthService {
     private userService: UserService,
     private readonly i18n: I18nService,
     private roleService: RoleService,
-    private cacheService: CacheService,
   ) {}
 
   async hashPassword() {}
