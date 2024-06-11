@@ -17,34 +17,28 @@ import { InitPeriodTypeData } from 'src/common/constant/init-data';
 import { LogActionType } from 'src/common/constant/log';
 import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
+import { ContractCompleteGuard } from 'src/common/guard/contract-completed.guard';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { ResponseData, RoleId, RoleName } from 'src/common/interface';
-import { DebitStatus } from 'src/common/interface/bat-ho';
+import { ResponseData, RoleName } from 'src/common/interface';
 import { PaymentStatusHistory } from 'src/common/interface/history';
-import { PawnQuery } from 'src/common/interface/query';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import {
-  calculateInterestToTodayPawn,
-  calculateLateAndBadPaymentPawn,
-} from 'src/common/utils/calculate';
-import {
-  mapPawnResponse,
-  mapTransactionHistoryResponse,
-} from 'src/common/utils/map';
-import { convertPostgresDate, formatDate } from 'src/common/utils/time';
+import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
+import { mapTransactionHistoryResponse } from 'src/common/utils/map';
+import { formatDate } from 'src/common/utils/time';
 import { LogActionService } from 'src/log-action/log-action.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
 import { User } from 'src/user/user.entity';
-import { And, Between, Equal, ILike, IsNull, Not, Or } from 'typeorm';
 import { CreatePawnDto } from './dto/create-pawn.dto';
+import { ExtendedPeriodConfirmDto } from './dto/extended-period-confirm.dto';
+import { ListPawnQueryDto } from './dto/list-pawn-query.dto';
+import { LoanMoreMoneyDto } from './dto/loan-more-money.dto';
 import { PaymentDownRootMoneyDto } from './dto/payment-down-root-money.dto';
 import { SettlementPawnDto } from './dto/settlement-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { PawnService } from './pawn.service';
-import { LoanMoreMoneyDto } from './dto/loan-more-money.dto';
-import { ExtendedPeriodConfirmDto } from './dto/extended-period-confirm.dto';
-import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
-import { ContractCompleteGuard } from 'src/common/guard/contract-completed.guard';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Pawn } from './pawn.entity';
+import { PawnRepository } from './pawn.repository';
 
 const ENTITY_LOG = 'Pawn';
 
@@ -54,6 +48,8 @@ export class PawnController {
     private pawnService: PawnService,
     private logActionService: LogActionService,
     private logger: LoggerServerService,
+    @InjectRepository(Pawn)
+    private readonly pawnRepository: PawnRepository,
   ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -131,156 +127,32 @@ export class PawnController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(RouterUrl.BAT_HO.LIST)
-  async listPawn(@Res() res: Response, @Req() req) {
+  async listPawn(
+    @Body(new BodyValidationPipe()) payload: ListPawnQueryDto,
+    @Res() res: Response,
+    @Req() req,
+  ) {
     try {
       const me = req.user as User;
 
-      const role = me.roles[0];
+      const listPawnPagination = await this.pawnService.listPawn(payload, me);
 
-      const {
-        search,
-        fromDate,
-        toDate,
-        page,
-        pageSize,
-        debitStatus,
-        receiptToday,
-      } = req.body as PawnQuery;
+      const listAllPawn = await this.pawnService.listPawn(
+        { ...payload, page: undefined, pageSize: undefined },
+        me,
+      );
 
-      const where = [];
-      const from = fromDate ? fromDate : formatDate(new Date());
-      const to = toDate ? toDate : formatDate(new Date());
-      const today = formatDate(new Date());
-
-      let user = undefined;
-      let paymentHistories = undefined;
-
-      if (role.id === RoleId.ADMIN) {
-        user = [
-          {
-            managerId: me.id,
-          },
-          {
-            id: me.id,
-          },
-        ];
-      } else if (role.id === RoleId.USER) {
-        user = {
-          id: me.id,
-        };
-      }
-
-      if (receiptToday === true) {
-        paymentHistories = {
-          endDate: Equal(convertPostgresDate(today)),
-          isDeductionMoney: Or(Equal(false), IsNull()),
-          paymentStatus: Or(Equal(false), IsNull()),
-        };
-      }
-
-      const query = {
-        loanDate: receiptToday
-          ? undefined
-          : Between(convertPostgresDate(from), convertPostgresDate(to)),
-        deleted_at: IsNull(),
-        debitStatus: receiptToday
-          ? And(Not(DebitStatus.COMPLETED), Not(DebitStatus.DELETED))
-          : Not(DebitStatus.DELETED),
-        user,
-        paymentHistories,
-      };
-
-      if (
-        (!search || (search as string).trim().length === 0) &&
-        (!debitStatus || (debitStatus as string).trim().length === 0)
-      ) {
-        where.push({
-          ...query,
-        });
-      } else {
-        if (debitStatus && !receiptToday) {
-          const values = Object.values(DebitStatus).map((value) =>
-            value.toString(),
-          );
-          if (values.includes(debitStatus)) {
-            where.push({
-              ...query,
-              debitStatus: ILike(debitStatus),
-            });
-          }
-        }
-
-        if (search) {
-          const searchType = parseInt((search as string) ?? '');
-
-          if (!Number.isNaN(searchType)) {
-            where.push({
-              ...query,
-              customer: {
-                phoneNumber: ILike(search),
-              },
-            });
-            where.push({
-              ...query,
-              customer: {
-                personalID: ILike(search),
-              },
-            });
-          } else {
-            where.push({
-              ...query,
-              customer: {
-                firstName: ILike(search),
-              },
-            });
-            where.push({
-              ...query,
-              customer: {
-                lastName: ILike(search),
-              },
-            });
-            where.push({
-              ...query,
-              contractId: ILike(search),
-            });
-          }
-        }
-      }
-
-      const data = await this.pawnService.listAndCount({
-        relations: ['customer', 'paymentHistories', 'user', 'assetType'],
-        where: [...where],
-        take: pageSize ?? 10,
-        skip: ((page ?? 1) - 1) * (pageSize ?? 10),
-        order: { created_at: 'ASC' },
-      });
-
-      const listPawnData = await this.pawnService.listAndCount({
-        relations: ['customer', 'paymentHistories', 'user', 'assetType'],
-        where: [...where],
-        order: { created_at: 'ASC' },
-      });
-
-      const list_pawn: any[] = [];
-
-      for (let i = 0; i < data[0].length; i++) {
-        const pawn = await this.pawnService.retrieveOne({
-          where: { id: data[0][i].id },
-          relations: ['customer', 'paymentHistories', 'user', 'assetType'],
-        });
-
-        if (pawn) {
-          list_pawn.push({ ...(mapPawnResponse(pawn) as any)?.pawn });
-        }
-      }
-
-      const totalMoney = this.pawnService.calculateTotalPricePawn(
-        listPawnData[0] as any[],
+      const totalMoney = await this.pawnService.calculateTotalPricePawn(
+        listAllPawn.list_pawn,
       );
 
       const responseData: ResponseData = {
         message: 'success',
-        data: { list_pawn, total: data[1], totalMoney },
+        data: {
+          list_pawn: listPawnPagination.list_pawn,
+          total: listPawnPagination.total,
+          totalMoney,
+        },
         error: null,
         statusCode: 200,
       };
@@ -361,17 +233,14 @@ export class PawnController {
       );
 
       const { interestDayToday, interestMoneyToday } =
-        calculateInterestToTodayPawn(pawn);
+        this.pawnRepository.calculateInterestToToday(pawn);
 
       pawn.paymentHistories = undefined;
 
       const transactionHistories = pawn.transactionHistories ?? [];
 
       const { latePaymentMoney, latePaymentPeriod, badDebitMoney } =
-        calculateLateAndBadPaymentPawn(
-          pawn.paymentHistories ?? [],
-          pawn.debitStatus,
-        );
+        this.pawnRepository.calculateLateAndBadPayment(pawn);
 
       const responseData: ResponseData = {
         message: 'success',

@@ -25,6 +25,11 @@ export class UpdatePawnDto {
   @ApiProperty()
   @IsNumber()
   @IsOptional()
+  rootMoney?: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
   paymentPeriod?: number;
 
   @ApiProperty()

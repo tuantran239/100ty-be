@@ -58,10 +58,6 @@ export interface PaymentHistoryFinishQuery extends BaseQuery {
   search?: string;
 }
 
-export interface StatisticsContractQuery extends BaseQuery {
-  type?: string;
-}
-
 export interface CashCSVQuery {
   type?: string;
   isContract?: boolean;

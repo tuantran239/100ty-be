@@ -71,4 +71,9 @@ export class CreateTransactionHistoryDto {
   @IsString()
   @IsOptional()
   contractType?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  moneyType?: string;
 }

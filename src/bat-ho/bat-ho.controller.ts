@@ -21,7 +21,6 @@ import { RolesGuard } from 'src/common/guard/roles.guard';
 import { CashFilterType, ResponseData, RoleName } from 'src/common/interface';
 import { PaymentStatusHistory } from 'src/common/interface/history';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import { calculateLateAndBadPaymentIcloud } from 'src/common/utils/calculate';
 import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
 import { mapTransactionHistoryResponse } from 'src/common/utils/map';
 import { convertPostgresDate, formatDate } from 'src/common/utils/time';
@@ -36,6 +35,9 @@ import { ListBatHoQueryDto } from './dto/list-bat-ho-query.dto';
 import { ReverseBatHoDto } from './dto/reverse-bat-ho.dto';
 import { SettlementBatHoDto } from './dto/settlement-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { BatHoRepository } from './bat-ho.repository';
+import { BatHo } from './bat-ho.entity';
 
 export const BAT_HO_CODE_PREFIX = 'bh';
 const ENTITY_LOG = 'BatHo';
@@ -48,6 +50,7 @@ export class BatHoController {
     private logger: LoggerServerService,
     private logActionService: LogActionService,
     private databaseService: DatabaseService,
+    @InjectRepository(BatHo) private readonly batHoRepository: BatHoRepository,
   ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -268,10 +271,7 @@ export class BatHoController {
       );
 
       const { latePaymentDay, latePaymentMoney, badDebitMoney } =
-        calculateLateAndBadPaymentIcloud(
-          batHo.paymentHistories ?? [],
-          batHo.debitStatus,
-        );
+        this.batHoRepository.calculateLateAndBadPayment(batHo);
 
       const responseData: ResponseData = {
         message: 'success',
@@ -306,29 +306,6 @@ export class BatHoController {
       this.logger.error(
         { loggerType: 'get', entity: ENTITY_LOG, serverType: 'error' },
         error,
-      );
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.BAT_HO.CHECK_UPDATE)
-  async checkAndUpdateCash(@Res() res: Response) {
-    try {
-      await this.batHoService.checkUpdateBatHoDebitStatus();
-
-      const responseData: ResponseData = {
-        message: 'success',
-        data: null,
-        error: null,
-        statusCode: 200,
-      };
-
-      return res.status(200).send(responseData);
-    } catch (error: any) {
-      this.logger.error(
-        { customerMessage: 'Check and update bat ho status' },
-        null,
       );
       throw new InternalServerErrorException(error.message);
     }

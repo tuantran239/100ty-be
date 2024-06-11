@@ -10,6 +10,11 @@ import { ContractType } from 'src/common/interface';
 import { TransactionHistoryType } from 'src/common/interface/history';
 import { getContentTransactionHistory } from 'src/common/utils/history';
 
+export enum TransactionHistoryMoneyType {
+  SUB = 'sub',
+  ADD = 'add',
+}
+
 export interface TransactionHistoryRepository
   extends Repository<TransactionHistory> {
   this: TransactionHistoryRepository;
@@ -138,6 +143,9 @@ export const customerCustomRepository: Pick<TransactionHistoryRepository, any> =
         moneyAdd: SUB_TYPE.includes(type) ? 0 : money,
         moneySub: SUB_TYPE.includes(type) ? money : 0,
         note,
+        moneyType: SUB_TYPE.includes(type)
+          ? TransactionHistoryMoneyType.SUB
+          : TransactionHistoryMoneyType.ADD,
       });
     },
 

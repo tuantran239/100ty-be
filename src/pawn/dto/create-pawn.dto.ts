@@ -11,7 +11,7 @@ export class CreatePawnDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  userId: string;
+  userId?: string;
 
   @ApiProperty()
   @IsOptional()
@@ -40,6 +40,11 @@ export class CreatePawnDto {
   @IsNumber()
   @IsNotEmpty()
   loanAmount: number;
+
+  @ApiProperty()
+  @IsNumber()
+  @IsOptional()
+  rootMoney?: number;
 
   @ApiProperty()
   @IsNumber()

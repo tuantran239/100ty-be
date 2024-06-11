@@ -14,7 +14,6 @@ import {
   formatDate,
   getDateLocal,
 } from 'src/common/utils/time';
-import { ContractService } from 'src/contract/contract.service';
 import { DatabaseService } from 'src/database/database.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
 import { User } from 'src/user/user.entity';
@@ -38,6 +37,7 @@ import { CreateBatHoDto } from './dto/create-bat-ho.dto';
 import { ListBatHoQueryDto } from './dto/list-bat-ho-query.dto';
 import { SettlementBatHoDto } from './dto/settlement-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
+import { ContractService } from 'src/contract/contract.service';
 
 @Injectable()
 export class BatHoService extends BaseService<
@@ -49,8 +49,8 @@ export class BatHoService extends BaseService<
   constructor(
     private dataSource: DataSource,
     private logger: LoggerServerService,
-    private contractService: ContractService,
     private databaseService: DatabaseService,
+    private contractService: ContractService,
     @InjectRepository(BatHo) private readonly batHoRepository: BatHoRepository,
   ) {
     super();
@@ -89,7 +89,11 @@ export class BatHoService extends BaseService<
             ...payload.customer,
           });
 
-          payloadData = { ...payloadData, customerId: newCustomer.id };
+          payloadData = {
+            ...payloadData,
+            customerId: newCustomer.id,
+            customer: newCustomer,
+          };
         }
 
         const newBatHo = await batHoRepository.createBatHo({
@@ -97,7 +101,7 @@ export class BatHoService extends BaseService<
         });
 
         const paymentHistoriesPayload =
-          await batHoRepository.createPaymentHistories(newBatHo);
+          await batHoRepository.createPaymentHistoriesPayload(newBatHo);
 
         const newPaymentHistories =
           await paymentHistoryRepository.createManyPaymentHistory(
@@ -167,7 +171,11 @@ export class BatHoService extends BaseService<
       },
     );
 
-    await this.contractService.updateBatHoStatus(newBatHo.id);
+    await this.batHoRepository.updateStatus(newBatHo.id);
+
+    await this.contractService.updateBadDebitStatusCustomer(
+      newBatHo.customerId,
+    );
 
     return newBatHo;
   }
@@ -182,7 +190,32 @@ export class BatHoService extends BaseService<
           transactionHistoryRepository,
         } = repositories;
 
-        const batHo = await batHoRepository.updateBatHo({ ...payload, id });
+        const batHo = await this.batHoRepository.checkBatHoExist(
+          { where: [{ id }, { contractId: id }] },
+          { message: 'Hợp đồng không tồn tại' },
+        );
+
+        if (payload.contractId && batHo.contractId !== payload.contractId) {
+          await this.batHoRepository.checkBatHoExist(
+            { where: { contractId: payload.contractId } },
+            { message: 'Mã hợp đồng đã tồn tại.' },
+            true,
+          );
+        }
+
+        if (payload.debitStatus && payload.debitStatus !== batHo.debitStatus) {
+          const values = Object.values(DebitStatus);
+          const isDebitStatus = values.find(
+            (val) => val == payload.debitStatus,
+          );
+          if (!isDebitStatus) {
+            throw new Error('Trạng thái không hợp lệ.');
+          }
+        }
+
+        if (payload.loanAmount > payload.revenueReceived) {
+          throw new Error('Số tiền nhận về không thể nhỏ hơn khoản vay');
+        }
 
         if (
           payload.fundedAmount &&
@@ -230,7 +263,7 @@ export class BatHoService extends BaseService<
           await transactionHistoryRepository.delete({ batHoId: batHo.id });
 
           const paymentHistories =
-            await batHoRepository.createPaymentHistories(batHo);
+            await batHoRepository.createPaymentHistoriesPayload(batHo);
 
           const newPaymentHistories =
             await paymentHistoryRepository.createManyPaymentHistory(
@@ -300,7 +333,11 @@ export class BatHoService extends BaseService<
       },
     );
 
-    await this.contractService.updateBatHoStatus(batHoUpdated.id);
+    await this.batHoRepository.updateStatus(batHoUpdated.id);
+
+    await this.contractService.updateBadDebitStatusCustomer(
+      batHoUpdated.customerId,
+    );
 
     return batHoUpdated;
   }
@@ -491,16 +528,6 @@ export class BatHoService extends BaseService<
     return this.batHoRepository.findOne(options);
   }
 
-  async checkUpdateBatHoDebitStatus() {
-    const batHos = await this.list({});
-
-    Promise.allSettled(
-      batHos.map(async (batHo) => {
-        await this.contractService.updateBatHoStatus(batHo.id);
-      }),
-    );
-  }
-
   async settlementBatHo(batHoId: string, payload: SettlementBatHoDto) {
     await this.databaseService.runTransaction(async (repositories) => {
       const {
@@ -642,7 +669,10 @@ export class BatHoService extends BaseService<
 
     Promise.allSettled(
       batHos.map(async (batHo) => {
-        await this.contractService.updateBatHoStatus(batHo.id);
+        await this.batHoRepository.updateStatus(batHo.id);
+        await this.contractService.updateBadDebitStatusCustomer(
+          batHo.customerId,
+        );
       }),
     );
   }
