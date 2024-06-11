@@ -114,7 +114,7 @@ export class PaymentHistoryController {
 
   @UseGuards(JwtAuthGuard)
   @Put(RouterUrl.PAYMENT_HISTORY.UPDATE)
-  async updateCustomer(
+  async payLoanMoney(
     @Body(new BodyValidationPipe()) payload: PayMoneyDto,
     @Res() res: Response,
     @Req() req,
@@ -128,7 +128,7 @@ export class PaymentHistoryController {
         { ...payload, id },
       );
 
-      const paymentHistory = await this.paymentHistoryService.updateTransaction(
+      const paymentHistory = await this.paymentHistoryService.payLoanMoney(
         id,
         payload,
       );
@@ -153,31 +153,6 @@ export class PaymentHistoryController {
       this.logger.error(
         { loggerType: 'update', entity: ENTITY_LOG, serverType: 'error' },
         error,
-      );
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.PAYMENT_HISTORY.CHECK_UPDATE)
-  async checkAndUpdateCash(@Res() res: Response, @Req() req) {
-    try {
-      await this.paymentHistoryService.checkAndUpdateCashPaymentHistory(
-        req?.user?.user_id ?? '',
-      );
-
-      const responseData: ResponseData = {
-        message: 'success',
-        data: null,
-        error: null,
-        statusCode: 200,
-      };
-
-      return res.status(200).send(responseData);
-    } catch (error: any) {
-      this.logger.error(
-        { customerMessage: 'Check and update cash payment history' },
-        null,
       );
       throw new InternalServerErrorException(error.message);
     }

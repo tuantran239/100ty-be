@@ -103,4 +103,6 @@ export interface ContractResponse {
   moneyMustPay: number;
   moneyPaid: number;
   contractType: string;
+  revenueReceived: number;
+  disbursementMoney: number;
 }

@@ -85,6 +85,11 @@ export class CreateCashDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
+  contractId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
   userId?: string;
 
   @ApiProperty()

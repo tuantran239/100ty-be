@@ -7,6 +7,11 @@ export class CreateBatHoDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
+  userId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
   customerId?: string;
 
   @ApiProperty()

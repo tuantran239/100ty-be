@@ -55,4 +55,9 @@ export class UpdateCashDto {
   @IsBoolean()
   @IsOptional()
   isInitCash?: boolean;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  contractId?: string;
 }

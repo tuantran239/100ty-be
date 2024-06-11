@@ -18,33 +18,24 @@ import { LogActionType } from 'src/common/constant/log';
 import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import {
-  CashFilterType,
-  ResponseData,
-  RoleId,
-  RoleName,
-} from 'src/common/interface';
-import { DebitStatus } from 'src/common/interface/bat-ho';
+import { CashFilterType, ResponseData, RoleName } from 'src/common/interface';
 import { PaymentStatusHistory } from 'src/common/interface/history';
-import { BatHoQuery } from 'src/common/interface/query';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { calculateLateAndBadPaymentIcloud } from 'src/common/utils/calculate';
-import {
-  mapBatHoResponse,
-  mapTransactionHistoryResponse,
-} from 'src/common/utils/map';
+import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
+import { mapTransactionHistoryResponse } from 'src/common/utils/map';
 import { convertPostgresDate, formatDate } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import { LogActionService } from 'src/log-action/log-action.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
 import { User } from 'src/user/user.entity';
-import { And, Between, Equal, ILike, IsNull, Not, Or } from 'typeorm';
+import { IsNull } from 'typeorm';
 import { BatHoService } from './bat-ho.service';
 import { CreateBatHoDto } from './dto/create-bat-ho.dto';
+import { ListBatHoQueryDto } from './dto/list-bat-ho-query.dto';
 import { ReverseBatHoDto } from './dto/reverse-bat-ho.dto';
 import { SettlementBatHoDto } from './dto/settlement-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
-import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
 
 export const BAT_HO_CODE_PREFIX = 'bh';
 const ENTITY_LOG = 'BatHo';
@@ -75,7 +66,7 @@ export class BatHoController {
         payload,
       );
 
-      const batHo = await this.batHoService.createTransaction(payload, userId);
+      const batHo = await this.batHoService.create({ ...payload, userId });
 
       this.logActionService.create({
         userId,
@@ -105,7 +96,7 @@ export class BatHoController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Put(RouterUrl.BAT_HO.UPDATE)
-  async updateCash(
+  async updateBatHo(
     @Body(new BodyValidationPipe()) payload: UpdateBatHoDto,
     @Res() res: Response,
     @Req() req: Request,
@@ -139,216 +130,35 @@ export class BatHoController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(RouterUrl.BAT_HO.LIST)
-  async listBatHo(@Res() res: Response, @Req() req) {
+  async listBatHo(
+    @Body(new BodyValidationPipe()) payload: ListBatHoQueryDto,
+    @Res() res: Response,
+    @Req() req,
+  ) {
     try {
       const me = req.user as User;
 
-      const role = me.roles[0];
+      const listIcloudPagination = await this.batHoService.listBatHo(
+        payload,
+        me,
+      );
 
-      let user = undefined;
+      const listAllIcloud = await this.batHoService.listBatHo(
+        { ...payload, page: undefined, pageSize: undefined },
+        me,
+      );
 
-      const {
-        search,
-        fromDate,
-        toDate,
-        page,
-        pageSize,
-        debitStatus,
-        device,
-        hostServer,
-        receiptToday,
-      } = req.body as BatHoQuery;
-
-      let paymentHistories = undefined;
-
-      const where = [];
-      const from = fromDate ? fromDate : formatDate(new Date());
-      const to = toDate ? toDate : formatDate(new Date());
-      const today = formatDate(new Date());
-
-      if (role.id === RoleId.ADMIN) {
-        user = [
-          {
-            managerId: me.id,
-          },
-          {
-            id: me.id,
-          },
-        ];
-      } else if (role.id === RoleId.USER) {
-        user = {
-          id: me.id,
-        };
-      }
-
-      if (receiptToday === true) {
-        paymentHistories = {
-          startDate: Equal(convertPostgresDate(today)),
-          isDeductionMoney: Or(Equal(false), IsNull()),
-          paymentStatus: Or(Equal(false), IsNull()),
-        };
-      }
-
-      const query = {
-        loanDate: receiptToday
-          ? undefined
-          : Between(convertPostgresDate(from), convertPostgresDate(to)),
-        deleted_at: IsNull(),
-        debitStatus: receiptToday
-          ? And(Not(DebitStatus.COMPLETED), Not(DebitStatus.DELETED))
-          : Not(DebitStatus.DELETED),
-        user,
-        paymentHistories,
-      };
-
-      if (
-        (!search || (search as string).trim().length === 0) &&
-        (!debitStatus || (debitStatus as string).trim().length === 0) &&
-        (!device || (device as string).trim().length === 0) &&
-        (!hostServer || (hostServer as string).trim().length === 0)
-      ) {
-        where.push({
-          ...query,
-        });
-      } else {
-        if (debitStatus && !receiptToday) {
-          const values = Object.values(DebitStatus).map((value) =>
-            value.toString(),
-          );
-          if (values.includes(debitStatus)) {
-            where.push({
-              ...query,
-              debitStatus: ILike(debitStatus),
-            });
-          }
-        }
-
-        if (search) {
-          const searchType = parseInt((search as string) ?? '');
-
-          if (!Number.isNaN(searchType)) {
-            where.push({
-              ...query,
-              customer: {
-                phoneNumber: ILike(search),
-              },
-            });
-            where.push({
-              ...query,
-              customer: {
-                personalID: ILike(search),
-              },
-            });
-          } else {
-            where.push({
-              ...query,
-              customer: {
-                firstName: ILike(search),
-              },
-            });
-            where.push({
-              ...query,
-              customer: {
-                lastName: ILike(search),
-              },
-            });
-            where.push({
-              ...query,
-              contractId: ILike(search),
-            });
-          }
-        }
-
-        if (device) {
-          where.push({
-            ...query,
-            device: {
-              name: ILike(device),
-            },
-          });
-        }
-
-        if (hostServer) {
-          where.push({
-            ...query,
-            hostServer: {
-              name: ILike(hostServer),
-            },
-          });
-        }
-      }
-
-      const data = await this.batHoService.listAndCount({
-        relations: [
-          'customer',
-          'paymentHistories',
-          'device',
-          'hostServer',
-          'user',
-        ],
-        where: [...where],
-        take: pageSize ?? 10,
-        skip: ((page ?? 1) - 1) * (pageSize ?? 10),
-        order: { created_at: 'ASC' },
-      });
-
-      const listIcloudData = await this.batHoService.listAndCount({
-        relations: [
-          'customer',
-          'paymentHistories',
-          'device',
-          'hostServer',
-          'user',
-        ],
-        where: [...where],
-        order: { created_at: 'ASC' },
-      });
-
-      const list_bat_ho: any[] = [];
-      const list_bat_ho_total: any[] = [];
-
-      for (let i = 0; i < data[0].length; i++) {
-        const batHo = await this.batHoService.retrieveOne({
-          where: { id: data[0][i].id },
-          relations: [
-            'customer',
-            'paymentHistories',
-            'device',
-            'hostServer',
-            'user',
-          ],
-        });
-
-        if (batHo) {
-          list_bat_ho.push({ ...(mapBatHoResponse(batHo) as any)?.batHo });
-        }
-      }
-
-      for (let i = 0; i < listIcloudData[0].length; i++) {
-        const batHo = await this.batHoService.retrieveOne({
-          where: { id: listIcloudData[0][i].id },
-          relations: [
-            'customer',
-            'paymentHistories',
-            'device',
-            'hostServer',
-            'user',
-          ],
-        });
-
-        if (batHo) {
-          list_bat_ho_total.push({
-            ...(mapBatHoResponse(batHo) as any)?.batHo,
-          });
-        }
-      }
-
-      const totalMoney =
-        await this.batHoService.calculateTotalIcloud(list_bat_ho_total);
+      const totalMoney = await this.batHoService.calculateTotalIcloud(
+        listAllIcloud.list_bat_ho,
+      );
 
       const responseData: ResponseData = {
         message: 'success',
-        data: { list_bat_ho, total: data[1], totalMoney },
+        data: {
+          list_bat_ho: listIcloudPagination.list_bat_ho,
+          total: listIcloudPagination.total,
+          totalMoney,
+        },
         error: null,
         statusCode: 200,
       };
@@ -590,10 +400,10 @@ export class BatHoController {
         oldContractId: batHo.id,
       };
 
-      const newBatHo = await this.batHoService.createTransaction(
-        createBatHoPayload,
-        req?.user?.user_id ?? '',
-      );
+      const newBatHo = await this.batHoService.create({
+        ...createBatHoPayload,
+        userId: req?.user?.user_id,
+      });
 
       await this.batHoService.update(id, {
         maturityDate: convertPostgresDate(payDate),

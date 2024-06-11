@@ -1,16 +1,8 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { ContractResponse, ContractType } from 'src/common/interface';
-import { PaymentStatusHistory } from 'src/common/interface/history';
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ContractResponse } from 'src/common/interface';
 import { BaseService } from 'src/common/service/base.service';
-import {
-  calculateLateAndBadPaymentIcloud,
-  calculateLateAndBadPaymentPawn,
-} from 'src/common/utils/calculate';
-import { convertPostgresDate, formatDate } from 'src/common/utils/time';
+import { ContractService } from 'src/contract/contract.service';
 import { DatabaseService } from 'src/database/database.service';
 import {
   DataSource,
@@ -19,11 +11,12 @@ import {
   FindManyOptions,
   FindOneOptions,
   IsNull,
-  Repository,
 } from 'typeorm';
 import { Customer } from './customer.entity';
+import { CustomerRepository } from './customer.repository';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { formatDate } from 'src/common/utils/time';
 
 @Injectable()
 export class CustomerService extends BaseService<
@@ -32,81 +25,31 @@ export class CustomerService extends BaseService<
   UpdateCustomerDto
 > {
   protected manager: EntityManager;
-  private customerRepository: Repository<Customer>;
+
   constructor(
     private dataSource: DataSource,
     private databaseService: DatabaseService,
+    private contractService: ContractService,
+    @InjectRepository(Customer)
+    private readonly customerRepository: CustomerRepository,
   ) {
     super();
     this.manager = this.dataSource.manager;
-    this.customerRepository = this.dataSource.manager.getRepository(Customer);
   }
 
   async create(payload: CreateCustomerDto): Promise<Customer> {
-    const customerPersonalID = await this.retrieveOne({
-      where: { personalID: payload?.personalID },
-    });
-
-    if (customerPersonalID) {
-      throw new BadRequestException('Số CMND/CCCD đã tồn tại.');
-    }
-
-    const customerPhonenumber = await this.retrieveOne({
-      where: { phoneNumber: payload?.phoneNumber },
-    });
-
-    if (customerPhonenumber) {
-      throw new BadRequestException('Số điện thoại đã tồn tại.');
-    }
-    const newCustomer = await this.customerRepository.create({
-      ...payload,
-      images: payload.images ?? [],
-      dateOfBirth: convertPostgresDate(payload.dateOfBirth),
-    });
-    return await this.customerRepository.save(newCustomer);
+    return await this.customerRepository.createCustomer(payload);
   }
 
   async update(id: string, payload: UpdateCustomerDto): Promise<any> {
-    const customer = await this.customerRepository.findOne({
-      where: [{ id }, { personalID: id }],
-    });
-
-    if (!customer) {
-      throw new NotFoundException('Không tìm thấy khách hàng');
-    }
-
-    const customerPersonalID = await this.retrieveOne({
-      where: { personalID: payload?.personalID },
-    });
-
-    if (customerPersonalID && customerPersonalID.id !== customer.id) {
-      throw new BadRequestException('Số CMND/CCCD đã tồn tại.');
-    }
-
-    const customerPhonenumber = await this.retrieveOne({
-      where: { phoneNumber: payload?.phoneNumber },
-    });
-
-    if (customerPhonenumber && customerPhonenumber.id !== customer.id) {
-      throw new BadRequestException('Số điện thoại đã tồn tại.');
-    }
-
-    if (payload.dateOfBirth) {
-      payload.dateOfBirth = convertPostgresDate(payload.dateOfBirth);
-    }
-
-    return await this.customerRepository.update(
-      { id: customer.id },
-      { ...payload, updated_at: new Date() },
-    );
+    return await this.customerRepository.updateCustomer({ ...payload, id });
   }
 
   async delete(id: string): Promise<DeleteResult> {
-    const customer = await this.customerRepository.findOne({ where: { id } });
-
-    if (!customer) {
-      throw new Error();
-    }
+    await this.customerRepository.checkCustomerExist(
+      { where: { id } },
+      { message: `Không tìm thấy khách hàng` },
+    );
 
     return await this.customerRepository.delete({ id });
   }
@@ -130,119 +73,29 @@ export class CustomerService extends BaseService<
   }
 
   async getTransactionHistory(id: string, contractType?: string) {
-    const { batHoRepository, pawnRepository } =
-      this.databaseService.getRepositories();
+    const customer = await this.customerRepository.checkCustomerExist(
+      { where: { id } },
+      { message: 'Không tìm thấy khách hàng' },
+    );
 
-    const customer = await this.retrieveOne({
-      where: { id },
-    });
-
-    if (!customer) {
-      throw new Error('Không tìm thấy khách hàng');
-    }
-
-    const batHoContracts = await batHoRepository.find({
+    const contracts = await this.contractService.listContract(contractType, {
       where: { customerId: customer.id, deleted_at: IsNull() },
-      relations: ['paymentHistories'],
     });
 
-    const pawnContracts = await pawnRepository.find({
-      where: { customerId: customer.id, deleted_at: IsNull() },
-      relations: ['paymentHistories'],
-    });
-
-    let contractResponses: ContractResponse[] = [];
-
-    const icloudContractResponses: ContractResponse[] = [];
-    const pawnContractResponses: ContractResponse[] = [];
-
-    for (let i = 0; i < batHoContracts.length; i++) {
-      const batHo = batHoContracts[i];
-
-      const paymentHistories = batHo.paymentHistories;
-
-      const { latePaymentDay, latePaymentMoney, badDebitMoney } =
-        calculateLateAndBadPaymentIcloud(
-          batHo.paymentHistories ?? [],
-          batHo.debitStatus,
-        );
-
-      const moneyPaidNumber = paymentHistories.reduce(
-        (total, paymentHistory) => {
-          if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
-            return (total += paymentHistory.payMoney);
-          }
-          return total;
-        },
-        0,
-      );
-
-      icloudContractResponses.push({
-        badDebitMoney,
-        moneyPaid: moneyPaidNumber,
-        latePaymentDay,
-        latePaymentMoney,
-        contractId: batHo.contractId,
-        loanDate: formatDate(batHo.loanDate),
-        debitStatus: batHo.debitStatus,
-        loanAmount: batHo.loanAmount,
-        moneyMustPay: batHo.revenueReceived,
-        contractType: ContractType.BAT_HO,
-      });
-    }
-
-    for (let i = 0; i < pawnContracts.length; i++) {
-      const pawn = pawnContracts[i];
-
-      const paymentHistories = pawn.paymentHistories;
-
-      const { latePaymentPeriod, latePaymentMoney, badDebitMoney } =
-        calculateLateAndBadPaymentPawn(
-          pawn.paymentHistories ?? [],
-          pawn.debitStatus,
-        );
-
-      const moneyPaidNumber = paymentHistories.reduce(
-        (total, paymentHistory) => {
-          if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
-            return (total += paymentHistory.payMoney);
-          }
-          return total;
-        },
-        0,
-      );
-
-      pawnContractResponses.push({
-        badDebitMoney,
-        moneyPaid: moneyPaidNumber,
-        latePaymentDay: latePaymentPeriod,
-        latePaymentMoney,
-        contractId: pawn.contractId,
-        loanDate: formatDate(pawn.loanDate),
-        debitStatus: pawn.debitStatus,
-        loanAmount: pawn.loanAmount,
-        moneyMustPay: pawn.revenueReceived,
-        contractType: ContractType.CAM_DO,
-      });
-    }
-
-    if (contractType === ContractType.BAT_HO) {
-      contractResponses = contractResponses.concat(
-        contractResponses,
-        icloudContractResponses,
-      );
-    } else if (contractType === ContractType.CAM_DO) {
-      contractResponses = contractResponses.concat(
-        contractResponses,
-        pawnContractResponses,
-      );
-    } else {
-      contractResponses = contractResponses.concat(
-        contractResponses,
-        icloudContractResponses,
-        pawnContractResponses,
-      );
-    }
+    const contractResponses: ContractResponse[] = contracts.map((contract) => ({
+      contractId: contract.contractId,
+      loanDate: formatDate(contract.loanDate),
+      debitStatus: contract.debitStatus,
+      loanAmount: contract.loanAmount,
+      latePaymentMoney: contract.latePaymentMoney,
+      badDebitMoney: contract.badDebitMoney,
+      latePaymentDay: contract.latePaymentDay,
+      moneyMustPay: contract.moneyMustPay,
+      moneyPaid: contract.moneyPaid,
+      contractType: contract.contractType,
+      revenueReceived: contract.revenueReceived,
+      disbursementMoney: contract.summarize.loan.disbursementMoney,
+    }));
 
     return contractResponses;
   }

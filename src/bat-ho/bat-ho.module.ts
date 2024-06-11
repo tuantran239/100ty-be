@@ -11,6 +11,7 @@ import { PaymentHistoryModule } from 'src/payment-history/payment-history.module
 import { TransactionHistoryModule } from 'src/transaction-history/transaction-history.module';
 import { DatabaseModule } from 'src/database/database.module';
 import { ContractModule } from 'src/contract/contract.module';
+import { BatHoRepositoryProvider } from './bat-ho.repository';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { ContractModule } from 'src/contract/contract.module';
     ContractModule,
   ],
   controllers: [BatHoController],
-  providers: [BatHoService],
+  providers: [BatHoService, BatHoRepositoryProvider],
   exports: [BatHoService],
 })
 export class BatHoModule {}
