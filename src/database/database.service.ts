@@ -23,6 +23,7 @@ import { BatHoRepository } from 'src/bat-ho/bat-ho.repository';
 import { CashRepository } from 'src/cash/cash.repository';
 import { PaymentHistoryRepository } from 'src/payment-history/payment-history.repository';
 import { TransactionHistoryRepository } from 'src/transaction-history/transaction-history.repository';
+import { PawnRepository } from 'src/pawn/pawn.repository';
 
 export interface DataSourceRepository {
   batHoRepository: BatHoRepository;
@@ -35,7 +36,7 @@ export interface DataSourceRepository {
   transactionHistoryRepository: TransactionHistoryRepository;
   userRepository: UserRepository;
   groupCashRepository: Repository<GroupCash>;
-  pawnRepository: Repository<Pawn>;
+  pawnRepository: PawnRepository;
   assetTypeRepository: Repository<AssetType>;
   assetPropertyRepository: Repository<AssetProperty>;
   extendedPeriodHistory: Repository<ExtendedPeriodHistory>;
@@ -60,6 +61,8 @@ export class DatabaseService {
     private readonly paymentHistoryRepository: PaymentHistoryRepository,
     @InjectRepository(TransactionHistory)
     private readonly transactionHistoryRepository: TransactionHistoryRepository,
+    @InjectRepository(Pawn)
+    private readonly pawnRepository: PawnRepository,
   ) {
     this.repositories = {
       batHoRepository: this.batHoRepository,
@@ -72,7 +75,7 @@ export class DatabaseService {
       transactionHistoryRepository: this.transactionHistoryRepository,
       userRepository: this.userRepository,
       groupCashRepository: this.dataSource.manager.getRepository(GroupCash),
-      pawnRepository: this.dataSource.manager.getRepository(Pawn),
+      pawnRepository: this.pawnRepository,
       assetTypeRepository: this.dataSource.manager.getRepository(AssetType),
       assetPropertyRepository:
         this.dataSource.manager.getRepository(AssetProperty),
@@ -113,7 +116,9 @@ export class DatabaseService {
         .getRepository(User)
         .extend(this.userRepository),
       groupCashRepository: queryRunner.manager.getRepository(GroupCash),
-      pawnRepository: queryRunner.manager.getRepository(Pawn),
+      pawnRepository: queryRunner.manager
+        .getRepository(Pawn)
+        .extend(this.pawnRepository),
       assetTypeRepository: queryRunner.manager.getRepository(AssetType),
       assetPropertyRepository: queryRunner.manager.getRepository(AssetProperty),
       extendedPeriodHistory: queryRunner.manager.getRepository(

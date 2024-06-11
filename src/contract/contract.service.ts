@@ -16,16 +16,12 @@ import {
   TransactionHistoryType,
 } from 'src/common/interface/history';
 import {
-  calculateInterestMoneyOfOneDay,
-  calculateLateAndBadPaymentIcloud,
-  calculateLateAndBadPaymentPawn,
   calculateMoneyBadDebit,
   calculateMoneyCompleted,
   calculateMoneyInDebit,
   calculateReduceTotal,
 } from 'src/common/utils/calculate';
 import { mapUniqueArray } from 'src/common/utils/map';
-import { getBatHoStatus, getPawnStatus } from 'src/common/utils/status';
 import { calculateRangeTime, formatDate } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import { Pawn } from 'src/pawn/pawn.entity';
@@ -185,6 +181,9 @@ export class ContractService {
   }
 
   private mapContractData({ icloud, pawn }: { icloud?: BatHo; pawn?: Pawn }) {
+    const { pawnRepository, batHoRepository } =
+      this.databaseService.getRepositories();
+
     let contract: Contract;
 
     if (icloud) {
@@ -192,10 +191,7 @@ export class ContractService {
       const transactionHistories = icloud.transactionHistories ?? [];
 
       const { latePaymentDay, latePaymentMoney, badDebitMoney } =
-        calculateLateAndBadPaymentIcloud(
-          paymentHistories ?? [],
-          icloud.debitStatus,
-        );
+        batHoRepository.calculateLateAndBadPayment(icloud);
 
       const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
         if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
@@ -249,10 +245,7 @@ export class ContractService {
       const transactionHistories = pawn.transactionHistories ?? [];
 
       const { latePaymentPeriod, latePaymentMoney, badDebitMoney } =
-        calculateLateAndBadPaymentPawn(
-          paymentHistories ?? [],
-          pawn.debitStatus,
-        );
+        pawnRepository.calculateLateAndBadPayment(pawn);
 
       const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
         if (paymentHistory.paymentStatus === PaymentStatusHistory.FINISH) {
@@ -276,12 +269,12 @@ export class ContractService {
         transactionHistories,
       );
 
-      const interestMoneyOneDay = calculateInterestMoneyOfOneDay(
-        pawn.loanAmount,
-        pawn.interestMoney,
-        pawn.paymentPeriod,
-        pawn.interestType,
-      );
+      const interestMoneyOneDay = pawnRepository.calculateInterestMoneyOneDay({
+        loanAmount: pawn.loanAmount,
+        interestMoney: pawn.interestMoney,
+        paymentPeriod: pawn.paymentPeriod,
+        interestType: pawn.interestType,
+      });
 
       summarize.expected.interestMoneyOneDay = interestMoneyOneDay;
 
@@ -385,182 +378,6 @@ export class ContractService {
     }
 
     return contracts;
-  }
-
-  async listBadDebitContractCustomer(customerId: string, user?: any) {
-    const { customerRepository } = this.databaseService.getRepositories();
-
-    const customer = await customerRepository.findOne({
-      where: { id: customerId },
-    });
-
-    if (!customer) {
-      return {
-        total: 0,
-        contracts: [],
-      };
-    }
-
-    const contracts = await this.listContract(null, {
-      where: {
-        user,
-        deleted_at: IsNull(),
-        customer: {
-          id: customer.id,
-        },
-        debitStatus: Equal(DebitStatus.BAD_DEBIT),
-      },
-      relations: ['paymentHistories', 'customer', 'user'],
-    });
-
-    const total = contracts.reduce((total, contract) => {
-      return total + contract.badDebitMoney;
-    }, 0);
-
-    return {
-      total,
-      contracts,
-    };
-  }
-
-  async updateBatHoStatus(batHoId: string) {
-    await this.databaseService.runTransaction(async (repositories) => {
-      const { batHoRepository } = repositories;
-
-      const batHo = await batHoRepository.findOne({
-        where: { id: batHoId },
-        relations: ['paymentHistories'],
-      });
-
-      if (batHo) {
-        const status = getBatHoStatus(batHo.paymentHistories ?? []);
-
-        await batHoRepository.update({ id: batHo.id }, { debitStatus: status });
-      }
-    });
-
-    await this.databaseService.runTransaction(async (repositories) => {
-      const { batHoRepository, customerRepository } = repositories;
-
-      const batHo = await batHoRepository.findOne({
-        where: { id: batHoId },
-      });
-
-      if (batHo) {
-        const customer = await customerRepository.findOne({
-          where: { id: batHo.customerId },
-        });
-
-        const customerBadDebitContract =
-          await this.listBadDebitContractCustomer(customer.id);
-
-        await customerRepository.update(customer.id, {
-          debtMoney: customerBadDebitContract.total,
-          isDebt: customerBadDebitContract.total !== 0,
-        });
-      }
-    });
-  }
-
-  async updatePawnStatus(pawnId: string) {
-    await this.databaseService.runTransaction(async (repositories) => {
-      const { pawnRepository } = repositories;
-
-      const pawn = await pawnRepository.findOne({
-        where: { id: pawnId },
-        relations: ['paymentHistories'],
-      });
-
-      if (pawn) {
-        const status = getPawnStatus(pawn.paymentHistories ?? []);
-
-        await pawnRepository.update({ id: pawn.id }, { debitStatus: status });
-      }
-    });
-
-    await this.databaseService.runTransaction(async (repositories) => {
-      const { pawnRepository, customerRepository } = repositories;
-
-      const pawn = await pawnRepository.findOne({
-        where: { id: pawnId },
-      });
-
-      if (pawn) {
-        const customer = await customerRepository.findOne({
-          where: { id: pawn.customerId },
-        });
-
-        const customerBadDebitContract =
-          await this.listBadDebitContractCustomer(customer.id);
-
-        await customerRepository.update(customer.id, {
-          debtMoney: customerBadDebitContract.total,
-          isDebt: customerBadDebitContract.total !== 0,
-        });
-      }
-    });
-  }
-
-  async updateStatusContract(contractType?: string) {
-    let total = 0;
-    let updated = 0;
-
-    const { batHoRepository, pawnRepository } =
-      this.databaseService.getRepositories();
-
-    if (contractType === ContractType.BAT_HO) {
-      const icloudContracts = await batHoRepository.find({
-        where: { deleted_at: IsNull() },
-      });
-
-      total = icloudContracts.length;
-
-      await Promise.allSettled(
-        icloudContracts.map(async (icloudContract) => {
-          await this.updateBatHoStatus(icloudContract.id);
-          updated++;
-        }),
-      );
-    } else if (contractType === ContractType.CAM_DO) {
-      const pawnContracts = await pawnRepository.find({
-        where: { deleted_at: IsNull() },
-      });
-
-      total = pawnContracts.length;
-
-      await Promise.allSettled(
-        pawnContracts.map(async (pawnContract) => {
-          await this.updatePawnStatus(pawnContract.id);
-          updated++;
-        }),
-      );
-    } else {
-      const icloudContracts = await batHoRepository.find({
-        where: { deleted_at: IsNull() },
-      });
-
-      const pawnContracts = await pawnRepository.find({
-        where: { deleted_at: IsNull() },
-      });
-
-      total = pawnContracts.length + icloudContracts.length;
-
-      await Promise.allSettled(
-        icloudContracts.map(async (icloudContract) => {
-          await this.updateBatHoStatus(icloudContract.id);
-          updated++;
-        }),
-      );
-
-      await Promise.allSettled(
-        pawnContracts.map(async (pawnContract) => {
-          await this.updatePawnStatus(pawnContract.id);
-          updated++;
-        }),
-      );
-    }
-
-    return { updated: `${updated}/${total}` };
   }
 
   async listNewContractToday() {
@@ -817,5 +634,81 @@ export class ContractService {
     };
 
     return summarizeContractRangeTime;
+  }
+
+  async listBadDebitContractCustomer(customerId: string, user?: any) {
+    const { customerRepository } = this.databaseService.getRepositories();
+
+    const customer = await customerRepository.findOne({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      return {
+        total: 0,
+        contracts: [],
+      };
+    }
+
+    const contracts = await this.listContract(null, {
+      where: {
+        user,
+        deleted_at: IsNull(),
+        customer: {
+          id: customer.id,
+        },
+        debitStatus: Equal(DebitStatus.BAD_DEBIT),
+      },
+      relations: ['paymentHistories', 'customer', 'user'],
+    });
+
+    const total = contracts.reduce((total, contract) => {
+      return total + contract.badDebitMoney;
+    }, 0);
+
+    return {
+      total,
+      contracts,
+    };
+  }
+
+  async updateBadDebitStatusCustomer(customerId: string) {
+    const { customerRepository } = this.databaseService.getRepositories();
+    const { total } = await this.listBadDebitContractCustomer(customerId);
+
+    return await customerRepository.updateCustomer({
+      id: customerId,
+      debtMoney: total,
+      isDebt: total > 0,
+    });
+  }
+
+  async updateStatusContract(contractType?: string) {
+    let total = 0;
+    let updated = 0;
+
+    const listContract = await this.listContract(contractType);
+
+    total = listContract.length;
+
+    await this.databaseService.runTransaction(async (repositories) => {
+      const { batHoRepository, pawnRepository } = repositories;
+
+      await Promise.all(
+        listContract.map(async (contract) => {
+          if (contract.contractType === ContractType.BAT_HO) {
+            await batHoRepository.updateStatus(contract.contractId);
+            await this.updateBadDebitStatusCustomer(contract.customer.id);
+            updated++;
+          } else if (contract.contractType === ContractType.BAT_HO) {
+            await pawnRepository.updateStatus(contract.contractId);
+            await this.updateBadDebitStatusCustomer(contract.customer.id);
+            updated++;
+          }
+        }),
+      );
+    });
+
+    return { updated: `${updated}/${total}` };
   }
 }

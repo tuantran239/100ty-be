@@ -8,6 +8,7 @@ import { BatHoRepositoryProvider } from 'src/bat-ho/bat-ho.repository';
 import { CashRepositoryProvider } from 'src/cash/cash.repository';
 import { PaymentHistoryRepositoryProvider } from 'src/payment-history/payment-history.repository';
 import { TransactionHistoryRepositoryProvider } from 'src/transaction-history/transaction-history.repository';
+import { PawnRepositoryProvider } from 'src/pawn/pawn.repository';
 
 @Global()
 @Module({
@@ -20,6 +21,7 @@ import { TransactionHistoryRepositoryProvider } from 'src/transaction-history/tr
     CashRepositoryProvider,
     PaymentHistoryRepositoryProvider,
     TransactionHistoryRepositoryProvider,
+    PawnRepositoryProvider,
   ],
   exports: [DatabaseService],
   controllers: [DatabaseController],

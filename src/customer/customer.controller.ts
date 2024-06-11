@@ -20,7 +20,6 @@ import { CustomerQuery } from 'src/common/interface/query';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { filterRole } from 'src/common/utils/filter-role';
 import { getSearch } from 'src/common/utils/query';
-import { DatabaseService } from 'src/database/database.service';
 import { User } from 'src/user/user.entity';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -34,7 +33,6 @@ import { getSearchName } from 'src/common/utils/get-full-name';
 export class CustomerController {
   constructor(
     private customerService: CustomerService,
-    private databaseService: DatabaseService,
     private contractService: ContractService,
   ) {}
 
@@ -163,7 +161,7 @@ export class CustomerController {
 
       const responseData: ResponseData = {
         message: 'success',
-        data: { list_customer, total: data[1] },
+        data: { list_customer: data[0], total: data[1] },
         error: null,
         statusCode: 200,
       };

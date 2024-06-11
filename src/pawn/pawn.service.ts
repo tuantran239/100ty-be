@@ -1,5 +1,6 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { InjectRepository } from '@nestjs/typeorm';
 import { CashFilterType, ContractType } from 'src/common/interface';
 import { DebitStatus, ServiceFee } from 'src/common/interface/bat-ho';
 import {
@@ -11,47 +12,47 @@ import {
   LoanMoreMoney,
   LoanMoreMoneyHistory,
   PawnExtendPeriod,
-  PawnInterestType,
   PawnPaymentPeriodType,
   PaymentDownRootMoney,
   PaymentDownRootMoneyHistory,
   SettlementPawn,
 } from 'src/common/interface/pawn';
 import { BaseService } from 'src/common/service/base.service';
-import { calculateInterestToTodayPawn } from 'src/common/utils/calculate';
 import { getFullName } from 'src/common/utils/get-full-name';
 import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
 import {
   calculateTotalDayRangeDate,
   convertPostgresDate,
-  countFromToDate,
   formatDate,
   getDateLocal,
   getTodayNotTimeZone,
 } from 'src/common/utils/time';
-import { ContractService } from 'src/contract/contract.service';
 import { DatabaseService } from 'src/database/database.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
-import { CreatePaymentHistoryDto } from 'src/payment-history/dto/create-payment-history';
+import { User } from 'src/user/user.entity';
 import {
+  And,
+  Between,
   DataSource,
   EntityManager,
   Equal,
   FindManyOptions,
   FindOneOptions,
+  ILike,
   IsNull,
   Not,
   Or,
-  Repository,
 } from 'typeorm';
-import { PawnPaymentType } from './../common/interface/profit';
 import { CreatePawnDto } from './dto/create-pawn.dto';
 import { ExtendedPeriodConfirmDto } from './dto/extended-period-confirm.dto';
+import { ListPawnQueryDto } from './dto/list-pawn-query.dto';
 import { LoanMoreMoneyDto } from './dto/loan-more-money.dto';
 import { PaymentDownRootMoneyDto } from './dto/payment-down-root-money.dto';
 import { SettlementPawnDto } from './dto/settlement-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { Pawn } from './pawn.entity';
+import { PawnRepository } from './pawn.repository';
+import { ContractService } from 'src/contract/contract.service';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -60,16 +61,17 @@ export class PawnService extends BaseService<
   UpdatePawnDto
 > {
   protected manager: EntityManager;
-  private pawnRepository: Repository<Pawn>;
+
   constructor(
     private dataSource: DataSource,
     private databaseService: DatabaseService,
-    private contractService: ContractService,
     private logger: LoggerServerService,
+    @InjectRepository(Pawn)
+    private readonly pawnRepository: PawnRepository,
+    private contractService: ContractService,
   ) {
     super();
     this.manager = this.dataSource.manager;
-    this.pawnRepository = this.dataSource.manager.getRepository(Pawn);
   }
 
   async create(payload: CreatePawnDto): Promise<Pawn> {
@@ -104,46 +106,25 @@ export class PawnService extends BaseService<
             ...payload.customer,
           });
 
-          payloadData = { ...payloadData, customerId: newCustomer.id };
+          payloadData = {
+            ...payloadData,
+            customerId: newCustomer.id,
+            customer: newCustomer,
+          };
         }
 
-        const pawnContract = await pawnRepository.findOne({
-          where: { contractId: payload.contractId },
-        });
-
-        if (pawnContract) {
-          throw new BadRequestException('Mã hợp đồng đã tồn tại.');
-        }
-
-        let newPawn = await pawnRepository.create({
+        const newPawn = await pawnRepository.createPawn({
           ...payloadData,
           userId,
-          paymentType: payloadData.paymentType ?? PawnPaymentType.AFTER,
         });
 
-        newPawn = await pawnRepository.save(newPawn);
+        const paymentHistoriesPayload =
+          await pawnRepository.createPaymentHistoriesPayload(newPawn);
 
-        const paymentHistories = await this.countPawnPaymentHistory(
-          newPawn,
-          userId,
-        );
-
-        const newPaymentHistories = await Promise.all(
-          paymentHistories.map(async (paymentHistory) => {
-            let newPaymentHistory =
-              await paymentHistoryRepository.create(paymentHistory);
-            newPaymentHistory =
-              await paymentHistoryRepository.save(newPaymentHistory);
-            return newPaymentHistory;
-          }),
-        );
-
-        const revenueReceived = newPaymentHistories.reduce(
-          (total, paymentHistory) => {
-            return total + paymentHistory.payNeed;
-          },
-          0,
-        );
+        const newPaymentHistories =
+          await paymentHistoryRepository.createManyPaymentHistory(
+            paymentHistoriesPayload,
+          );
 
         const lastPaymentHistory =
           newPaymentHistories[newPaymentHistories.length - 1];
@@ -151,10 +132,11 @@ export class PawnService extends BaseService<
         await pawnRepository.update(
           { id: newPawn.id },
           {
-            revenueReceived,
             finishDate: lastPaymentHistory.endDate,
           },
         );
+
+        await pawnRepository.updateRevenueReceived(newPawn.id);
 
         const pawn = await pawnRepository.findOne({
           where: { id: newPawn.id },
@@ -185,7 +167,9 @@ export class PawnService extends BaseService<
       },
     );
 
-    await this.contractService.updatePawnStatus(newPawn.id);
+    await this.pawnRepository.updateStatus(newPawn.id);
+
+    await this.contractService.updateBadDebitStatusCustomer(newPawn.customerId);
 
     return newPawn;
   }
@@ -200,13 +184,12 @@ export class PawnService extends BaseService<
           transactionHistoryRepository,
         } = repositories;
 
-        const pawn = await pawnRepository.findOne({
-          where: [{ id }, { contractId: id }],
-        });
-
-        if (!pawn) {
-          throw new Error('Không tìm thấy hợp đồng');
-        }
+        const pawn = await pawnRepository.checkPawnExist(
+          {
+            where: [{ id }, { contractId: id }],
+          },
+          { message: 'Hợp đồng không tồn tại' },
+        );
 
         if (payload.debitStatus && payload.debitStatus !== pawn.debitStatus) {
           const values = Object.values(DebitStatus);
@@ -228,17 +211,10 @@ export class PawnService extends BaseService<
           }
         }
 
-        if (payload.loanAmount && payload.loanAmount !== pawn.loanAmount) {
-          await cashRepository.update(
-            {
-              pawnId: pawn.id,
-              filterType: CashFilterType.PAYMENT_CONTRACT,
-            },
-            { amount: payload.loanAmount },
-          );
-        }
-
         const pawnLoanDate = formatDate(pawn.loanDate);
+
+        const isUpdateLoanAmount =
+          payload.loanAmount && payload.loanAmount !== pawn.loanAmount;
 
         const isUpdateLoanDate =
           payload.loanDate && pawnLoanDate !== payload.loanDate;
@@ -260,6 +236,7 @@ export class PawnService extends BaseService<
           payload.numOfPayment && pawn.numOfPayment !== payload.numOfPayment;
 
         if (
+          isUpdateLoanAmount ||
           isUpdateLoanDate ||
           isUpdateInterestMoney ||
           isUpdateInterestType ||
@@ -274,24 +251,25 @@ export class PawnService extends BaseService<
           pawn.paymentPeriod = payload.paymentPeriod;
           pawn.paymentPeriodType = payload.paymentPeriodType;
 
+          await cashRepository.update(
+            {
+              pawnId: pawn.id,
+              filterType: CashFilterType.PAYMENT_CONTRACT,
+            },
+            { amount: payload.loanAmount },
+          );
+
           await paymentHistoryRepository.delete({ pawnId: pawn.id });
 
           await transactionHistoryRepository.delete({ pawnId: pawn.id });
 
-          const paymentHistories = await this.countPawnPaymentHistory(
-            pawn,
-            pawn.userId,
-          );
+          const paymentHistoriesPayload =
+            await pawnRepository.createPaymentHistoriesPayload(pawn);
 
-          const newPaymentHistories = await Promise.all(
-            paymentHistories.map(async (paymentHistory) => {
-              let newPaymentHistory =
-                await paymentHistoryRepository.create(paymentHistory);
-              newPaymentHistory =
-                await paymentHistoryRepository.save(newPaymentHistory);
-              return newPaymentHistory;
-            }),
-          );
+          const newPaymentHistories =
+            await paymentHistoryRepository.createManyPaymentHistory(
+              paymentHistoriesPayload,
+            );
 
           const revenueReceived = newPaymentHistories.reduce(
             (total, paymentHistory) => {
@@ -300,7 +278,10 @@ export class PawnService extends BaseService<
             0,
           );
 
-          await pawnRepository.update({ id: pawn.id }, { revenueReceived });
+          await pawnRepository.update(
+            { id: pawn.id },
+            { revenueReceived, rootMoney: payload.loanAmount },
+          );
 
           await cashRepository.update(
             { pawnId: pawn.id, filterType: CashFilterType.RECEIPT_CONTRACT },
@@ -326,11 +307,17 @@ export class PawnService extends BaseService<
           loanDate: convertPostgresDate(payload.loanDate),
         });
 
+        await pawnRepository.updateRevenueReceived(pawn.id);
+
         return pawn;
       },
     );
 
-    await this.contractService.updatePawnStatus(pawnUpdated.id);
+    await this.pawnRepository.updateStatus(pawnUpdated.id);
+
+    await this.contractService.updateBadDebitStatusCustomer(
+      pawnUpdated.customerId,
+    );
 
     return pawnUpdated;
   }
@@ -364,6 +351,116 @@ export class PawnService extends BaseService<
     });
   }
 
+  async listPawn(queryData: ListPawnQueryDto, me: User) {
+    const { userRepository, pawnRepository } =
+      this.databaseService.getRepositories();
+
+    const {
+      search,
+      fromDate,
+      toDate,
+      page,
+      pageSize,
+      debitStatus,
+      receiptToday,
+    } = queryData;
+
+    const user = userRepository.filterRole(me);
+
+    const where = [];
+    const from = fromDate ? fromDate : formatDate(new Date());
+    const to = toDate ? toDate : formatDate(new Date());
+    const today = formatDate(new Date());
+    let paymentHistories = undefined;
+
+    if (receiptToday === true) {
+      paymentHistories = {
+        endDate: Equal(convertPostgresDate(today)),
+        isDeductionMoney: Or(Equal(false), IsNull()),
+        paymentStatus: Or(Equal(false), IsNull()),
+      };
+    }
+
+    const query = {
+      loanDate: receiptToday
+        ? undefined
+        : Between(convertPostgresDate(from), convertPostgresDate(to)),
+      deleted_at: IsNull(),
+      debitStatus: receiptToday
+        ? And(Not(DebitStatus.COMPLETED), Not(DebitStatus.DELETED))
+        : Not(DebitStatus.DELETED),
+      user,
+      paymentHistories,
+    };
+
+    if (
+      (!search || (search as string).trim().length === 0) &&
+      (!debitStatus || (debitStatus as string).trim().length === 0)
+    ) {
+      where.push({
+        ...query,
+      });
+    } else {
+      if (debitStatus && !receiptToday) {
+        const values = Object.values(DebitStatus).map((value) =>
+          value.toString(),
+        );
+        if (values.includes(debitStatus)) {
+          where.push({
+            ...query,
+            debitStatus: ILike(debitStatus),
+          });
+        }
+      }
+
+      if (search) {
+        const searchType = parseInt((search as string) ?? '');
+
+        if (!Number.isNaN(searchType)) {
+          where.push({
+            ...query,
+            customer: {
+              phoneNumber: ILike(search),
+            },
+          });
+          where.push({
+            ...query,
+            customer: {
+              personalID: ILike(search),
+            },
+          });
+        } else {
+          where.push({
+            ...query,
+            customer: {
+              firstName: ILike(search),
+            },
+          });
+          where.push({
+            ...query,
+            customer: {
+              lastName: ILike(search),
+            },
+          });
+          where.push({
+            ...query,
+            contractId: ILike(search),
+          });
+        }
+      }
+    }
+
+    const options: FindManyOptions<Pawn> = {
+      relations: pawnRepository.getRelations([]),
+      where: [...where],
+      take: pageSize,
+      skip: page ? ((page ?? 1) - 1) * (pageSize ?? 10) : undefined,
+      order: { created_at: 'ASC' },
+    };
+
+    return pawnRepository.listPawn(options);
+  }
+
   async list(options: FindManyOptions<Pawn>): Promise<Pawn[]> {
     throw new Error('Method not implemented.');
     console.log(options);
@@ -382,351 +479,6 @@ export class PawnService extends BaseService<
 
   async retrieveOne(options: FindOneOptions<Pawn>): Promise<Pawn> {
     return await this.pawnRepository.findOne(options);
-  }
-
-  async updateRevenue(id: string) {
-    await this.databaseService.runTransaction(async (repositories) => {
-      const { pawnRepository } = repositories;
-
-      const pawn = await pawnRepository.findOne({
-        where: { id },
-        relations: ['paymentHistories', 'customer', 'user'],
-      });
-
-      if (pawn) {
-        const paymentHistoryMoney = pawn.paymentHistories.reduce(
-          (total, paymentHistory) => {
-            if (!paymentHistory.isRootMoney) {
-              return paymentHistory.payNeed + total;
-            }
-            return total;
-          },
-          0,
-        );
-
-        await pawnRepository.update(
-          { id: pawn.id },
-          {
-            revenueReceived: pawn.loanAmount + paymentHistoryMoney,
-          },
-        );
-      }
-    });
-  }
-
-  async countPawnPaymentHistory(
-    pawn: Pawn,
-    userId: string,
-  ): Promise<CreatePaymentHistoryDto[]> {
-    const paymentHistories: CreatePaymentHistoryDto[] = [];
-    const {
-      interestMoney,
-      contractId,
-      paymentPeriod,
-      paymentPeriodType,
-      numOfPayment,
-      loanDate,
-      loanAmount,
-      interestType,
-      id,
-    } = pawn;
-
-    let duration = numOfPayment;
-    let skip = 0;
-    let index = 1;
-
-    const methodType =
-      paymentPeriodType === PawnPaymentPeriodType.MOTH ||
-      paymentPeriodType === PawnPaymentPeriodType.REGULAR_MOTH
-        ? 'month'
-        : 'day';
-
-    let countPeriod = paymentPeriod;
-
-    if (paymentPeriodType === PawnPaymentPeriodType.WEEK) {
-      countPeriod = countPeriod * 7;
-    }
-
-    while (duration > 0) {
-      const dates = countFromToDate(countPeriod, methodType, skip, loanDate);
-
-      const totalDayMonth =
-        paymentPeriodType === PawnPaymentPeriodType.MOTH ||
-        paymentPeriodType === PawnPaymentPeriodType.REGULAR_MOTH
-          ? calculateTotalDayRangeDate(dates[0], dates[1])
-          : undefined;
-
-      const interestMoneyEachPeriod = this.countInterestMoneyEachPeriod(
-        loanAmount,
-        interestMoney,
-        paymentPeriod,
-        interestType,
-        paymentPeriodType,
-        totalDayMonth,
-      );
-
-      if (duration === 1) {
-        paymentHistories.push({
-          rowId: index + 1,
-          pawnId: id,
-          userId,
-          contractId: contractId,
-          startDate: convertPostgresDate(formatDate(dates[0])),
-          endDate: convertPostgresDate(formatDate(dates[1])),
-          paymentMethod: paymentPeriodType,
-          payMoney: 0,
-          payNeed: loanAmount,
-          paymentStatus: null,
-          contractType: ContractType.CAM_DO,
-          isRootMoney: true,
-          type: PaymentHistoryType.ROOT_MONEY,
-        });
-        paymentHistories.push({
-          rowId: index,
-          pawnId: id,
-          userId,
-          contractId: contractId,
-          startDate: convertPostgresDate(formatDate(dates[0])),
-          endDate: convertPostgresDate(formatDate(dates[1])),
-          paymentMethod: paymentPeriodType,
-          payMoney: 0,
-          payNeed: interestMoneyEachPeriod,
-          paymentStatus: null,
-          contractType: ContractType.CAM_DO,
-          type: PaymentHistoryType.INTEREST_MONEY,
-        });
-      } else {
-        paymentHistories.push({
-          rowId: index + 1,
-          pawnId: id,
-          userId,
-          contractId: contractId,
-          startDate: convertPostgresDate(formatDate(dates[0])),
-          endDate: convertPostgresDate(formatDate(dates[1])),
-          paymentMethod: paymentPeriodType,
-          payMoney: 0,
-          payNeed: interestMoneyEachPeriod,
-          paymentStatus: null,
-          contractType: ContractType.CAM_DO,
-          type: PaymentHistoryType.INTEREST_MONEY,
-        });
-      }
-
-      index++;
-      duration -= 1;
-      skip += countPeriod;
-    }
-
-    return paymentHistories;
-  }
-
-  private calculateInterestMoneyOfOneDay(
-    loanAmount: number,
-    interestMoney: number,
-    paymentPeriod: number,
-    interestType: string,
-  ) {
-    let moneyOneDay = 0;
-
-    switch (interestType) {
-      case PawnInterestType.LOAN_MIL_DAY:
-        moneyOneDay = Math.round(loanAmount / 1000000) * interestMoney;
-        break;
-      case PawnInterestType.LOAN_DAY:
-        moneyOneDay = interestMoney;
-        break;
-      case PawnInterestType.LOAN_PERCENT_MONTH:
-        moneyOneDay = (loanAmount * (interestMoney / 100)) / 30;
-        break;
-      case PawnInterestType.LOAN_PERIOD:
-        moneyOneDay = interestMoney / paymentPeriod;
-        break;
-      case PawnInterestType.LOAN_PERCENT_PERIOD:
-        moneyOneDay = (loanAmount * (interestMoney / 100)) / paymentPeriod;
-        break;
-      case PawnInterestType.LOAN_PERCENT_WEEK:
-        moneyOneDay = (loanAmount * (interestMoney / 100)) / 7;
-        break;
-      case PawnInterestType.LOAN_WEEK:
-        moneyOneDay = interestMoney / 7;
-        break;
-      default:
-        moneyOneDay = 0;
-    }
-
-    return moneyOneDay;
-  }
-
-  calculateInterestMoneyWithDay(
-    loanAmount: number,
-    interestMoney: number,
-    paymentPeriod: number,
-    interestType: string,
-  ) {
-    let money = 0;
-
-    const moneyOneDay = this.calculateInterestMoneyOfOneDay(
-      loanAmount,
-      interestMoney,
-      paymentPeriod,
-      interestType,
-    );
-
-    switch (interestType) {
-      case PawnInterestType.LOAN_MIL_DAY:
-        money = moneyOneDay * paymentPeriod;
-        break;
-      case PawnInterestType.LOAN_DAY:
-        money = moneyOneDay * paymentPeriod;
-        break;
-      case PawnInterestType.LOAN_PERCENT_MONTH:
-        money = Math.round(moneyOneDay * paymentPeriod);
-      case PawnInterestType.LOAN_PERIOD:
-        money = paymentPeriod * moneyOneDay;
-        break;
-      case PawnInterestType.LOAN_PERCENT_PERIOD:
-        money = paymentPeriod * moneyOneDay;
-        break;
-      default:
-        money = 0;
-    }
-
-    return parseInt(Math.round(money).toString());
-  }
-
-  calculateInterestMoneyWithWeek(
-    loanAmount: number,
-    interestMoney: number,
-    paymentPeriod: number,
-    interestType: string,
-  ) {
-    let money = 0;
-
-    const moneyOneDay = this.calculateInterestMoneyOfOneDay(
-      loanAmount,
-      interestMoney,
-      paymentPeriod,
-      interestType,
-    );
-
-    switch (interestType) {
-      case PawnInterestType.LOAN_PERCENT_WEEK:
-        money = moneyOneDay * paymentPeriod * 7;
-        break;
-      case PawnInterestType.LOAN_WEEK:
-        money = moneyOneDay * paymentPeriod * 7;
-        break;
-      default:
-        money = 0;
-    }
-
-    return parseInt(Math.round(money).toString());
-  }
-
-  calculateInterestMoneyWithMonth(
-    loanAmount: number,
-    interestMoney: number,
-    paymentPeriod: number,
-    interestType: string,
-    totalDayMonth?: number,
-  ) {
-    let money = 0;
-
-    const moneyOneDay = this.calculateInterestMoneyOfOneDay(
-      loanAmount,
-      interestMoney,
-      paymentPeriod,
-      interestType,
-    );
-
-    switch (interestType) {
-      case PawnInterestType.LOAN_MIL_DAY:
-        money =
-          moneyOneDay * (totalDayMonth ? totalDayMonth : paymentPeriod * 30);
-        break;
-      case PawnInterestType.LOAN_DAY:
-        money = moneyOneDay * (totalDayMonth ?? paymentPeriod * 30);
-        break;
-      case PawnInterestType.LOAN_PERCENT_MONTH:
-        money = Math.round(moneyOneDay * (totalDayMonth ?? paymentPeriod * 30));
-        break;
-      default:
-        money = 0;
-    }
-
-    return parseInt(Math.round(money).toString());
-  }
-
-  calculateInterestMoneyWithMonthRegular(
-    loanAmount: number,
-    interestMoney: number,
-    paymentPeriod: number,
-    interestType: string,
-    totalDayMonth?: number,
-  ) {
-    let money = 0;
-
-    const moneyOneDay = this.calculateInterestMoneyOfOneDay(
-      loanAmount,
-      interestMoney,
-      paymentPeriod,
-      interestType,
-    );
-
-    switch (interestType) {
-      case PawnInterestType.LOAN_PERCENT_MONTH:
-        money = Math.round(moneyOneDay * (totalDayMonth ?? paymentPeriod * 30));
-        break;
-      default:
-        money = 0;
-    }
-
-    return parseInt(Math.round(money).toString());
-  }
-
-  countInterestMoneyEachPeriod(
-    loanAmount: number,
-    interestMoney: number,
-    paymentPeriod: number,
-    interestType: string,
-    paymentPeriodType: string,
-    totalDayMonth?: number,
-  ) {
-    let money = 0;
-
-    if (paymentPeriodType === PawnPaymentPeriodType.DAY) {
-      money = this.calculateInterestMoneyWithDay(
-        loanAmount,
-        interestMoney,
-        paymentPeriod,
-        interestType,
-      );
-    } else if (paymentPeriodType === PawnPaymentPeriodType.WEEK) {
-      money = this.calculateInterestMoneyWithWeek(
-        loanAmount,
-        interestMoney,
-        paymentPeriod,
-        interestType,
-      );
-    } else if (paymentPeriodType === PawnPaymentPeriodType.MOTH) {
-      money = this.calculateInterestMoneyWithMonth(
-        loanAmount,
-        interestMoney,
-        paymentPeriod,
-        interestType,
-        totalDayMonth,
-      );
-    } else if (paymentPeriodType === PawnPaymentPeriodType.REGULAR_MOTH) {
-      money = this.calculateInterestMoneyWithMonthRegular(
-        loanAmount,
-        interestMoney,
-        paymentPeriod,
-        PawnInterestType.LOAN_PERCENT_MONTH,
-        totalDayMonth,
-      );
-    }
-
-    return money;
   }
 
   async settlementRequest(id: string) {
@@ -748,12 +500,13 @@ export class PawnService extends BaseService<
       paymentHistories,
     } = pawn;
 
-    const interestMoneyOneDay = this.calculateInterestMoneyOfOneDay(
-      loanAmount,
-      interestMoney,
-      paymentPeriod,
-      interestType,
-    );
+    const interestMoneyOneDay =
+      this.pawnRepository.calculateInterestMoneyOneDay({
+        loanAmount,
+        interestMoney,
+        paymentPeriod,
+        interestType,
+      });
 
     const today = getTodayNotTimeZone();
 
@@ -853,12 +606,13 @@ export class PawnService extends BaseService<
       paymentHistories,
     } = pawn;
 
-    const interestMoneyOneDay = this.calculateInterestMoneyOfOneDay(
-      loanAmount,
-      interestMoney,
-      paymentPeriod,
-      interestType,
-    );
+    const interestMoneyOneDay =
+      this.pawnRepository.calculateInterestMoneyOneDay({
+        loanAmount,
+        interestMoney,
+        paymentPeriod,
+        interestType,
+      });
 
     const totalDayToToday = calculateTotalDayRangeDate(
       new Date(paymentDate),
@@ -949,12 +703,13 @@ export class PawnService extends BaseService<
       paymentHistories,
     } = pawn;
 
-    const interestMoneyOneDay = this.calculateInterestMoneyOfOneDay(
-      loanAmount,
-      interestMoney,
-      paymentPeriod,
-      interestType,
-    );
+    const interestMoneyOneDay =
+      this.pawnRepository.calculateInterestMoneyOneDay({
+        loanAmount,
+        interestMoney,
+        paymentPeriod,
+        interestType,
+      });
 
     const totalDayToToday = calculateTotalDayRangeDate(
       new Date(convertPostgresDate(paymentDate)),
@@ -1168,7 +923,6 @@ export class PawnService extends BaseService<
               [
                 PaymentHistoryType.DEDUCTION_MONEY,
                 PaymentHistoryType.DOWN_ROOT_MONEY,
-                PaymentHistoryType.LOAN_MORE_MONEY,
                 PaymentHistoryType.OTHER_MONEY_DOWN_ROOT,
                 PaymentHistoryType.OTHER_MONEY_LOAN_MORE,
               ] as string[]
@@ -1187,14 +941,15 @@ export class PawnService extends BaseService<
                 )
               : undefined;
 
-          const interestMoneyEachPeriod = this.countInterestMoneyEachPeriod(
-            rootMoney,
-            interestMoney,
-            paymentPeriod,
-            interestType,
-            paymentPeriodType,
-            totalDayMonth,
-          );
+          const interestMoneyEachPeriod =
+            this.pawnRepository.calculateInterestMoneyEachPeriod({
+              loanAmount: rootMoney,
+              interestMoney,
+              paymentPeriod,
+              interestType,
+              paymentPeriodType,
+              totalDayMonth,
+            });
 
           if (paymentHistory.isRootMoney) {
             await paymentHistoryRepository.update(
@@ -1214,6 +969,21 @@ export class PawnService extends BaseService<
           }
         }),
       );
+
+      await paymentHistoryRepository.createPaymentHistory({
+        rowId: pawnPaymentHistories.length + 1,
+        pawnId: id,
+        payMoney: payload.paymentMoney,
+        payNeed: payload.paymentMoney,
+        startDate: convertPostgresDate(payload.paymentDate),
+        endDate: convertPostgresDate(payload.paymentDate),
+        type: PaymentHistoryType.DOWN_ROOT_MONEY,
+        paymentStatus: PaymentStatusHistory.FINISH,
+        contractType: ContractType.CAM_DO,
+        paymentMethod: pawn.paymentPeriodType,
+        contractId: pawn.contractId,
+        userId: pawn.userId,
+      });
 
       if (payload.otherMoney) {
         await paymentHistoryRepository.createPaymentHistory({
@@ -1252,9 +1022,9 @@ export class PawnService extends BaseService<
         { id: pawn.id },
         { loanAmount: pawn.loanAmount - payload.paymentMoney },
       );
-    });
 
-    await this.updateRevenue(pawn.id);
+      await pawnRepository.updateRevenueReceived(pawn.id);
+    });
 
     return true;
   }
@@ -1370,7 +1140,6 @@ export class PawnService extends BaseService<
               [
                 PaymentHistoryType.DEDUCTION_MONEY,
                 PaymentHistoryType.DOWN_ROOT_MONEY,
-                PaymentHistoryType.LOAN_MORE_MONEY,
                 PaymentHistoryType.OTHER_MONEY_DOWN_ROOT,
                 PaymentHistoryType.OTHER_MONEY_LOAN_MORE,
               ] as string[]
@@ -1389,14 +1158,15 @@ export class PawnService extends BaseService<
                 )
               : undefined;
 
-          const interestMoneyEachPeriod = this.countInterestMoneyEachPeriod(
-            rootMoney,
-            interestMoney,
-            paymentPeriod,
-            interestType,
-            paymentPeriodType,
-            totalDayMonth,
-          );
+          const interestMoneyEachPeriod =
+            this.pawnRepository.calculateInterestMoneyEachPeriod({
+              loanAmount: rootMoney,
+              interestMoney,
+              paymentPeriod,
+              interestType,
+              paymentPeriodType,
+              totalDayMonth,
+            });
 
           if (paymentHistory.isRootMoney) {
             await paymentHistoryRepository.update(
@@ -1454,9 +1224,9 @@ export class PawnService extends BaseService<
         { id: pawn.id },
         { loanAmount: pawn.loanAmount + payload.loanMoney },
       );
-    });
 
-    await this.updateRevenue(pawn.id);
+      await pawnRepository.updateRevenueReceived(pawn.id);
+    });
 
     return true;
   }
@@ -1523,17 +1293,15 @@ export class PawnService extends BaseService<
 
       const clonePawn = { ...pawn, numOfPayment: newNumOfPayment } as Pawn;
 
-      const newPaymentHistories = await this.countPawnPaymentHistory(
-        clonePawn,
-        clonePawn.user.id,
-      );
+      const newPaymentHistoriesPayload =
+        await this.pawnRepository.createPaymentHistoriesPayload(clonePawn);
 
-      const newPaymentHistoryRootMoney = newPaymentHistories.find(
+      const newPaymentHistoryRootMoney = newPaymentHistoriesPayload.find(
         (paymentHistory) =>
           paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
       );
 
-      const sortNewPaymentHistories = newPaymentHistories.sort(
+      const sortNewPaymentHistories = newPaymentHistoriesPayload.sort(
         (p1, p2) => p1.rowId - p2.rowId,
       );
 
@@ -1600,9 +1368,9 @@ export class PawnService extends BaseService<
       });
 
       await extendedPeriodHistory.save(newExtendedPeriod);
-    });
 
-    await this.updateRevenue(pawn.id);
+      await pawnRepository.updateRevenueReceived(pawn.id);
+    });
 
     return true;
   }
@@ -1630,7 +1398,8 @@ export class PawnService extends BaseService<
 
       totalMoneyPaid += moneyPaidNumber;
 
-      const { interestMoneyToday } = calculateInterestToTodayPawn(pawn);
+      const { interestMoneyToday } =
+        this.pawnRepository.calculateInterestToToday(pawn);
 
       totalMoneyToToday += interestMoneyToday;
     }
@@ -1653,7 +1422,10 @@ export class PawnService extends BaseService<
 
     Promise.allSettled(
       pawns.map(async (pawn) => {
-        await this.contractService.updatePawnStatus(pawn.id);
+        await this.pawnRepository.updateStatus(pawn.id);
+        await this.contractService.updateBadDebitStatusCustomer(
+          pawn.customerId,
+        );
       }),
     );
   }

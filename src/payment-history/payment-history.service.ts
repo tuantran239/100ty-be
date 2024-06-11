@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CashFilterType } from 'src/common/interface';
+import { CashFilterType, ContractType } from 'src/common/interface';
 import {
   PaymentStatusHistory,
   TransactionHistoryType,
@@ -53,6 +53,9 @@ export class PaymentHistoryService extends BaseService<
   }
 
   async payLoanMoney(id: string, payload: PayMoneyDto): Promise<any> {
+    const { pawnRepository, batHoRepository } =
+      this.databaseService.getRepositories();
+
     const { paymentHistory, paymentHistoryUpdated } =
       await this.databaseService.runTransaction(async (repositories) => {
         const {
@@ -132,9 +135,17 @@ export class PaymentHistoryService extends BaseService<
         return { paymentHistory, paymentHistoryUpdated };
       });
 
-    await this.contractService.updateBatHoStatus(paymentHistory?.batHo?.id);
-
-    await this.contractService.updatePawnStatus(paymentHistory?.pawn?.id);
+    if (paymentHistory.contractType === ContractType.BAT_HO) {
+      await batHoRepository.updateStatus(paymentHistory?.batHo?.id);
+      await this.contractService.updateBadDebitStatusCustomer(
+        paymentHistory?.batHo?.customerId ?? '',
+      );
+    } else if (paymentHistory.contractType === ContractType.CAM_DO) {
+      await pawnRepository.updateStatus(paymentHistory?.pawn?.id);
+      await this.contractService.updateBadDebitStatusCustomer(
+        paymentHistory?.pawn?.customerId ?? '',
+      );
+    }
 
     return paymentHistoryUpdated;
   }

@@ -32,6 +32,9 @@ export class Pawn extends SoftDeletableEntity {
   loanAmount: number;
 
   @Column()
+  rootMoney: number;
+
+  @Column()
   interestMoney: number;
 
   @Column()

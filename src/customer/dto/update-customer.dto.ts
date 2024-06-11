@@ -23,7 +23,7 @@ export class UpdateCustomerDto {
 
   @ApiProperty()
   @IsOptional()
-  phoneNumber: string;
+  phoneNumber?: string;
 
   @ApiProperty()
   @IsOptional()
@@ -46,4 +46,12 @@ export class UpdateCustomerDto {
   @ApiProperty()
   @IsOptional()
   customerInfo?: Record<string, unknown>;
+
+  @ApiProperty()
+  @IsOptional()
+  isDebt?: boolean;
+
+  @ApiProperty()
+  @IsOptional()
+  debtMoney?: number;
 }

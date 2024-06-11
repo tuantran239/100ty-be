@@ -54,12 +54,6 @@ export interface PawnResponse extends Omit<Pawn, 'beforeInsert'> {
   latePaymentPeriod: number;
   interestDayToday: number;
   interestMoneyToday: number;
-  // moneyMustPay: string;
-  // dateMustPay: string;
-  // latePaymentDay: number;
-  // isFinishToday: boolean;
-  // latePaymentMoney: number;
-  // badDebitMoney: number;
 }
 
 export interface PaymentHistoryResponse {

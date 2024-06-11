@@ -5,7 +5,6 @@ import {
   PaymentHistoryType,
   PaymentStatusHistory,
 } from 'src/common/interface/history';
-import { calculateLateAndBadPaymentIcloud } from 'src/common/utils/calculate';
 import {
   convertPostgresDate,
   countFromToDate,
@@ -24,6 +23,7 @@ import { BatHo } from './bat-ho.entity';
 import { BatHoResponseDto } from './dto/bat-ho-response.dto';
 import { CreateBatHoDto } from './dto/create-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
+import { isLastPaymentHistoryUnFinish } from 'src/common/utils/calculate';
 
 const BAT_HO_RELATIONS = [
   'customer',
@@ -55,9 +55,20 @@ export interface BatHoRepository extends Repository<BatHo> {
 
   getBatHo(options: FindOneOptions<BatHo>): Promise<BatHoResponseDto>;
 
-  createPaymentHistories(batHo: BatHo): Promise<CreatePaymentHistoryDto[]>;
+  createPaymentHistoriesPayload(
+    batHo: BatHo,
+  ): Promise<CreatePaymentHistoryDto[]>;
 
   getRelations(excludes: string[]): string[];
+
+  calculateLateAndBadPayment(icloud: BatHo): {
+    latePaymentDay;
+    latePaymentMoney;
+    badDebitMoney;
+    isFinishToday;
+  };
+
+  updateStatus(id: string): Promise<void>;
 }
 
 export const BatHoRepositoryProvider = {
@@ -180,6 +191,71 @@ export const BatHoCustomRepository: Pick<BatHoRepository, any> = {
     return batHo;
   },
 
+  calculateLateAndBadPayment(icloud: BatHo): {
+    latePaymentDay;
+    latePaymentMoney;
+    badDebitMoney;
+    isFinishToday;
+  } {
+    let latePaymentDay = 0;
+    let latePaymentMoney = 0;
+    let badDebitMoney = 0;
+    let isFinishToday = false;
+
+    const { debitStatus } = icloud;
+
+    const today = formatDate(new Date());
+
+    const paymentHistories = icloud.paymentHistories ?? [];
+
+    const sortPaymentHistories = paymentHistories.sort(
+      (p1, p2) => p1.rowId - p2.rowId,
+    );
+
+    const lastPaymentHistoryUnfinish = sortPaymentHistories.find(
+      (paymentHistory) => isLastPaymentHistoryUnFinish(paymentHistory),
+    );
+
+    if (lastPaymentHistoryUnfinish) {
+      latePaymentDay = Math.round(
+        (new Date(convertPostgresDate(today)).getTime() -
+          new Date(lastPaymentHistoryUnfinish.startDate).getTime()) /
+          86400000,
+      );
+
+      latePaymentMoney = sortPaymentHistories.reduce(
+        (total, paymentHistory) => {
+          if (isLastPaymentHistoryUnFinish(paymentHistory)) {
+            return paymentHistory.payNeed + total;
+          }
+          return total;
+        },
+        0,
+      );
+    }
+
+    if (debitStatus == DebitStatus.BAD_DEBIT) {
+      badDebitMoney = paymentHistories.reduce((total, paymentHistory) => {
+        if (paymentHistory.paymentStatus != PaymentStatusHistory.FINISH) {
+          return total + paymentHistory.payNeed;
+        }
+        return total;
+      }, 0);
+    }
+
+    const paymentHistoryFinishToday = sortPaymentHistories.find(
+      (paymentHistory) =>
+        paymentHistory.paymentStatus == PaymentStatusHistory.FINISH &&
+        formatDate(paymentHistory.startDate) == today,
+    );
+
+    if (paymentHistoryFinishToday) {
+      isFinishToday = true;
+    }
+
+    return { latePaymentDay, latePaymentMoney, badDebitMoney, isFinishToday };
+  },
+
   mapBatHoResponse(batHo: BatHo | null): BatHoResponseDto | null {
     if (batHo) {
       const { loanDurationDays, loanDate, revenueReceived } = batHo;
@@ -217,10 +293,7 @@ export const BatHoCustomRepository: Pick<BatHoRepository, any> = {
       );
 
       const { latePaymentDay, latePaymentMoney, badDebitMoney, isFinishToday } =
-        calculateLateAndBadPaymentIcloud(
-          batHo.paymentHistories ?? [],
-          batHo.debitStatus,
-        );
+        this.calculateLateAndBadPayment(batHo);
 
       return {
         ...batHo,
@@ -276,7 +349,7 @@ export const BatHoCustomRepository: Pick<BatHoRepository, any> = {
     return this.mapBatHoResponse(batHo);
   },
 
-  async createPaymentHistories(
+  async createPaymentHistoriesPayload(
     batHo: BatHo,
   ): Promise<CreatePaymentHistoryDto[]> {
     const paymentHistories: CreatePaymentHistoryDto[] = [];
@@ -377,5 +450,89 @@ export const BatHoCustomRepository: Pick<BatHoRepository, any> = {
 
   getRelations(excludes: string[]): string[] {
     return BAT_HO_RELATIONS.filter((relation) => !excludes.includes(relation));
+  },
+
+  async updateStatus(this: BatHoRepository, id: string): Promise<void> {
+    const batHo = await this.findOne({
+      where: [{ id }, { contractId: id }],
+      relations: ['paymentHistories'],
+    });
+
+    if (batHo) {
+      const paymentHistories = batHo.paymentHistories ?? [];
+
+      const sortPaymentHistories = paymentHistories.sort(
+        (a, b) => a.rowId - b.rowId,
+      );
+
+      const today = formatDate(new Date());
+
+      const lastPaymentHistory =
+        sortPaymentHistories[sortPaymentHistories.length - 1];
+
+      const todayTime = new Date(
+        convertPostgresDate(formatDate(new Date())),
+      ).setHours(0, 0, 0, 0);
+
+      const lastTime = new Date(
+        convertPostgresDate(
+          formatDate(lastPaymentHistory?.startDate ?? new Date()),
+        ),
+      ).setHours(0, 0, 0, 0);
+
+      const allFinish = sortPaymentHistories.every(
+        (paymentHistory) =>
+          paymentHistory.paymentStatus === PaymentStatusHistory.FINISH,
+      );
+
+      const isNotNull = sortPaymentHistories.some(
+        (paymentHistory) => paymentHistory.paymentStatus === null,
+      );
+
+      if (allFinish) {
+        batHo.debitStatus = DebitStatus.COMPLETED;
+        await this.save({ ...batHo });
+        return;
+      }
+
+      if (!isNotNull) {
+        batHo.debitStatus = DebitStatus.BAD_DEBIT;
+        await this.save({ ...batHo });
+        return;
+      }
+
+      if ((todayTime - lastTime) / 86400000 >= 1) {
+        batHo.debitStatus = DebitStatus.BAD_DEBIT;
+      } else {
+        const notFinishPaymentHistory = sortPaymentHistories.find(
+          (paymentHistory) =>
+            paymentHistory.paymentStatus !== PaymentStatusHistory.FINISH &&
+            formatDate(paymentHistory.startDate) !== today &&
+            new Date(paymentHistory.startDate).getTime() <
+              new Date(convertPostgresDate(today)).getTime(),
+        );
+
+        if (notFinishPaymentHistory) {
+          const timeNot = new Date(
+            convertPostgresDate(
+              formatDate(notFinishPaymentHistory?.startDate ?? new Date()),
+            ),
+          ).getTime();
+
+          if (timeNot > lastTime) {
+            batHo.debitStatus = DebitStatus.BAD_DEBIT;
+            await this.save({ ...batHo });
+            return;
+          } else {
+            batHo.debitStatus = DebitStatus.LATE_PAYMENT;
+            await this.save({ ...batHo });
+            return;
+          }
+        }
+      }
+
+      batHo.debitStatus = DebitStatus.IN_DEBIT;
+      await this.save({ ...batHo });
+    }
   },
 };
