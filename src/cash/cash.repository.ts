@@ -28,8 +28,6 @@ const noteContract = (filter: string, contractId: string) => {
       return `Chi tiền cho cộng tác viên hợp đồng ${contractId}`;
     case CashFilterType.LOAN_MORE_CONTRACT:
       return `Chi tiền vay thêm hợp đồng ${contractId}`;
-    case CashFilterType.LOAN_MORE_CONTRACT:
-      return `Chi tiền vay thêm hợp đồng ${contractId}`;
     case CashFilterType.DOWN_ROOT_MONEY:
       return `Thu bớt gốc hợp đồng ${contractId}`;
     default:

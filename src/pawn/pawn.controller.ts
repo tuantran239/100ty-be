@@ -20,7 +20,10 @@ import { Roles } from 'src/common/decorator/roles.decorator';
 import { ContractCompleteGuard } from 'src/common/guard/contract-completed.guard';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { ResponseData, RoleName } from 'src/common/interface';
-import { PaymentStatusHistory } from 'src/common/interface/history';
+import {
+  PaymentHistoryType,
+  PaymentStatusHistory,
+} from 'src/common/interface/history';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
 import { mapTransactionHistoryResponse } from 'src/common/utils/map';
@@ -214,8 +217,9 @@ export class PawnController {
             paymentHistory.payDate !== null
               ? formatDate(paymentHistory.payDate)
               : null,
-          isDeductionMoney: paymentHistory.isDeductionMoney,
-          isRootMoney: paymentHistory.isRootMoney,
+          isDeductionMoney:
+            paymentHistory.type === PaymentHistoryType.DEDUCTION_MONEY,
+          isRootMoney: paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
           paymentDate: formatDate(paymentHistory.endDate),
         }));
 

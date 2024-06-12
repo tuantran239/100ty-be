@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CashFilterType, ContractType } from 'src/common/interface';
 import {
+  PaymentHistoryType,
   PaymentStatusHistory,
   TransactionHistoryType,
 } from 'src/common/interface/history';
@@ -21,8 +22,7 @@ import {
   Equal,
   FindManyOptions,
   FindOneOptions,
-  IsNull,
-  Or,
+  Not,
 } from 'typeorm';
 import { CreatePaymentHistoryDto } from './dto/create-payment-history';
 import { PayMoneyDto } from './dto/pay-money';
@@ -204,11 +204,11 @@ export class PaymentHistoryService extends BaseService<
 
   async checkTotal() {
     const paymentHistories = await this.paymentHistoryRepository.find({
-      where: { isDeductionMoney: Or(Equal(false), IsNull()) },
+      where: { type: Not(Equal(PaymentHistoryType.DEDUCTION_MONEY)) },
     });
 
     const paymentHistoriesDeduction = await this.paymentHistoryRepository.find({
-      where: { isDeductionMoney: true },
+      where: { type: Equal(PaymentHistoryType.DEDUCTION_MONEY) },
     });
 
     const finishMoney = paymentHistories.reduce((total, paymentHistory) => {

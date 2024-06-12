@@ -1,5 +1,10 @@
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, FindOneOptions, Repository } from 'typeorm';
+import {
+  DataSource,
+  FindManyOptions,
+  FindOneOptions,
+  Repository,
+} from 'typeorm';
 import { CreatePaymentHistoryDto } from './dto/create-payment-history';
 import { PayMoneyDto } from './dto/pay-money';
 import { UpdatePaymentHistoryDto } from './dto/update-payment-history';
@@ -37,6 +42,11 @@ export interface PaymentHistoryRepository extends Repository<PaymentHistory> {
     paymentHistoryUpdated: PaymentHistory;
     paymentHistory: PaymentHistory;
   }>;
+
+  sortRowId(payload: {
+    pawnId?: string;
+    cloudId?: string;
+  }): Promise<PaymentHistory[]>;
 }
 
 export const PaymentHistoryRepositoryProvider = {
@@ -152,6 +162,7 @@ export const PaymentHistoryRepository: Pick<PaymentHistoryRepository, any> = {
     const canNotChangeList = [
       PaymentHistoryType.DEDUCTION_MONEY,
       PaymentHistoryType.OTHER_MONEY_DOWN_ROOT,
+      PaymentHistoryType.DOWN_ROOT_MONEY,
     ] as string[];
 
     if (canNotChangeList.includes(paymentHistory.type)) {
@@ -179,5 +190,35 @@ export const PaymentHistoryRepository: Pick<PaymentHistoryRepository, any> = {
     });
 
     return { paymentHistoryUpdated, paymentHistory };
+  },
+
+  async sortRowId(
+    this: PaymentHistoryRepository,
+    payload: {
+      pawnId?: string;
+      cloudId?: string;
+    },
+  ): Promise<PaymentHistory[]> {
+    const options: FindManyOptions<PaymentHistory> = {
+      where: {
+        batHoId: payload.cloudId,
+        pawnId: payload.pawnId,
+      },
+    };
+
+    const paymentHistories = await this.find(options);
+
+    const sortPaymentHistories = paymentHistories.sort(
+      (p1, p2) =>
+        new Date(p1.endDate).getTime() - new Date(p2.endDate).getTime(),
+    );
+
+    await Promise.all(
+      sortPaymentHistories.map(async (paymentHistory, index) => {
+        await this.update({ id: paymentHistory.id }, { rowId: index + 1 });
+      }),
+    );
+
+    return sortPaymentHistories;
   },
 };
