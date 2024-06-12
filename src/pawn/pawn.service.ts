@@ -503,57 +503,20 @@ export class PawnService extends BaseService<
   }
 
   async settlementRequest(id: string) {
-    const pawn = await this.pawnRepository.findOne({
-      where: { id },
-      relations: ['paymentHistories', 'customer'],
-    });
-
-    if (!pawn) {
-      throw new Error('Không tìm thấy hợp đồng');
-    }
-
-    const {
-      loanAmount,
-      interestMoney,
-      paymentPeriod,
-      interestType,
-      loanDate,
-      paymentHistories,
-    } = pawn;
-
-    const interestMoneyOneDay =
-      this.pawnRepository.calculateInterestMoneyOneDay({
-        loanAmount,
-        interestMoney,
-        paymentPeriod,
-        interestType,
-      });
+    const pawn = await this.pawnRepository.checkPawnExist(
+      {
+        where: { id },
+        relations: ['paymentHistories', 'customer'],
+      },
+      { message: 'Không tìm thấy hợp đồng' },
+    );
 
     const today = getTodayNotTimeZone();
 
-    const totalDayToToday = calculateTotalDayRangeDate(
-      new Date(new Date(loanDate).setHours(0, 0, 0, 0)),
-      today,
-    );
+    const { loanAmount, loanDate, paymentHistories } = pawn;
 
-    const interestMoneyTotal = totalDayToToday * interestMoneyOneDay;
-
-    const rootPaymentHistory = paymentHistories.find(
-      (paymentHistory) => paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
-    );
-
-    const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
-      if (
-        paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
-        paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
-      ) {
-        return total + paymentHistory.payMoney;
-      }
-      return total;
-    }, 0);
-
-    const settlementMoney =
-      rootPaymentHistory?.payNeed + interestMoneyTotal - moneyPaid;
+    const { settlementMoney, interestMoneyTotal, moneyPaid, totalDayToToday } =
+      this.pawnRepository.getSettlementInfo(pawn, today);
 
     const totalMoney = calculateTotalMoneyPaymentHistory(
       paymentHistories ?? [],
@@ -593,16 +556,18 @@ export class PawnService extends BaseService<
   }
 
   async settlementChange(id: string, paymentDate: string) {
-    const pawn = await this.pawnRepository.findOne({
-      where: { id },
-      relations: ['paymentHistories', 'customer'],
-    });
+    const pawn = await this.pawnRepository.checkPawnExist(
+      {
+        where: { id },
+        relations: ['paymentHistories', 'customer'],
+      },
+      { message: 'Không tìm thấy hợp đồng' },
+    );
 
-    if (!pawn) {
-      throw new Error('Không tìm thấy hợp đồng');
-    }
+    const { loanAmount, loanDate, paymentHistories } = pawn;
 
     const today = getTodayNotTimeZone();
+
     const paymentDateTime = new Date(convertPostgresDate(paymentDate)).setHours(
       0,
       0,
@@ -618,46 +583,11 @@ export class PawnService extends BaseService<
       throw new Error('Thời gian tất toán không được nhỏ hơn ngày vay');
     }
 
-    const {
-      loanAmount,
-      interestMoney,
-      paymentPeriod,
-      interestType,
-      loanDate,
-      paymentHistories,
-    } = pawn;
-
-    const interestMoneyOneDay =
-      this.pawnRepository.calculateInterestMoneyOneDay({
-        loanAmount,
-        interestMoney,
-        paymentPeriod,
-        interestType,
-      });
-
-    const totalDayToToday = calculateTotalDayRangeDate(
-      new Date(paymentDate),
-      today,
-    );
-
-    const interestMoneyTotal = totalDayToToday * interestMoneyOneDay;
-
-    const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
-      if (
-        paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
-        paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
-      ) {
-        return total + paymentHistory.payMoney;
-      }
-      return total;
-    }, 0);
-
-    const rootPaymentHistory = paymentHistories.find(
-      (paymentHistory) => paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
-    );
-
-    const settlementMoney =
-      rootPaymentHistory.payNeed + interestMoneyTotal - moneyPaid;
+    const { settlementMoney, interestMoneyTotal, moneyPaid, totalDayToToday } =
+      this.pawnRepository.getSettlementInfo(
+        pawn,
+        new Date(getDateLocal(new Date(convertPostgresDate(paymentDate)))),
+      );
 
     const totalMoney = calculateTotalMoneyPaymentHistory(
       paymentHistories ?? [],
@@ -694,18 +624,24 @@ export class PawnService extends BaseService<
   }
 
   async settlementConfirm(id: string, payload: SettlementPawnDto) {
-    const pawn = await this.pawnRepository.findOne({
-      where: { id },
-      relations: ['paymentHistories', 'customer', 'user'],
-    });
+    const pawn = await this.pawnRepository.checkPawnExist(
+      {
+        where: { id },
+        relations: ['paymentHistories', 'customer'],
+      },
+      { message: 'Không tìm thấy hợp đồng' },
+    );
 
-    if (!pawn) {
-      throw new Error('Không tìm thấy hợp đồng');
-    }
+    const { paymentHistories } = pawn;
+
+    const rootPaymentHistory = paymentHistories.find(
+      (paymentHistory) => paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
+    );
 
     const { paymentDate, settlementMoney, serviceFee } = payload;
 
     const today = getTodayNotTimeZone();
+
     const paymentDateTime = new Date(convertPostgresDate(paymentDate)).setHours(
       0,
       0,
@@ -716,45 +652,11 @@ export class PawnService extends BaseService<
       throw new Error('Thời gian tất toán không được lớn hơn hôm nay');
     }
 
-    const {
-      loanAmount,
-      interestMoney,
-      paymentPeriod,
-      interestType,
-      paymentHistories,
-    } = pawn;
-
-    const interestMoneyOneDay =
-      this.pawnRepository.calculateInterestMoneyOneDay({
-        loanAmount,
-        interestMoney,
-        paymentPeriod,
-        interestType,
-      });
-
-    const totalDayToToday = calculateTotalDayRangeDate(
-      new Date(convertPostgresDate(paymentDate)),
-      today,
-    );
-
-    const interestMoneyTotal = totalDayToToday * interestMoneyOneDay;
-
-    const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
-      if (
-        paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
-        paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
-      ) {
-        return total + paymentHistory.payMoney;
-      }
-      return total;
-    }, 0);
-
-    const rootPaymentHistory = paymentHistories.find(
-      (paymentHistory) => paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
-    );
-
-    const settlementMoneyExpected =
-      rootPaymentHistory.payNeed + interestMoneyTotal - moneyPaid;
+    const { settlementMoney: settlementMoneyExpected } =
+      this.pawnRepository.getSettlementInfo(
+        pawn,
+        new Date(getDateLocal(new Date(convertPostgresDate(paymentDate)))),
+      );
 
     if (settlementMoney < settlementMoneyExpected) {
       throw new Error(`Số tiền đóng không được nhỏ hơn số tiền còn phải thu`);

@@ -91,6 +91,16 @@ export interface PawnRepository extends Repository<Pawn> {
     isFinishPaymentPeriod;
   };
 
+  getSettlementInfo(
+    pawn: Pawn,
+    payDate: Date,
+  ): {
+    interestMoneyTotal: number;
+    totalDayToToday: number;
+    settlementMoney: number;
+    moneyPaid: number;
+  };
+
   mapPawnResponse(pawn: Pawn | null): PawnResponseDto | null;
 
   listPawn(
@@ -819,5 +829,72 @@ export const PawnRepositoryCustomRepository: Pick<PawnRepository, any> = {
       pawn.debitStatus = DebitStatus.IN_DEBIT;
       await this.save({ ...pawn });
     }
+  },
+
+  getSettlementInfo(
+    this: PawnRepository,
+    pawn: Pawn,
+    payDate: Date,
+  ): {
+    interestMoneyTotal: number;
+    totalDayToToday: number;
+    settlementMoney: number;
+    moneyPaid: number;
+  } {
+    const {
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+      loanDate,
+      paymentHistories,
+    } = pawn;
+
+    const interestMoneyOneDay = this.calculateInterestMoneyOneDay({
+      loanAmount,
+      interestMoney,
+      paymentPeriod,
+      interestType,
+    });
+
+    const totalDayToToday = calculateTotalDayRangeDate(
+      new Date(new Date(loanDate).setHours(0, 0, 0, 0)),
+      payDate,
+    );
+
+    const interestMoneyTotal = totalDayToToday * interestMoneyOneDay;
+
+    const rootPaymentHistory = paymentHistories.find(
+      (paymentHistory) => paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
+    );
+
+    const paymentLoanMoreOther = paymentHistories.find(
+      (paymentHistory) =>
+        paymentHistory.type === PaymentHistoryType.OTHER_MONEY_LOAN_MORE &&
+        paymentHistory.paymentStatus !== PaymentStatusHistory.FINISH,
+    );
+
+    const moneyPaid = paymentHistories.reduce((total, paymentHistory) => {
+      if (
+        paymentHistory.paymentStatus === PaymentStatusHistory.FINISH &&
+        paymentHistory.type === PaymentHistoryType.INTEREST_MONEY
+      ) {
+        return total + paymentHistory.payMoney;
+      }
+      return total;
+    }, 0);
+
+    const settlementMoney =
+      paymentLoanMoreOther?.payNeed +
+      rootPaymentHistory?.payNeed +
+      interestMoneyTotal -
+      moneyPaid;
+
+    return {
+      interestMoneyTotal,
+      totalDayToToday,
+      settlementMoney,
+      moneyPaid,
+    };
   },
 };
