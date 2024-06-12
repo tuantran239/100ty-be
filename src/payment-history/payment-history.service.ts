@@ -22,9 +22,7 @@ import {
   Equal,
   FindManyOptions,
   FindOneOptions,
-  IsNull,
   Not,
-  Or,
 } from 'typeorm';
 import { CreatePaymentHistoryDto } from './dto/create-payment-history';
 import { PayMoneyDto } from './dto/pay-money';

@@ -1039,7 +1039,7 @@ export class PawnService extends BaseService<
 
       await cashRepository.createCashContract(
         { pawn },
-        CashFilterType.PAYMENT_CONTRACT,
+        CashFilterType.DOWN_ROOT_MONEY,
         { amount: payload.paymentMoney + payload.otherMoney },
       );
 
@@ -1245,7 +1245,7 @@ export class PawnService extends BaseService<
 
       await cashRepository.createCashContract(
         { pawn },
-        CashFilterType.PAYMENT_CONTRACT,
+        CashFilterType.LOAN_MORE_CONTRACT,
         { amount: payload.loanMoney + payload.otherMoney },
       );
 
