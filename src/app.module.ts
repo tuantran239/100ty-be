@@ -38,6 +38,8 @@ import { ContractModule } from './contract/contract.module';
 import { ExtendedPeriodHistoryModule } from './extended-period-history/extended-period-history.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { CacheCustomModule } from './cache/cache.module';
+import { WarehouseModule } from './warehouse/warehouse.module';
+import { AssetModule } from './asset/asset.module';
 
 @Module({
   imports: [
@@ -93,6 +95,8 @@ import { CacheCustomModule } from './cache/cache.module';
     ContractModule,
     ExtendedPeriodHistoryModule,
     CacheCustomModule,
+    WarehouseModule,
+    AssetModule,
   ],
   providers: [
     {

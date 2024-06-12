@@ -9,11 +9,8 @@ import {
   TransactionHistoryType,
 } from 'src/common/interface/history';
 import { BaseService } from 'src/common/service/base.service';
-import {
-  convertPostgresDate,
-  formatDate,
-  getDateLocal,
-} from 'src/common/utils/time';
+import { convertPostgresDate, formatDate } from 'src/common/utils/time';
+import { ContractService } from 'src/contract/contract.service';
 import { DatabaseService } from 'src/database/database.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
 import { User } from 'src/user/user.entity';
@@ -37,7 +34,6 @@ import { CreateBatHoDto } from './dto/create-bat-ho.dto';
 import { ListBatHoQueryDto } from './dto/list-bat-ho-query.dto';
 import { SettlementBatHoDto } from './dto/settlement-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
-import { ContractService } from 'src/contract/contract.service';
 
 @Injectable()
 export class BatHoService extends BaseService<
@@ -92,7 +88,6 @@ export class BatHoService extends BaseService<
           payloadData = {
             ...payloadData,
             customerId: newCustomer.id,
-            customer: newCustomer,
           };
         }
 
@@ -575,7 +570,7 @@ export class BatHoService extends BaseService<
         type: TransactionHistoryType.SETTLEMENT_CONTRACT,
         money: settlementMoney,
         otherMoney: 0,
-        createdAt: getDateLocal(new Date(payload.payDate)),
+        createdAt: convertPostgresDate(payload.payDate),
       });
 
       await batHoRepository.update(batHo.id, {

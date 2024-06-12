@@ -108,11 +108,13 @@ export const PawnRepositoryProvider = {
   provide: getRepositoryToken(Pawn),
   inject: [getDataSourceToken()],
   useFactory(dataSource: DataSource) {
-    return dataSource.getRepository(Pawn).extend(customerCustomRepository);
+    return dataSource
+      .getRepository(Pawn)
+      .extend(PawnRepositoryCustomRepository);
   },
 };
 
-export const customerCustomRepository: Pick<PawnRepository, any> = {
+export const PawnRepositoryCustomRepository: Pick<PawnRepository, any> = {
   async checkPawnExist(
     this: PawnRepository,
     options: FindOneOptions<Pawn>,
@@ -772,14 +774,20 @@ export const customerCustomRepository: Pick<PawnRepository, any> = {
 
       if (allFinish) {
         pawn.debitStatus = DebitStatus.COMPLETED;
+        await this.save({ ...pawn });
+        return;
       }
 
       if (!isNotNull) {
         pawn.debitStatus = DebitStatus.BAD_DEBIT;
+        await this.save({ ...pawn });
+        return;
       }
 
       if ((todayTime - lastTime) / 86400000 >= 1) {
         pawn.debitStatus = DebitStatus.BAD_DEBIT;
+        await this.save({ ...pawn });
+        return;
       } else {
         const notFinishPaymentHistory = sortPaymentHistories.find(
           (paymentHistory) =>
@@ -798,15 +806,18 @@ export const customerCustomRepository: Pick<PawnRepository, any> = {
 
           if (timeNot > lastTime) {
             pawn.debitStatus = DebitStatus.BAD_DEBIT;
+            await this.save({ ...pawn });
+            return;
           } else {
             pawn.debitStatus = DebitStatus.LATE_PAYMENT;
+            await this.save({ ...pawn });
+            return;
           }
         }
       }
 
       pawn.debitStatus = DebitStatus.IN_DEBIT;
+      await this.save({ ...pawn });
     }
-
-    await this.save({ ...pawn });
   },
 };

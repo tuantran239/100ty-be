@@ -372,7 +372,7 @@ export class BatHoController {
         deviceId: batHo.deviceId,
         hostServerId: batHo.hostServerId,
         ...dataLoan,
-        loanDate: convertPostgresDate(dataLoan?.loanDate ?? payDate),
+        loanDate: dataLoan?.loanDate ?? payDate,
         contractId,
         oldContractId: batHo.id,
       };
@@ -382,7 +382,7 @@ export class BatHoController {
         userId: req?.user?.user_id,
       });
 
-      await this.batHoService.update(id, {
+      await this.batHoRepository.update(id, {
         maturityDate: convertPostgresDate(payDate),
       });
 

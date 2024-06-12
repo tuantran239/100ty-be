@@ -9,6 +9,8 @@ import { CashRepositoryProvider } from 'src/cash/cash.repository';
 import { PaymentHistoryRepositoryProvider } from 'src/payment-history/payment-history.repository';
 import { TransactionHistoryRepositoryProvider } from 'src/transaction-history/transaction-history.repository';
 import { PawnRepositoryProvider } from 'src/pawn/pawn.repository';
+import { WarehouseRepositoryProvider } from 'src/warehouse/warehouse.repository';
+import { AssetRepositoryProvider } from 'src/asset/asset.repository';
 
 @Global()
 @Module({
@@ -22,6 +24,8 @@ import { PawnRepositoryProvider } from 'src/pawn/pawn.repository';
     PaymentHistoryRepositoryProvider,
     TransactionHistoryRepositoryProvider,
     PawnRepositoryProvider,
+    WarehouseRepositoryProvider,
+    AssetRepositoryProvider,
   ],
   exports: [DatabaseService],
   controllers: [DatabaseController],

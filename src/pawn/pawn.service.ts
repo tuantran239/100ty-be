@@ -53,6 +53,7 @@ import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { Pawn } from './pawn.entity';
 import { PawnRepository } from './pawn.repository';
 import { ContractService } from 'src/contract/contract.service';
+import { INIT_DATA_WAREHOUSE } from 'src/warehouse/warehouse.service';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -85,6 +86,8 @@ export class PawnService extends BaseService<
           paymentHistoryRepository,
           transactionHistoryRepository,
           cashRepository,
+          assetRepository,
+          warehouseRepository,
         } = repositories;
 
         let payloadData = {
@@ -92,6 +95,7 @@ export class PawnService extends BaseService<
           customer: undefined,
           loanDate: convertPostgresDate(payload.loanDate),
           debitStatus: payload.debitStatus ?? DebitStatus.IN_DEBIT,
+          warehouseId: undefined,
         };
 
         if (customerId) {
@@ -109,7 +113,6 @@ export class PawnService extends BaseService<
           payloadData = {
             ...payloadData,
             customerId: newCustomer.id,
-            customer: newCustomer,
           };
         }
 
@@ -162,6 +165,24 @@ export class PawnService extends BaseService<
           otherMoney: 0,
           createdAt: newPawn.loanDate,
         });
+
+        if (payload.warehouseId) {
+          await assetRepository.createAssetFromPawn({
+            pawn: newPawn,
+            warehouseId: payload.warehouseId,
+          });
+        } else {
+          const warehouse = await warehouseRepository.findOne({
+            where: { name: INIT_DATA_WAREHOUSE.name },
+          });
+
+          if (warehouse) {
+            await assetRepository.createAssetFromPawn({
+              pawn: newPawn,
+              warehouseId: warehouse.id,
+            });
+          }
+        }
 
         return newPawn;
       },

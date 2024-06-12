@@ -24,6 +24,10 @@ import { CashRepository } from 'src/cash/cash.repository';
 import { PaymentHistoryRepository } from 'src/payment-history/payment-history.repository';
 import { TransactionHistoryRepository } from 'src/transaction-history/transaction-history.repository';
 import { PawnRepository } from 'src/pawn/pawn.repository';
+import { WarehouseRepository } from 'src/warehouse/warehouse.repository';
+import { Warehouse } from 'src/warehouse/warehouse.entity';
+import { AssetRepository } from 'src/asset/asset.repository';
+import { Asset } from 'src/asset/asset.entity';
 
 export interface DataSourceRepository {
   batHoRepository: BatHoRepository;
@@ -41,6 +45,8 @@ export interface DataSourceRepository {
   assetPropertyRepository: Repository<AssetProperty>;
   extendedPeriodHistory: Repository<ExtendedPeriodHistory>;
   logAction: Repository<LogAction>;
+  warehouseRepository: WarehouseRepository;
+  assetRepository: AssetRepository;
 }
 
 @Injectable()
@@ -63,6 +69,10 @@ export class DatabaseService {
     private readonly transactionHistoryRepository: TransactionHistoryRepository,
     @InjectRepository(Pawn)
     private readonly pawnRepository: PawnRepository,
+    @InjectRepository(Warehouse)
+    private readonly warehouseRepository: WarehouseRepository,
+    @InjectRepository(Asset)
+    private readonly assetRepository: AssetRepository,
   ) {
     this.repositories = {
       batHoRepository: this.batHoRepository,
@@ -83,6 +93,8 @@ export class DatabaseService {
         ExtendedPeriodHistory,
       ),
       logAction: this.dataSource.manager.getRepository(LogAction),
+      warehouseRepository: this.warehouseRepository,
+      assetRepository: this.assetRepository,
     };
   }
 
@@ -125,6 +137,12 @@ export class DatabaseService {
         ExtendedPeriodHistory,
       ),
       logAction: queryRunner.manager.getRepository(LogAction),
+      warehouseRepository: queryRunner.manager
+        .getRepository(Warehouse)
+        .extend(this.warehouseRepository),
+      assetRepository: queryRunner.manager
+        .getRepository(Asset)
+        .extend(this.assetRepository),
     };
 
     try {
