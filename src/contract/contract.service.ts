@@ -202,7 +202,7 @@ export class ContractService {
 
       const deductionMoney = paymentHistories.reduce(
         (total, paymentHistory) => {
-          if (paymentHistory.isDeductionMoney) {
+          if (paymentHistory.type === PaymentHistoryType.DEDUCTION_MONEY) {
             return (total += paymentHistory.payMoney);
           }
           return total;
@@ -256,7 +256,7 @@ export class ContractService {
 
       const deductionMoney = paymentHistories.reduce(
         (total, paymentHistory) => {
-          if (paymentHistory.isDeductionMoney) {
+          if (paymentHistory.type === PaymentHistoryType.DEDUCTION_MONEY) {
             return (total += paymentHistory.payMoney);
           }
           return total;

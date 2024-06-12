@@ -394,8 +394,8 @@ export class BatHoService extends BaseService<
     if (receiptToday === true) {
       paymentHistories = {
         startDate: Equal(convertPostgresDate(today)),
-        isDeductionMoney: Or(Equal(false), IsNull()),
         paymentStatus: Or(Equal(false), IsNull()),
+        type: Not(PaymentHistoryType.DEDUCTION_MONEY),
       };
     }
 

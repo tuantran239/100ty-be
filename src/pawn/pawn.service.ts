@@ -397,8 +397,8 @@ export class PawnService extends BaseService<
     if (receiptToday === true) {
       paymentHistories = {
         endDate: Equal(convertPostgresDate(today)),
-        isDeductionMoney: Or(Equal(false), IsNull()),
         paymentStatus: Or(Equal(false), IsNull()),
+        type: Not(PaymentHistoryType.DEDUCTION_MONEY),
       };
     }
 
@@ -826,6 +826,8 @@ export class PawnService extends BaseService<
         contractId: pawn.contractId,
         userId: pawn.userId,
       });
+
+      await paymentHistoryRepository.sortRowId({ pawnId: pawn.id });
     });
 
     return true;
@@ -934,8 +936,10 @@ export class PawnService extends BaseService<
       });
 
       const rootMoney =
-        (paymentHistories.find((paymentHistory) => paymentHistory.isRootMoney)
-          ?.payNeed ?? 0) - payload.paymentMoney;
+        (paymentHistories.find(
+          (paymentHistory) =>
+            paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
+        )?.payNeed ?? 0) - payload.paymentMoney;
 
       const sortPaymentHistories = paymentHistories
         .filter(
@@ -972,7 +976,7 @@ export class PawnService extends BaseService<
               totalDayMonth,
             });
 
-          if (paymentHistory.isRootMoney) {
+          if (paymentHistory.type === PaymentHistoryType.ROOT_MONEY) {
             await paymentHistoryRepository.update(
               { id: paymentHistory.id },
               {
@@ -1045,6 +1049,8 @@ export class PawnService extends BaseService<
       );
 
       await pawnRepository.updateRevenueReceived(pawn.id);
+
+      await paymentHistoryRepository.sortRowId({ pawnId: pawn.id });
     });
 
     return true;
@@ -1151,8 +1157,10 @@ export class PawnService extends BaseService<
 
       const rootMoney =
         payload.loanMoney +
-          paymentHistories.find((paymentHistory) => paymentHistory.isRootMoney)
-            ?.payNeed ?? 0;
+          paymentHistories.find(
+            (paymentHistory) =>
+              paymentHistory.type === PaymentHistoryType.ROOT_MONEY,
+          )?.payNeed ?? 0;
 
       const sortPaymentHistories = paymentHistories
         .filter(
@@ -1189,7 +1197,7 @@ export class PawnService extends BaseService<
               totalDayMonth,
             });
 
-          if (paymentHistory.isRootMoney) {
+          if (paymentHistory.type === PaymentHistoryType.ROOT_MONEY) {
             await paymentHistoryRepository.update(
               { id: paymentHistory.id },
               {
@@ -1247,6 +1255,8 @@ export class PawnService extends BaseService<
       );
 
       await pawnRepository.updateRevenueReceived(pawn.id);
+
+      await paymentHistoryRepository.sortRowId({ pawnId: pawn.id });
     });
 
     return true;
@@ -1391,6 +1401,8 @@ export class PawnService extends BaseService<
       await extendedPeriodHistory.save(newExtendedPeriod);
 
       await pawnRepository.updateRevenueReceived(pawn.id);
+
+      await paymentHistoryRepository.sortRowId({ pawnId: pawn.id });
     });
 
     return true;
