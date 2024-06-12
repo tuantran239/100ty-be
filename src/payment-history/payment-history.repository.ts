@@ -45,11 +45,11 @@ export const PaymentHistoryRepositoryProvider = {
   useFactory(dataSource: DataSource) {
     return dataSource
       .getRepository(PaymentHistory)
-      .extend(customerCustomRepository);
+      .extend(PaymentHistoryRepository);
   },
 };
 
-export const customerCustomRepository: Pick<PaymentHistoryRepository, any> = {
+export const PaymentHistoryRepository: Pick<PaymentHistoryRepository, any> = {
   async checkPaymentHistoryExist(
     this: PaymentHistoryRepository,
     options: FindOneOptions<PaymentHistory>,

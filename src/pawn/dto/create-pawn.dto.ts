@@ -93,4 +93,9 @@ export class CreatePawnDto {
   @IsString()
   @IsOptional()
   paymentType?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  warehouseId?: string;
 }
