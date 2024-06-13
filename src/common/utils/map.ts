@@ -1,41 +1,7 @@
 import * as moment from 'moment';
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
-import { Role } from 'src/role/entities/role.entity';
 import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
-import { User } from 'src/user/user.entity';
-import { UserResponseData } from '../interface/response';
 import { formatDate } from './time';
-
-export const mapUserResponse = (
-  user: User | null,
-  roles: Role[] | null,
-  permissionsData: any | null,
-): { user: UserResponseData } | null => {
-  if (user) {
-    const role = roles ? roles[0] : null;
-
-    let permissions = [];
-
-    if (role) {
-      if (permissionsData) {
-        permissions = permissionsData;
-      } else {
-        permissions = role?.permissions?.data ?? [];
-      }
-      role.permissions = {};
-    }
-
-    const userData = {
-      ...user,
-      role,
-      password: undefined,
-      permissions,
-    };
-
-    return { user: { ...userData, roles: undefined, password: undefined } };
-  }
-  return null;
-};
 
 export const mapPaymentHistoryResponse = (
   paymentHistory: PaymentHistory | null,

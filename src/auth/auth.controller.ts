@@ -14,21 +14,19 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
-import { CacheService } from 'src/cache/cache.service';
 import IConfig, { JWTConfig } from 'src/common/config/config.interface';
 import { LogActionType } from 'src/common/constant/log';
 import RouterUrl from 'src/common/constant/router';
 import { ResponseData } from 'src/common/interface';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import { mapUserResponse } from 'src/common/utils/map';
 import { LogActionService } from 'src/log-action/log-action.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
-import { RoleService } from 'src/role/role.service';
 import { UserService } from 'src/user/user.service';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { DatabaseService } from 'src/database/database.service';
 
 @ApiTags('Auth')
 @Controller(RouterUrl.AUTH.ROOT)
@@ -38,10 +36,9 @@ export class AuthController {
     private jwtService: JwtService,
     private configService: ConfigService<IConfig>,
     private userService: UserService,
-    private roleService: RoleService,
     private logger: LoggerServerService,
     private logActionService: LogActionService,
-    private cacheService: CacheService,
+    private databaseService: DatabaseService,
   ) {}
 
   @Post(RouterUrl.AUTH.LOGIN)
@@ -95,11 +92,9 @@ export class AuthController {
         error: null,
         data: {
           token,
-          ...mapUserResponse(
-            user,
-            user?.roles ?? [],
-            user.roles[0]?.permissions ?? null,
-          ),
+          user: this.databaseService
+            .getRepositories()
+            .userRepository.mapUserResponse(user),
         },
         message: 'success',
         statusCode: 200,
@@ -167,11 +162,11 @@ export class AuthController {
 
       const responseData: ResponseData = {
         error: null,
-        data: mapUserResponse(
-          user,
-          user?.roles ?? [],
-          user.roles[0]?.permissions ?? null,
-        ),
+        data: {
+          user: this.databaseService
+            .getRepositories()
+            .userRepository.mapUserResponse(user),
+        },
         message: 'success',
         statusCode: 200,
       };
