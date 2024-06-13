@@ -1,5 +1,6 @@
 import { Customer } from 'src/customer/customer.entity';
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
+import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
 import { User } from 'src/user/user.entity';
 
 export interface Contract {
@@ -23,6 +24,7 @@ export interface Contract {
   user: User;
   summarize: SummarizeContract;
   settlementDate?: string;
+  transactionHistories: TransactionHistory[];
 }
 
 export interface SummarizeContract {
