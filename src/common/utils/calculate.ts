@@ -4,7 +4,11 @@ import { ContractInitLabel } from '../constant/contract';
 import { GroupCashId } from '../constant/group-cash';
 import { CashType, ContractType } from '../interface';
 import { Contract } from '../interface/contract';
-import { PaymentHistoryType, PaymentStatusHistory } from '../interface/history';
+import {
+  PaymentHistoryType,
+  PaymentStatusHistory,
+  TransactionHistoryType,
+} from '../interface/history';
 import { ProfitCash, ProfitData } from '../interface/profit';
 import {
   calculateTotalDayRangeDate,
@@ -194,20 +198,24 @@ export const calculateSettlementMoney = (payload: {
   return rootPaymentHistory?.payNeed + interestMoneyTotal - moneyPaid;
 };
 
-export const calculateMoneyInDebit = (paymentHistories: PaymentHistory[]) => {
-  return paymentHistories.reduce((total, paymentHistory) => {
+export const calculateMoneyInDebit = (contract: Contract) => {
+  const transactionHistories = contract.transactionHistories ?? [];
+
+  return transactionHistories.reduce((total, transactionHistory) => {
     if (
-      paymentHistory.paymentStatus === PaymentStatusHistory.UNFINISH ||
-      paymentHistory.paymentStatus === null
+      transactionHistory.type ===
+      TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT
     ) {
-      total += paymentHistory.payNeed;
+      total += transactionHistory.moneySub;
     }
 
     return total;
   }, 0);
 };
 
-export const calculateMoneyBadDebit = (paymentHistories: PaymentHistory[]) => {
+export const calculateMoneyBadDebit = (contract: Contract) => {
+  const paymentHistories = contract.paymentHistories ?? [];
+
   return paymentHistories.reduce((total, paymentHistory) => {
     if (
       paymentHistory.paymentStatus === PaymentStatusHistory.UNFINISH ||

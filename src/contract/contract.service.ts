@@ -239,6 +239,7 @@ export class ContractService {
         deductionMoney,
         summarize,
         settlementDate: icloud.maturityDate,
+        transactionHistories: icloud.transactionHistories ?? [],
       };
     } else if (pawn) {
       const paymentHistories = pawn.paymentHistories ?? [];
@@ -299,6 +300,7 @@ export class ContractService {
         disbursementMoney: pawn.loanAmount,
         summarize,
         settlementDate: pawn.settlementDate,
+        transactionHistories: pawn.transactionHistories ?? [],
       };
     }
 
@@ -421,14 +423,14 @@ export class ContractService {
     const contractInDebit = {
       contracts: listContractInDebit.length ?? 0,
       amount: listContractInDebit.reduce((total, contract) => {
-        return total + calculateMoneyInDebit(contract.paymentHistories ?? []);
+        return total + calculateMoneyInDebit(contract);
       }, 0),
     };
 
     const contractBadDebit = {
       contracts: listContractBadDebit.length ?? 0,
       amount: listContractBadDebit.reduce((total, contract) => {
-        return total + calculateMoneyBadDebit(contract.paymentHistories ?? []);
+        return total + calculateMoneyBadDebit(contract);
       }, 0),
     };
 

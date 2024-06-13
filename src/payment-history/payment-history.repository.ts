@@ -208,10 +208,13 @@ export const PaymentHistoryRepository: Pick<PaymentHistoryRepository, any> = {
 
     const paymentHistories = await this.find(options);
 
-    const sortPaymentHistories = paymentHistories.sort(
-      (p1, p2) =>
-        new Date(p1.endDate).getTime() - new Date(p2.endDate).getTime(),
-    );
+    const sortPaymentHistories = paymentHistories.sort((p1, p2) => {
+      if (new Date(p1.endDate).getTime() === new Date(p2.endDate).getTime()) {
+        return p1.payNeed - p2.payNeed;
+      }
+
+      return new Date(p1.endDate).getTime() - new Date(p2.endDate).getTime();
+    });
 
     await Promise.all(
       sortPaymentHistories.map(async (paymentHistory, index) => {

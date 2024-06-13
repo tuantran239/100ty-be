@@ -779,14 +779,23 @@ export class StatisticsService {
 
     const transactionsToday = transactionHistoriesToday.length;
 
+    const loanTodayContracts = new Map<string, string>();
+
     const loanToday = transactionHistoriesToday.reduce(
       (loan, transactionHistory) => {
         if (
-          transactionHistory.type ===
-          TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT
+          (
+            [TransactionHistoryType.DISBURSEMENT_NEW_CONTRACT] as string[]
+          ).includes(transactionHistory.type)
         ) {
           loan.amount += transactionHistory.moneySub;
-          loan.contracts += 1;
+          if (!loanTodayContracts.has(transactionHistory.contractId)) {
+            loanTodayContracts.set(
+              transactionHistory.contractId,
+              transactionHistory.contractId,
+            );
+            loan.contracts += 1;
+          }
         }
         return loan;
       },
@@ -796,11 +805,27 @@ export class StatisticsService {
       },
     );
 
+    const loanReceiptTodayContracts = new Map<string, string>();
+
     const loanReceiptToday = transactionHistoriesToday.reduce(
       (loan, transactionHistory) => {
-        if (transactionHistory.type === TransactionHistoryType.PAYMENT) {
-          loan.amount += transactionHistory.moneySub;
-          loan.contracts += 1;
+        if (
+          (
+            [
+              TransactionHistoryType.PAYMENT,
+              TransactionHistoryType.PAYMENT_DOWN_ROOT_MONEY,
+            ] as string[]
+          ).includes(transactionHistory.type)
+        ) {
+          loan.amount +=
+            transactionHistory.moneyAdd + transactionHistory.otherMoney;
+          if (!loanReceiptTodayContracts.has(transactionHistory.contractId)) {
+            loanReceiptTodayContracts.set(
+              transactionHistory.contractId,
+              transactionHistory.contractId,
+            );
+            loan.contracts += 1;
+          }
         }
         return loan;
       },
@@ -890,10 +915,10 @@ export class StatisticsService {
         label: contractDetail.label,
         contracts: contractDetail.total,
         loanAmount: {
-          amount: contractDetail.summarizeDetail.loan.disbursementMoney,
+          amount: contractDetail.summarizeDetail.contractInDebit.amount,
           percent: calculatePercent(
-            contractDetail.summarizeDetail.loan.disbursementMoney,
-            allContract.summarizeDetail.loan.disbursementMoney,
+            contractDetail.summarizeDetail.contractInDebit.amount,
+            allContract.summarizeDetail.contractInDebit.amount,
           ),
         },
         interestReceipt: {

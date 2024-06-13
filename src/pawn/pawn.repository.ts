@@ -885,7 +885,7 @@ export const PawnRepositoryCustomRepository: Pick<PawnRepository, any> = {
     }, 0);
 
     const settlementMoney =
-      paymentLoanMoreOther?.payNeed +
+      (paymentLoanMoreOther?.payNeed ?? 0) +
       rootPaymentHistory?.payNeed +
       interestMoneyTotal -
       moneyPaid;

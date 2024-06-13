@@ -883,7 +883,6 @@ export class PawnService extends BaseService<
               { id: paymentHistory.id },
               {
                 payNeed: rootMoney,
-                payMoney: paymentHistory.payMoney + payload.paymentMoney,
               },
             );
           } else {
