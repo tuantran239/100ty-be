@@ -23,7 +23,6 @@ import {
 } from 'src/common/interface';
 import { CashQuery } from 'src/common/interface/query';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import { mapCashResponse } from 'src/common/utils/map';
 import { convertPostgresDate, formatDate } from 'src/common/utils/time';
 import { LogActionService } from 'src/log-action/log-action.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
@@ -32,6 +31,9 @@ import { Between, Equal, ILike, IsNull, Or } from 'typeorm';
 import { CashService } from './cash.service';
 import { CreateCashDto } from './dto/create-cash.dto';
 import { UpdateCashDto } from './dto/update-cash.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Cash } from './cash.entity';
+import { CashRepository } from './cash.repository';
 
 const ENTITY_LOG = 'Cash';
 
@@ -73,6 +75,8 @@ export class CashController {
     private cashService: CashService,
     private logger: LoggerServerService,
     private logActionService: LogActionService,
+    @InjectRepository(Cash)
+    private readonly cashRepository: CashRepository,
   ) {}
 
   @UseGuards(JwtAuthGuard)
@@ -104,7 +108,7 @@ export class CashController {
 
       const responseData: ResponseData = {
         message: 'success',
-        data: mapCashResponse(cash),
+        data: { cash: this.cashRepository.mapCashResponse(cash) },
         error: null,
         statusCode: 200,
       };
@@ -257,6 +261,21 @@ export class CashController {
         where: [...where],
       });
 
+      const totalMoney = await this.cashRepository.calculateTotal({
+        where: [...where],
+        relations: [
+          'batHo',
+          'batHo.user',
+          'batHo.customer',
+          'batHo.user.manager',
+          'group',
+          'pawn',
+          'pawn.user',
+          'pawn.customer',
+          'pawn.user.manager',
+        ],
+      });
+
       const count = {
         payment: result.reduce((total, cash) => {
           if (cash.type === CashType.PAYMENT) {
@@ -272,13 +291,18 @@ export class CashController {
         }, 0),
       };
 
-      data[0] = data[0].map((cash) => ({
-        ...(mapCashResponse(cash) as any)?.cash,
-      }));
+      data[0] = data[0].map((cash) =>
+        this.cashRepository.mapCashResponse(cash),
+      );
 
       const responseData: ResponseData = {
         message: 'success',
-        data: { list_cash: data[0], total: data[1], count },
+        data: {
+          list_cash: data[0],
+          total: data[1],
+          count,
+          totalMoney,
+        },
         error: null,
         statusCode: 200,
       };
@@ -303,7 +327,7 @@ export class CashController {
 
       const responseData: ResponseData = {
         message: 'success',
-        data: mapCashResponse(cash),
+        data: { cash: this.cashRepository.mapCashResponse(cash) },
         error: null,
         statusCode: 200,
       };

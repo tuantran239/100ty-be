@@ -4,8 +4,6 @@ import { Role } from 'src/role/entities/role.entity';
 import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
 import { User } from 'src/user/user.entity';
 import { UserResponseData } from '../interface/response';
-import { Cash } from './../../cash/cash.entity';
-import { getFullName } from './get-full-name';
 import { formatDate } from './time';
 
 export const mapUserResponse = (
@@ -35,61 +33,6 @@ export const mapUserResponse = (
     };
 
     return { user: { ...userData, roles: undefined, password: undefined } };
-  }
-  return null;
-};
-
-export const mapCashResponse = (cash: Cash | null): { cash: any } | null => {
-  if (cash) {
-    let admin = '';
-    let rootMoney = 0;
-    let interestMoney = 0;
-    let contractId = '';
-    let customer = {};
-
-    if (cash.isContract) {
-      if (cash.batHo) {
-        cash.traders =
-          getFullName(
-            cash.batHo?.customer?.firstName,
-            cash.batHo?.customer?.lastName,
-          ) ?? '';
-        cash.staff = cash.batHo?.user?.fullName ?? cash.batHo.user.username;
-        admin =
-          cash.batHo?.user?.manager?.fullName ??
-          cash.batHo?.user?.manager?.username;
-        contractId = cash.batHo.contractId;
-        rootMoney = cash.batHo.loanAmount;
-        interestMoney = cash.batHo.revenueReceived - cash.batHo.loanAmount;
-        customer = cash.batHo.customer ?? {};
-      } else if (cash.pawn) {
-        cash.traders =
-          getFullName(
-            cash.pawn?.customer?.firstName,
-            cash.pawn?.customer?.lastName,
-          ) ?? '';
-        cash.staff = cash.pawn?.user?.fullName ?? cash.pawn?.user?.username;
-        admin =
-          cash.pawn?.user?.manager?.fullName ??
-          cash.pawn?.user?.manager?.username;
-        contractId = cash.pawn.contractId;
-        rootMoney = cash.pawn.loanAmount;
-        interestMoney = cash.pawn.revenueReceived - cash.pawn.loanAmount;
-        customer = cash.pawn.customer ?? {};
-      }
-    }
-
-    return {
-      cash: {
-        ...cash,
-        createAt: moment(new Date(cash.createAt)).format('DD/MM/YYYY') as any,
-        admin,
-        contractId,
-        rootMoney,
-        interestMoney,
-        customer,
-      },
-    };
   }
   return null;
 };

@@ -19,6 +19,8 @@ export interface CustomerRepository extends Repository<Customer> {
   updateCustomer(
     payload: UpdateCustomerDto & { id: string },
   ): Promise<Customer>;
+
+  calculateTotal(options): Promise<{ totalBadDebit: number }>;
 }
 
 export const CustomerRepositoryProvider = {
@@ -126,5 +128,19 @@ export const customerCustomRepository: Pick<CustomerRepository, any> = {
     });
 
     return customer;
+  },
+
+  async calculateTotal(
+    this: CustomerRepository,
+    options,
+  ): Promise<{ totalBadDebit: number }> {
+    const customers = await this.find(options);
+
+    const totalBadDebit = customers.reduce(
+      (total, customer) => customer.debtMoney + total,
+      0,
+    );
+
+    return { totalBadDebit };
   },
 };

@@ -11,6 +11,7 @@ import { CreateCashDto } from './dto/create-cash.dto';
 import { UpdateCashDto } from './dto/update-cash.dto';
 import { Pawn } from 'src/pawn/pawn.entity';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
+import { CashResponseDto } from './dto/cash-response.dto';
 
 export const CASH_CODE_PREFIX = 'c';
 
@@ -142,6 +143,15 @@ export interface CashRepository extends Repository<Cash> {
   ): Promise<Cash>;
 
   updateCash(payload: UpdateCashDto & { id: string }): Promise<Cash>;
+
+  calculateTotal(options): Promise<{
+    totalPayment: number;
+    totalReceipt: number;
+    totalRootMoney: number;
+    totalInterestMoney: number;
+  }>;
+
+  mapCashResponse(cash: Cash | null): CashResponseDto | null;
 }
 
 export const CashRepositoryProvider = {
@@ -259,5 +269,99 @@ export const CashCustomRepository: Pick<CashRepository, any> = {
     });
 
     return cash;
+  },
+
+  mapCashResponse(cash: Cash | null): CashResponseDto | null {
+    if (cash) {
+      let admin = '';
+      let rootMoney = 0;
+      let interestMoney = 0;
+      let contractId = '';
+      let customer = {};
+
+      if (cash.isContract) {
+        if (cash.batHo) {
+          cash.traders =
+            getFullName(
+              cash.batHo?.customer?.firstName,
+              cash.batHo?.customer?.lastName,
+            ) ?? '';
+          cash.staff = cash.batHo?.user?.fullName ?? cash.batHo.user.username;
+          admin =
+            cash.batHo?.user?.manager?.fullName ??
+            cash.batHo?.user?.manager?.username;
+          contractId = cash.batHo.contractId;
+          rootMoney = cash.batHo.loanAmount;
+          interestMoney = cash.batHo.revenueReceived - cash.batHo.loanAmount;
+          customer = cash.batHo.customer ?? {};
+        } else if (cash.pawn) {
+          cash.traders =
+            getFullName(
+              cash.pawn?.customer?.firstName,
+              cash.pawn?.customer?.lastName,
+            ) ?? '';
+          cash.staff = cash.pawn?.user?.fullName ?? cash.pawn?.user?.username;
+          admin =
+            cash.pawn?.user?.manager?.fullName ??
+            cash.pawn?.user?.manager?.username;
+          contractId = cash.pawn.contractId;
+          rootMoney = cash.pawn.loanAmount;
+          interestMoney = cash.pawn.revenueReceived - cash.pawn.loanAmount;
+          customer = cash.pawn.customer ?? {};
+        }
+      }
+
+      return {
+        ...cash,
+        createAt: formatDate(cash.createAt),
+        admin,
+        contractId,
+        rootMoney,
+        interestMoney,
+        customer,
+      } as CashResponseDto;
+    }
+
+    return null;
+  },
+
+  async calculateTotal(
+    this: CashRepository,
+    options,
+  ): Promise<{
+    totalPayment: number;
+    totalReceipt: number;
+    totalRootMoney: number;
+    totalInterestMoney: number;
+  }> {
+    const cashes = await this.find(options);
+
+    const cashesResponse = cashes.map((cash) => this.mapCashResponse(cash));
+
+    const totalPayment = cashesResponse.reduce((total, cash) => {
+      if (cash.type === CashType.PAYMENT) {
+        total += cash.amount;
+      }
+      return total;
+    }, 0);
+
+    const totalReceipt = cashesResponse.reduce((total, cash) => {
+      if (cash.type === CashType.RECEIPT) {
+        total += cash.amount;
+      }
+      return total;
+    }, 0);
+
+    const totalRootMoney = cashesResponse.reduce(
+      (total, cash) => cash.rootMoney + total,
+      0,
+    );
+
+    const totalInterestMoney = cashesResponse.reduce(
+      (total, cash) => cash.interestMoney + total,
+      0,
+    );
+
+    return { totalInterestMoney, totalPayment, totalReceipt, totalRootMoney };
   },
 };
