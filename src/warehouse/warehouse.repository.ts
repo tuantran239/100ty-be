@@ -2,6 +2,7 @@ import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, FindOneOptions, Repository } from 'typeorm';
 import { CreateWareHouseDto } from './dto/create-warehouse.dto';
 import { Warehouse } from './warehouse.entity';
+import { UpdateWareHouseDto } from './dto/update-warehouse.dto';
 
 export enum WarehouseStatus {
   EMPTY = 'empty',
@@ -18,6 +19,10 @@ export interface WarehouseRepository extends Repository<Warehouse> {
   ): Promise<Warehouse>;
 
   createWarehouse(payload: CreateWareHouseDto): Promise<Warehouse>;
+
+  updateWarehouse(
+    payload: UpdateWareHouseDto & { id: string },
+  ): Promise<Warehouse>;
 }
 
 export const WarehouseRepositoryProvider = {
@@ -56,10 +61,54 @@ export const WarehouseCustomRepository: Pick<WarehouseRepository, any> = {
     this: WarehouseRepository,
     payload: CreateWareHouseDto,
   ): Promise<Warehouse> {
+    const warehouseStatus = Object.values(WarehouseStatus) as string[];
+
+    if (payload.status && !warehouseStatus.includes(payload.status)) {
+      throw new Error('Tình trạng kho hàng không đúng định dạng');
+    }
+
     const newWarehouse = await this.create({
       ...payload,
       status: payload.status ?? WarehouseStatus.EMPTY,
     });
+
     return this.save(newWarehouse);
+  },
+
+  async updateWarehouse(
+    this: WarehouseRepository,
+    payload: UpdateWareHouseDto & { id: string },
+  ): Promise<Warehouse> {
+    const { id } = payload;
+
+    const warehouse = await this.checkWarehouseExist({ where: { id } }, {});
+
+    const warehouseStatus = Object.values(WarehouseStatus) as string[];
+
+    if (payload.status && !warehouseStatus.includes(payload.status)) {
+      throw new Error('Tình trạng kho hàng không đúng định dạng');
+    }
+
+    const keysPayload = Object.keys(payload);
+
+    for (let i = 0; i < keysPayload.length; i++) {
+      const key = keysPayload[i];
+
+      const payloadValue = payload[key];
+
+      const warehouseValue = warehouse[key];
+
+      if (warehouseValue !== undefined && warehouseValue !== payloadValue) {
+        warehouse[key] = payloadValue;
+      }
+    }
+
+    warehouse.updated_at = new Date();
+
+    await this.save({
+      ...warehouse,
+    });
+
+    return warehouse;
   },
 };

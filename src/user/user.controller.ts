@@ -12,6 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { Request, Response } from 'express';
 import { I18nContext, I18nService } from 'nestjs-i18n';
@@ -21,16 +22,15 @@ import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { ResponseData, RoleId, RoleName } from 'src/common/interface';
-import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import { mapUserResponse } from 'src/common/utils/map';
-import { RoleService } from 'src/role/role.service';
-import { UserService } from './user.service';
-import { User } from './user.entity';
 import { UserQuery } from 'src/common/interface/query';
-import { InitRoleData } from 'src/common/constant/data';
+import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { getSearch } from 'src/common/utils/query';
+import { RoleService } from 'src/role/role.service';
 import { IsNull } from 'typeorm';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { getSearch } from 'src/common/utils/query';
+import { User } from './user.entity';
+import { UserRepository } from './user.repository';
+import { UserService } from './user.service';
 
 @ApiTags('User')
 @Controller(RouterUrl.USER.ROOT)
@@ -39,6 +39,7 @@ export class UserController {
     private userService: UserService,
     private roleService: RoleService,
     private readonly i18n: I18nService,
+    @InjectRepository(User) private readonly userRepository: UserRepository,
   ) {}
 
   @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
@@ -133,15 +134,9 @@ export class UserController {
         relations: ['roles'],
       });
 
-      const roleData = InitRoleData.find((role) => role.name == userRole.name);
-
-      const permissionData = await fetch(roleData.link, { method: 'GET' });
-
-      const permissions = await permissionData.json();
-
       const responseData: ResponseData = {
         message: 'success',
-        data: mapUserResponse(user, user?.roles ?? [], permissions ?? null),
+        data: this.userRepository.mapUserResponse(user),
         error: null,
         statusCode: 200,
       };

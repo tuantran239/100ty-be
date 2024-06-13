@@ -5,12 +5,14 @@ import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RoleId } from 'src/common/interface';
+import { UserResponseDto } from './dto/user-response.dto';
 
 export interface UserRepository extends Repository<User> {
   this: Repository<User>;
   createUser(payload: CreateUserDto): Promise<User>;
   updateUser(payload: UpdateUserDto & { id: string }): Promise<User>;
   filterRole(me: User): any;
+  mapUserResponse: (user: User | null) => UserResponseDto | null;
 }
 
 export const UserRepositoryProvider = {
@@ -84,5 +86,33 @@ export const userCustomRepository: Pick<UserRepository, any> = {
     }
 
     return user;
+  },
+
+  mapUserResponse(user: User | null): UserResponseDto | null {
+    if (user) {
+      const role = user?.roles[0];
+
+      let permissions = [];
+
+      if (role) {
+        permissions = role?.permissions ?? [];
+
+        role.permissions = undefined;
+      }
+
+      const userData = {
+        ...user,
+        role,
+        password: undefined,
+        permissions,
+        roles: undefined,
+      };
+
+      return {
+        ...userData,
+      } as UserResponseDto;
+    }
+
+    return null;
   },
 };

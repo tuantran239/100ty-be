@@ -219,6 +219,24 @@ const ASSET_TYPE: BaseRouter = {
   DELETE: '/:id',
 };
 
+const WAREHOUSE: BaseRouter = {
+  ROOT: `${API_URL}/warehouse`,
+  CREATE: '/',
+  UPDATE: '/:id',
+  LIST: '/list',
+  RETRIEVE: '/:id',
+  DELETE: '/:id',
+};
+
+const ASSET: BaseRouter = {
+  ROOT: `${API_URL}/asset`,
+  CREATE: '/',
+  UPDATE: '/:id',
+  LIST: '/list',
+  RETRIEVE: '/:id',
+  DELETE: '/:id',
+};
+
 interface ContractRouter {
   ROOT: string;
   UPDATE_STATUS: string;
@@ -252,6 +270,8 @@ const RouterUrl = {
   PAWN,
   CONTRACT,
   DATABASE,
+  WAREHOUSE,
+  ASSET,
 };
 
 export default RouterUrl;

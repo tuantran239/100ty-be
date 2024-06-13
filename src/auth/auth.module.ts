@@ -7,11 +7,11 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './jwt.strategy';
 
-import 'dotenv/config';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import 'dotenv/config';
 import IConfig, { JWTConfig } from 'src/common/config/config.interface';
-import { RoleModule } from 'src/role/role.module';
 import { LoggerServerModule } from 'src/logger/logger-server.module';
+import { RoleModule } from 'src/role/role.module';
 
 @Module({
   imports: [
