@@ -27,6 +27,9 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { ContractService } from 'src/contract/contract.service';
 import { IsNull } from 'typeorm';
 import { getSearchName } from 'src/common/utils/get-full-name';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Customer } from './customer.entity';
+import { CustomerRepository } from './customer.repository';
 
 @ApiTags('Customer')
 @Controller(RouterUrl.CUSTOMER.ROOT)
@@ -34,6 +37,8 @@ export class CustomerController {
   constructor(
     private customerService: CustomerService,
     private contractService: ContractService,
+    @InjectRepository(Customer)
+    private readonly customerRepository: CustomerRepository,
   ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -141,6 +146,10 @@ export class CustomerController {
         skip: ((page ?? 1) - 1) * (pageSize ?? 10),
       });
 
+      const totalMoney = await this.customerRepository.calculateTotal({
+        where: [...where],
+      });
+
       const list_customer = [];
 
       await Promise.all(
@@ -161,7 +170,7 @@ export class CustomerController {
 
       const responseData: ResponseData = {
         message: 'success',
-        data: { list_customer: data[0], total: data[1] },
+        data: { list_customer: data[0], total: data[1], totalMoney },
         error: null,
         statusCode: 200,
       };
