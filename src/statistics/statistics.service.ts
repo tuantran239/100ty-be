@@ -1,38 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { BatHo } from 'src/bat-ho/bat-ho.entity';
-import { Cash } from 'src/cash/cash.entity';
-import { GroupCashId } from 'src/common/constant/group-cash';
-import {
-  CashFilterType,
-  CashType,
-  ContractType,
-  GroupCashStatus,
-  RoleId,
-  StatisticsContractFilter,
-} from 'src/common/interface';
-import { DebitStatus } from 'src/common/interface/bat-ho';
-import { Contract } from 'src/common/interface/contract';
-import {
-  PaymentStatusHistory,
-  TransactionHistoryType,
-} from 'src/common/interface/history';
-import {
-  ProfitChartDetail,
-  ProfitChartDetailItem,
-  ProfitStatistics,
-} from 'src/common/interface/profit';
-import {
-  ContractHomePreviewResponses,
-  HomePreview,
-  HomePreviewContractResponse,
-  OverViewHomeToday,
-  PieChartStatisticsNewHomePreview,
-  StatisticNewHomePreview,
-  StatisticsOverview,
-  TableStatisticsNewHomePreview,
-} from 'src/common/interface/statistics';
+import { BatHoRepository } from 'src/bat-ho/bat-ho.repository';
+import { CashRepository } from 'src/cash/cash.repository';
+import { CashType } from 'src/cash/cash.type';
+import { CashFilterType, ContractType, DebitStatus } from 'src/common/types';
 import { calculatePercent, calculateProfit } from 'src/common/utils/calculate';
-import { filterRole } from 'src/common/utils/filter-role';
 import {
   calculateRangeDate,
   calculateRangeTime,
@@ -41,28 +12,52 @@ import {
   getTotalDayInMonth,
 } from 'src/common/utils/time';
 import { ContractService } from 'src/contract/contract.service';
-import { Customer } from 'src/customer/customer.entity';
+import { Contract } from 'src/contract/contract.type';
+import { CustomerRepository } from 'src/customer/customer.repository';
 import { DatabaseService } from 'src/database/database.service';
+import { GroupCashId, GroupCashStatus } from 'src/group-cash/group-cash.type';
+import { PaymentStatusHistory } from 'src/payment-history/payment-history.type';
+import { RoleId } from 'src/role/role.type';
+import {
+  ProfitChartDetail,
+  ProfitChartDetailItem,
+  ProfitStatistics,
+} from 'src/statistics/types/profit.type';
+import {
+  ContractHomePreviewResponses,
+  HomePreview,
+  HomePreviewContractResponse,
+  OverViewHomeToday,
+  PieChartStatisticsNewHomePreview,
+  StatisticNewHomePreview,
+  StatisticsContractFilter,
+  StatisticsOverview,
+  TableStatisticsNewHomePreview,
+} from 'src/statistics/types/statistics.type';
+import { TransactionHistoryType } from 'src/transaction-history/transaction-history.type';
 import { User } from 'src/user/user.entity';
-import { Between, DataSource, IsNull, Repository } from 'typeorm';
+import { UserRepository } from 'src/user/user.repository';
+import { Between, DataSource, IsNull } from 'typeorm';
 import { StatisticsContractQueryDto } from './dto/statistics-contract-query.dto';
 
 @Injectable()
 export class StatisticsService {
-  private batHoRepository: Repository<BatHo>;
-  private cashRepository: Repository<Cash>;
-  private customerRepository: Repository<Customer>;
-  private userRepository: Repository<User>;
+  private batHoRepository: BatHoRepository;
+  private cashRepository: CashRepository;
+  private customerRepository: CustomerRepository;
+  private userRepository: UserRepository;
 
   constructor(
     private dataSource: DataSource,
     private contractService: ContractService,
     private databaseService: DatabaseService,
   ) {
-    this.batHoRepository = this.dataSource.manager.getRepository(BatHo);
-    this.cashRepository = this.dataSource.manager.getRepository(Cash);
-    this.customerRepository = this.dataSource.manager.getRepository(Customer);
-    this.userRepository = this.dataSource.manager.getRepository(User);
+    this.batHoRepository =
+      this.databaseService.getRepositories().batHoRepository;
+    this.cashRepository = this.databaseService.getRepositories().cashRepository;
+    this.customerRepository =
+      this.databaseService.getRepositories().customerRepository;
+    this.userRepository = this.databaseService.getRepositories().userRepository;
   }
 
   private calculateHomePreviewContractResponse(
@@ -159,7 +154,7 @@ export class StatisticsService {
   }
 
   async homePreview(me: User): Promise<HomePreview> {
-    const user = filterRole(me);
+    const user = this.userRepository.filterRole(me);
 
     const contractResponses = await this.getHomePreviewContractResponse(user);
 
@@ -315,7 +310,7 @@ export class StatisticsService {
   }
 
   async statisticsOverview(me: User): Promise<StatisticsOverview[]> {
-    const user = filterRole(me);
+    const user = this.userRepository.filterRole(me);
 
     const { icloud: icloudContract, pawn: pawnContract } =
       await this.getHomePreviewContractResponse(user);
@@ -553,7 +548,7 @@ export class StatisticsService {
     month?: number;
     me: User;
   }): Promise<ProfitStatistics> {
-    const user = filterRole(me);
+    const user = this.userRepository.filterRole(me);
 
     const { paymentHistoryRepository, cashRepository } =
       this.databaseService.getRepositories();
@@ -598,7 +593,7 @@ export class StatisticsService {
     let endDate = undefined;
     let startDate = undefined;
 
-    const user = filterRole(me);
+    const user = this.userRepository.filterRole(me);
 
     const { paymentHistoryRepository } = this.databaseService.getRepositories();
 
@@ -741,7 +736,7 @@ export class StatisticsService {
   }
 
   async statisticNewHomePreview(me: User): Promise<StatisticNewHomePreview> {
-    const user = filterRole(me);
+    const user = this.userRepository.filterRole(me);
 
     const { transactionHistoryRepository, cashRepository } =
       this.databaseService.getRepositories();

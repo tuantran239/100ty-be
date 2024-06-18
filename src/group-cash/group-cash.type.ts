@@ -5,3 +5,8 @@ export const GroupCashId = {
   PAYMENT_ORTHER: 'chi_tieu_khac',
   INIT: 'tien_quy',
 };
+
+export enum GroupCashStatus {
+  ACTIVE = 'active',
+  OFF = 'off',
+}

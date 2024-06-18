@@ -8,7 +8,7 @@ import {
 import RouterUrl from 'src/common/constant/router';
 import { ContractService } from './contract.service';
 import { Request, Response } from 'express';
-import { ResponseData } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 
 @Controller(RouterUrl.CONTRACT.ROOT)
 export class ContractController {

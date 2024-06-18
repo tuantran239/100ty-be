@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsOptional, IsString } from 'class-validator';
-import { ServiceFee } from 'src/common/interface/bat-ho';
+import { ServiceFee } from 'src/bat-ho/bat-ho.type';
 
 export class UpdateBatHoDto {
   @ApiProperty()

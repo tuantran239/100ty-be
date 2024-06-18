@@ -13,11 +13,11 @@ import {
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import RouterUrl from 'src/common/constant/router';
-import { ResponseData, RoleId } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 import {
   PaymentHistoryFinishQuery,
   PaymentHistoryQuery,
-} from 'src/common/interface/query';
+} from 'src/common/types/query';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { mapPaymentHistoryResponse } from 'src/common/utils/map';
 import { LoggerServerService } from 'src/logger/logger-server.service';
@@ -30,7 +30,8 @@ import { convertPostgresDate, formatDate } from 'src/common/utils/time';
 import { getSearch } from 'src/common/utils/query';
 import { DatabaseService } from 'src/database/database.service';
 import { IsNull } from 'typeorm';
-import { PaymentHistoryType } from 'src/common/interface/history';
+import { RoleId } from 'src/role/role.type';
+import { PaymentHistoryType } from './payment-history.type';
 
 const ENTITY_LOG = 'PaymentHistory';
 

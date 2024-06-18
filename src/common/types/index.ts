@@ -5,29 +5,14 @@ export interface ResponseData {
   statusCode: number;
 }
 
-export enum RoleName {
-  SUPER_ADMIN = 'super_admin',
-  ADMIN = 'admin',
-  USER = 'user',
-}
-
-export enum RoleId {
-  SUPER_ADMIN = 'role_super_admin',
-  ADMIN = 'role_admin',
-  USER = 'role_user',
-}
-
-export interface RoleData {
-  name: string;
-  permissions: any;
-  level: number;
-  link: string;
-  id: string;
-}
-
-export enum CashType {
-  RECEIPT = 'receipt',
-  PAYMENT = 'payment',
+export enum DebitStatus {
+  IN_DEBIT = 'inDebt',
+  ON_TIME = 'onTime',
+  LATE_PAYMENT = 'latePayment',
+  COMPLETED = 'completed',
+  BAD_DEBIT = 'badDebit',
+  RISK_DEBIT = 'riskDebit',
+  DELETED = 'deleted',
 }
 
 export enum CashFilterType {
@@ -64,34 +49,6 @@ export interface paymentHistoriesCashItem {
 export interface paymentHistoriesCash {
   data: paymentHistoriesCashItem[];
 }
-
-export enum StatisticsContractFilter {
-  TOTAL_DISBURSEMENT = 'total_disbursement',
-  TOTAL_MUST_RECEIPT = 'total_must_receipt',
-  TOTAL_BAD_DEBIT = 'total_bad_debit',
-  TOTAL_RECEIPT = 'total_receipt',
-  TOTAL_DEDUCTION = 'total_deduction',
-  TOTAL_INTEREST = 'total_interest',
-}
-
-export interface StatisticsContractItem {
-  customer: string;
-  employee: string;
-  contractId: string;
-  amount: number;
-}
-
-export interface StatisticsContractResponse {
-  totalPage: number;
-  totalMoney: number;
-  list_contract: StatisticsContractItem[];
-}
-
-export enum GroupCashStatus {
-  ACTIVE = 'active',
-  OFF = 'off',
-}
-
 export interface ContractResponse {
   contractId: string;
   loanDate: string;
@@ -105,4 +62,10 @@ export interface ContractResponse {
   contractType: string;
   revenueReceived: number;
   disbursementMoney: number;
+}
+
+export interface SummarizeOptions {
+  date: { day?: number; month?: number; year?: number };
+  type: 'day' | 'month' | 'year';
+  user?: any;
 }

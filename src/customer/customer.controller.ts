@@ -15,10 +15,9 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { ResponseData, RoleName } from 'src/common/interface';
-import { CustomerQuery } from 'src/common/interface/query';
+import { ResponseData } from 'src/common/types';
+import { CustomerQuery } from 'src/common/types/query';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import { filterRole } from 'src/common/utils/filter-role';
 import { getSearch } from 'src/common/utils/query';
 import { User } from 'src/user/user.entity';
 import { CustomerService } from './customer.service';
@@ -30,6 +29,8 @@ import { getSearchName } from 'src/common/utils/get-full-name';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from './customer.entity';
 import { CustomerRepository } from './customer.repository';
+import { RoleName } from 'src/role/role.type';
+import { DatabaseService } from 'src/database/database.service';
 
 @ApiTags('Customer')
 @Controller(RouterUrl.CUSTOMER.ROOT)
@@ -37,6 +38,7 @@ export class CustomerController {
   constructor(
     private customerService: CustomerService,
     private contractService: ContractService,
+    private databaseService: DatabaseService,
     @InjectRepository(Customer)
     private readonly customerRepository: CustomerRepository,
   ) {}
@@ -98,7 +100,9 @@ export class CustomerController {
     try {
       const me = req.user as User;
 
-      const user = filterRole(me);
+      const user = this.databaseService
+        .getRepositories()
+        .userRepository.filterRole(me);
 
       const { search, page, pageSize, isDebt } = req.body as CustomerQuery;
 

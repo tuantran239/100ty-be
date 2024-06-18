@@ -14,7 +14,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import RouterUrl from 'src/common/constant/router';
-import { ResponseData } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { LoggerServerService } from 'src/logger/logger-server.service';
 import { DeviceService } from './device.service';

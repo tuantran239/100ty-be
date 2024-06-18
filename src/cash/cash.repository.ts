@@ -1,17 +1,39 @@
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
-import { CashFilterType, CashType, ContractType } from 'src/common/interface';
+import { BatHo } from 'src/bat-ho/bat-ho.entity';
+import { ContractInitLabel } from 'src/common/constant/contract';
+import {
+  CashFilterType,
+  ContractType,
+  SummarizeOptions,
+} from 'src/common/types';
+import { calculateReduceTotal } from 'src/common/utils/calculate';
 import { generatePrefixNumberId } from 'src/common/utils/generated-id';
 import { getFullName } from 'src/common/utils/get-full-name';
-import { convertPostgresDate, formatDate } from 'src/common/utils/time';
+import {
+  calculateRangeDate,
+  convertPostgresDate,
+  formatDate,
+} from 'src/common/utils/time';
 import { Customer } from 'src/customer/customer.entity';
+import { Pawn } from 'src/pawn/pawn.entity';
 import { User } from 'src/user/user.entity';
-import { DataSource, FindOneOptions, Repository } from 'typeorm';
+import {
+  Between,
+  DataSource,
+  FindOneOptions,
+  FindOptionsWhere,
+  Repository,
+} from 'typeorm';
 import { Cash } from './cash.entity';
+import {
+  CashType,
+  ContractCash,
+  ISummarizeCashContract,
+  ISummarizeCashContractDetail,
+} from './cash.type';
+import { CashResponseDto } from './dto/cash-response.dto';
 import { CreateCashDto } from './dto/create-cash.dto';
 import { UpdateCashDto } from './dto/update-cash.dto';
-import { Pawn } from 'src/pawn/pawn.entity';
-import { BatHo } from 'src/bat-ho/bat-ho.entity';
-import { CashResponseDto } from './dto/cash-response.dto';
 
 export const CASH_CODE_PREFIX = 'c';
 
@@ -35,14 +57,6 @@ const noteContract = (filter: string, contractId: string) => {
       return `Tiền hợp đồng ${contractId}`;
   }
 };
-
-interface ContractCash {
-  contractType: string;
-  id: string;
-  date: string;
-  amount: number;
-  contractId: string;
-}
 
 const createCashContractPayload = (
   user: User,
@@ -152,6 +166,10 @@ export interface CashRepository extends Repository<Cash> {
   }>;
 
   mapCashResponse(cash: Cash | null): CashResponseDto | null;
+
+  summarizeCashContract(
+    options: SummarizeOptions,
+  ): Promise<ISummarizeCashContract>;
 }
 
 export const CashRepositoryProvider = {
@@ -363,5 +381,71 @@ export const CashCustomRepository: Pick<CashRepository, any> = {
     );
 
     return { totalInterestMoney, totalPayment, totalReceipt, totalRootMoney };
+  },
+
+  async summarizeCashContract(
+    this: CashRepository,
+    options: SummarizeOptions,
+  ): Promise<ISummarizeCashContract> {
+    const { date, type, user } = options;
+
+    const isAllUndefined = Object.values(date).every(
+      (value) => value === undefined,
+    );
+
+    const { fromDate, toDate } = calculateRangeDate(date, type);
+
+    const where: FindOptionsWhere<Cash> = {
+      user,
+      createAt: isAllUndefined ? undefined : Between(fromDate, toDate),
+      isContract: true,
+    };
+
+    const cashes = await this.find({ where });
+
+    const cashesReceipt = cashes.filter(
+      (cash) => cash.type === CashType.RECEIPT,
+    );
+
+    const cashesPayment = cashes.filter(
+      (cash) => cash.type === CashType.PAYMENT,
+    );
+
+    const all = {
+      receiptTotal: calculateReduceTotal<Pick<Cash, 'amount'>>(
+        cashesReceipt,
+        'amount',
+      ),
+      paymentTotal: calculateReduceTotal<Pick<Cash, 'amount'>>(
+        cashesPayment,
+        'amount',
+      ),
+    };
+
+    const details: ISummarizeCashContractDetail[] = [];
+
+    const contractTypes = Object.values(ContractType);
+
+    for (let i = 0; i < contractTypes.length; i++) {
+      const type = contractTypes[i];
+      details.push({
+        key: type,
+        label: ContractInitLabel[type],
+        receiptTotal: calculateReduceTotal<Pick<Cash, 'amount'>>(
+          cashesReceipt.filter((c) => c.contractType === type),
+          'amount',
+        ),
+        paymentTotal: calculateReduceTotal<Pick<Cash, 'amount'>>(
+          cashesPayment.filter((c) => c.contractType === type),
+          'amount',
+        ),
+        groupCash: [],
+      });
+    }
+
+    return {
+      all,
+      details,
+    };
   },
 };

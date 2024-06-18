@@ -9,8 +9,8 @@ import {
 import { LogActionService } from './log-action.service';
 import RouterUrl from 'src/common/constant/router';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { LogActionQuery } from 'src/common/interface/query';
-import { ResponseData } from 'src/common/interface';
+import { LogActionQuery } from 'src/common/types/query';
+import { ResponseData } from 'src/common/types';
 import { Response } from 'express';
 
 @Controller(RouterUrl.LOG_ACTION.ROOT)

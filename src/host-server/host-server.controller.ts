@@ -18,7 +18,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { CreateHostServerDto } from './dto/create-host-server.dto';
 import { Request, Response } from 'express';
-import { ResponseData } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 import { UpdateHostServerDto } from './dto/update-host-server.dto';
 
 const ENTITY_LOG = 'HostServer';

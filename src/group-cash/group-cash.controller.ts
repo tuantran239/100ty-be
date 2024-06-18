@@ -15,53 +15,18 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { CashFilterType, ResponseData, RoleName } from 'src/common/interface';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { ResponseData } from 'src/common/types';
+import { GroupCashQuery } from 'src/common/types/query';
+import { RoleName } from 'src/role/role.type';
 import { CreateGroupCashDto } from './dto/create-group-cash.dto';
-import { GroupCashService } from './group-cash.service';
 import { UpdateGroupCashDto } from './dto/update-group-cash.dto';
-import { GroupCashQuery } from 'src/common/interface/query';
-import { DatabaseService } from 'src/database/database.service';
-import { GroupCashId } from 'src/common/constant/group-cash';
-
-export const GROUP_CASH_INIT_DATA = [
-  {
-    id: GroupCashId.SERVICE_FEE,
-    groupName: 'Phí hồ sơ',
-    filterType: CashFilterType.SERVICE_FEE,
-    cashType: 'payment',
-  },
-  {
-    id: GroupCashId.PARTNER,
-    groupName: 'Tiền cộng tác viên',
-    filterType: CashFilterType.PARTNER,
-    cashType: 'payment',
-  },
-  {
-    id: GroupCashId.PAY_ROLL,
-    groupName: 'Tiền lương nhân viên',
-    filterType: CashFilterType.PAY_ROLL,
-    cashType: 'payment',
-  },
-  {
-    id: GroupCashId.PAYMENT_ORTHER,
-    groupName: 'Chi tiêu khác',
-    filterType: CashFilterType.PAYMENT_ORTHER,
-    cashType: 'payment',
-  },
-  {
-    id: GroupCashId.INIT,
-    groupName: 'Tiền quỹ',
-    filterType: CashFilterType.INIT,
-    cashType: 'receipt',
-  },
-];
+import { GroupCashService } from './group-cash.service';
 
 @Controller(RouterUrl.GROUP_CASH.ROOT)
 export class GroupCashController {
   constructor(
     private groupCashService: GroupCashService,
-    private databaseService: DatabaseService,
   ) {}
 
   @Roles(RoleName.SUPER_ADMIN)
@@ -184,46 +149,6 @@ export class GroupCashController {
       const responseData: ResponseData = {
         message: 'success',
         data: { groupCash },
-        error: null,
-        statusCode: 200,
-      };
-
-      return res.status(200).send(responseData);
-    } catch (error: any) {
-      throw new InternalServerErrorException(error.message);
-    }
-  }
-
-  @Roles(RoleName.SUPER_ADMIN)
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post('/create-init-data')
-  async createInitData(@Res() res: Response) {
-    try {
-      let group_created = 0;
-
-      await this.databaseService.runTransaction(async (repositories) => {
-        const { groupCashRepository } = repositories;
-        await Promise.all(
-          GROUP_CASH_INIT_DATA.map(async (groupCash) => {
-            const groupCashFind = await groupCashRepository.findOne({
-              where: { id: groupCash.id },
-            });
-
-            if (!groupCashFind) {
-              const newGroupCash = await groupCashRepository.create(groupCash);
-              await groupCashRepository.save(newGroupCash);
-
-              group_created++;
-            }
-          }),
-        );
-      });
-
-      const responseData: ResponseData = {
-        message: 'success',
-        data: {
-          group_created: `${group_created}/${GROUP_CASH_INIT_DATA.length}`,
-        },
         error: null,
         statusCode: 200,
       };

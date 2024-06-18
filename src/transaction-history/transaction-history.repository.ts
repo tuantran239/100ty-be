@@ -6,8 +6,8 @@ import { CreateTransactionHistoryDto } from './dto/create-transaction-history';
 import { UpdateTransactionHistoryDto } from './dto/update-transaction-history';
 import { Pawn } from 'src/pawn/pawn.entity';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
-import { ContractType } from 'src/common/interface';
-import { TransactionHistoryType } from 'src/common/interface/history';
+import { ContractType } from 'src/common/types';
+import { TransactionHistoryType } from 'src/transaction-history/transaction-history.type';
 import { getContentTransactionHistory } from 'src/common/utils/history';
 
 export enum TransactionHistoryMoneyType {

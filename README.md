@@ -18,6 +18,7 @@ $ yarn install
 |   |   +-- example.entity.ts
 |   |   +-- example.service.ts
 |   |   +-- example.repository.ts
+|   |   +-- example.type.ts
 ```
 
 ## Running the app

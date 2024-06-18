@@ -1,22 +1,22 @@
+import { PathImpl2 } from '@nestjs/config';
 import { Cash } from 'src/cash/cash.entity';
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { ContractInitLabel } from '../constant/contract';
-import { GroupCashId } from '../constant/group-cash';
-import { CashType, ContractType } from '../interface';
-import { Contract } from '../interface/contract';
+import { ContractType } from '../types';
+import { Contract } from '../../contract/contract.type';
 import {
-  PaymentHistoryType,
-  PaymentStatusHistory,
   TransactionHistoryType,
-} from '../interface/history';
-import { ProfitCash, ProfitData } from '../interface/profit';
+} from '../../transaction-history/transaction-history.type';
+import { ProfitCash, ProfitData } from '../../statistics/types/profit.type';
 import {
   calculateTotalDayRangeDate,
   convertPostgresDate,
   formatDate,
   getTodayNotTimeZone,
 } from './time';
-import { getValueNestedField } from './type';
+import { PaymentHistoryType, PaymentStatusHistory } from 'src/payment-history/payment-history.type';
+import { CashType } from 'src/cash/cash.type';
+import { GroupCashId } from 'src/group-cash/group-cash.type';
 
 export const isLastPaymentHistoryUnFinish = (
   paymentHistory: PaymentHistory,
@@ -249,12 +249,19 @@ export const calculateMoneyCompleted = (contract: Contract) => {
   return total;
 };
 
-export const calculateReduceTotal = (
-  list: any[],
-  field: string,
+export const calculateReduceTotal = <T>(
+  list: T[],
+  field: PathImpl2<T>,
   sum?: number,
-) =>
-  list.reduce(
-    (total, item) => total + getValueNestedField(item, field, 'number') ?? 0,
+) => {
+  const total = list.reduce(
+    (total, item) => total + item[field as string] ?? 0,
     sum ?? 0,
   );
+
+  return typeof total !== 'number'
+    ? 0
+    : Number.isNaN(total)
+      ? 0
+      : (total as number);
+};

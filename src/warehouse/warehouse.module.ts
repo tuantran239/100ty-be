@@ -6,5 +6,6 @@ import { WarehouseRepositoryProvider } from './warehouse.repository';
 @Module({
   providers: [WarehouseService, WarehouseRepositoryProvider],
   controllers: [WarehouseController],
+  exports: [WarehouseService],
 })
 export class WarehouseModule {}

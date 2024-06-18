@@ -1,6 +1,7 @@
 import { Customer } from 'src/customer/customer.entity';
 import { ExtendedPeriodHistory } from 'src/extended-period-history/extended-period-history.entity';
-import { ServiceFee } from './bat-ho';
+import { ServiceFee } from '../bat-ho/bat-ho.type';
+import { Pawn } from 'src/pawn/pawn.entity';
 
 export enum PawnPaymentPeriodType {
   DAY = 'day',
@@ -17,11 +18,6 @@ export enum PawnInterestType {
   LOAN_PERCENT_PERIOD = 'loan-percent/period',
   LOAN_WEEK = 'loan/week',
   LOAN_PERCENT_WEEK = 'loan-percent/week',
-}
-
-export enum AssetTypeStatus {
-  ACTIVE = 'active',
-  OFF = 'off',
 }
 
 export interface TotalMoneyPaymentHistory {
@@ -118,4 +114,30 @@ export interface PawnExtendPeriod {
   histories: ExtendedPeriodHistory[];
   contractId: string;
   totalMoney: TotalMoneyPaymentHistory;
+}
+
+export interface PawnResponse extends Omit<Pawn, 'beforeInsert'> {
+  moneyPaid: number;
+  moneyOnePeriod: number;
+  latePaymentMoney: number;
+  badDebitMoney: number;
+  latePaymentPeriod: number;
+  interestDayToday: number;
+  interestMoneyToday: number;
+}
+
+export interface PaymentHistoryResponse {
+  id: string;
+  rowId: number;
+  startDate: string;
+  endDate: string;
+  totalPaymentAmount: number;
+  customerPaymentAmount: number;
+  paymentStatus: boolean;
+  payDate: string | null;
+}
+
+export enum PawnPaymentType {
+  BEFORE = 'before',
+  AFTER = 'after',
 }

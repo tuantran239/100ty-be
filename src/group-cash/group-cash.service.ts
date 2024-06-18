@@ -11,6 +11,7 @@ import {
   Repository,
 } from 'typeorm';
 import { DatabaseService } from 'src/database/database.service';
+import { InitGroupCashData } from './group-cash.data';
 
 @Injectable()
 @Injectable()
@@ -29,6 +30,40 @@ export class GroupCashService extends BaseService<
     super();
     this.manager = this.dataSource.manager;
     this.groupCashRepository = this.dataSource.manager.getRepository(GroupCash);
+  }
+
+  async createInit() {
+    let total = InitGroupCashData.length;
+    let updated = 0;
+    let created = 0;
+
+    await this.databaseService.runTransaction(async (repositories) => {
+      const { groupCashRepository } = repositories;
+
+      for (let i = 0; i < total; i++) {
+        const initData = InitGroupCashData[i];
+
+        const groupCash = await groupCashRepository.findOne({
+          where: { id: initData.id },
+        });
+
+        if (!groupCash) {
+          const newGroupCash = await groupCashRepository.create({
+            ...initData,
+          });
+
+          await groupCashRepository.save(newGroupCash);
+
+          created++;
+        } else {
+          updated++;
+        }
+      }
+    });
+
+    console.log(
+      `>>>>>>>>>>>>>>>>>>>>>>>>>> Create Init Group Cash: { created: ${created}/${total}, updated: ${updated}/${total}  }`,
+    );
   }
 
   async create(payload: CreateGroupCashDto): Promise<GroupCash> {

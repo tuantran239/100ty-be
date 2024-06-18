@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { InitRoleData } from 'src/common/constant/data';
 import { BaseService } from 'src/common/service/base.service';
 import {
   DataSource,
@@ -13,6 +12,8 @@ import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { Role } from './entities/role.entity';
 import { UserRole } from './entities/user-role.entity';
+import { DatabaseService } from 'src/database/database.service';
+import { InitRoleData } from './role.data';
 
 @Injectable()
 export class RoleService extends BaseService<
@@ -23,100 +24,52 @@ export class RoleService extends BaseService<
   protected manager: EntityManager;
   private roleRepository: Repository<Role>;
   private userRoleRepository: Repository<UserRole>;
-  constructor(private dataSource: DataSource) {
+
+  constructor(
+    private dataSource: DataSource,
+    private databaseService: DatabaseService,
+  ) {
     super();
     this.manager = this.dataSource.manager;
     this.roleRepository = this.dataSource.manager.getRepository(Role);
     this.userRoleRepository = this.dataSource.manager.getRepository(UserRole);
+  }
 
-    const roleRepo = this.roleRepository;
-    const dataSr = this.dataSource;
+  async createInit() {
+    let total = InitRoleData.length;
+    let updated = 0;
+    let created = 0;
 
-    async function init() {
-      const queryRunner = await dataSr.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
-      try {
-        const roleRepository = queryRunner.manager.getRepository(Role);
-        const userRoleRepository = queryRunner.manager.getRepository(UserRole);
-        const roles = await roleRepository.find();
+    await this.databaseService.runTransaction(async (repositories) => {
+      const { roleRepository } = repositories;
 
-        if (roles.length === 0) {
-          await Promise.all(
-            InitRoleData.map(async (role) => {
-              const newRole = await roleRepository.create({
-                name: role.name,
-                level: role.level,
-                permissions: { data: [...role.permissions] },
-                id: role.id,
-              });
-              await roleRepo.save(newRole);
-            }),
-          );
-        } else if (roles.length < InitRoleData.length) {
-          for (let i = 0; i < InitRoleData.length; i++) {
-            const roleData = InitRoleData[i];
-            const roleFind = roles.find((role) => role.name === roleData.name);
-            if (!roleFind) {
-              const newRole = await roleRepo.create({
-                name: roleData.name,
-                level: roleData.level,
-                permissions: { data: [...roleData.permissions] },
-                id: roleData.id,
-              });
-              await roleRepo.save(newRole);
-            }
-          }
+      for (let i = 0; i < total; i++) {
+        const initData = InitRoleData[i];
+
+        const role = await roleRepository.findOne({
+          where: { id: initData.id },
+        });
+
+        if (!role) {
+          const newRole = await roleRepository.create({
+            name: initData.name,
+            level: initData.level,
+            permissions: [...initData.permissions],
+            id: initData.id,
+          });
+
+          await roleRepository.save(newRole);
+
+          created++;
         } else {
-          for (let i = 0; i < InitRoleData.length; i++) {
-            const roleData = InitRoleData[i];
-            const roleFind = roles.find((role) => role.name === roleData.name);
-            if (
-              roleFind &&
-              (!roleFind.permissions || roleFind.id !== roleData.id)
-            ) {
-              const newRole = await roleRepo.create({
-                name: roleData.name,
-                level: roleData.level,
-                permissions: { data: [...roleData.permissions] },
-                id: roleData.id,
-              });
-
-              await roleRepo.save(newRole);
-
-              const userRoles = await userRoleRepository.find({
-                where: { role_id: roleFind.id },
-              });
-
-              await Promise.all(
-                userRoles.map(async (userRole) => {
-                  const newUserRole = await userRoleRepository.create({
-                    role_id: roleData.id,
-                    user_id: userRole.user_id,
-                  });
-                  await userRoleRepository.save(newUserRole);
-                }),
-              );
-
-              await roleRepository.delete(roleFind.id);
-
-              await await Promise.all(
-                userRoles.map(async (userRole) => {
-                  await userRoleRepository.delete(userRole.id);
-                }),
-              );
-            }
-          }
+          updated++;
         }
-        await queryRunner.commitTransaction();
-      } catch (error) {
-        await queryRunner.rollbackTransaction();
-      } finally {
-        await queryRunner.release();
       }
-    }
+    });
 
-    init();
+    console.log(
+      `>>>>>>>>>>>>>>>>>>>>>>>>>> Create Init Role: { created: ${created}/${total}, updated: ${updated}/${total}  }`,
+    );
   }
 
   async createUserRole(payload: {

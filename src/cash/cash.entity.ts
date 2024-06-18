@@ -1,6 +1,6 @@
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity';
-import { paymentHistoriesCash } from 'src/common/interface';
+import { paymentHistoriesCash } from 'src/common/types';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { GroupCash } from 'src/group-cash/entity/group-cash.entity';
 import { Pawn } from 'src/pawn/pawn.entity';

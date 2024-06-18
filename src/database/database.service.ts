@@ -28,6 +28,7 @@ import { WarehouseRepository } from 'src/warehouse/warehouse.repository';
 import { Warehouse } from 'src/warehouse/warehouse.entity';
 import { AssetRepository } from 'src/asset/asset.repository';
 import { Asset } from 'src/asset/asset.entity';
+import { UserRole } from 'src/role/entities/user-role.entity';
 
 export interface DataSourceRepository {
   batHoRepository: BatHoRepository;
@@ -47,6 +48,7 @@ export interface DataSourceRepository {
   logAction: Repository<LogAction>;
   warehouseRepository: WarehouseRepository;
   assetRepository: AssetRepository;
+  userRoleRepository: Repository<UserRole>;
 }
 
 @Injectable()
@@ -95,6 +97,7 @@ export class DatabaseService {
       logAction: this.dataSource.manager.getRepository(LogAction),
       warehouseRepository: this.warehouseRepository,
       assetRepository: this.assetRepository,
+      userRoleRepository: this.dataSource.manager.getRepository(UserRole),
     };
   }
 
@@ -143,6 +146,7 @@ export class DatabaseService {
       assetRepository: queryRunner.manager
         .getRepository(Asset)
         .extend(this.assetRepository),
+      userRoleRepository: queryRunner.manager.getRepository(UserRole),
     };
 
     try {

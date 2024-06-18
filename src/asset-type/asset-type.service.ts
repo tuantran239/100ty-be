@@ -12,7 +12,7 @@ import {
   DataSource,
 } from 'typeorm';
 import { DatabaseService } from 'src/database/database.service';
-import { AssetTypeInitData } from 'src/common/constant/init-data';
+import { AssetTypeInitData } from './asset-type.data';
 
 @Injectable()
 export class AssetTypeService extends BaseService<
@@ -30,47 +30,51 @@ export class AssetTypeService extends BaseService<
     super();
     this.manager = this.dataSource.manager;
     this.assetTypeRepository = this.dataSource.manager.getRepository(AssetType);
+  }
 
-    const databaseServiceInit = this.databaseService;
+  async createInit() {
+    let total = AssetTypeInitData.length;
+    let updated = 0;
+    let created = 0;
 
-    async function init() {
-      await databaseServiceInit.runTransaction(async (repositories) => {
-        const { assetTypeRepository, assetPropertyRepository } = repositories;
+    await this.databaseService.runTransaction(async (repositories) => {
+      const { assetTypeRepository, assetPropertyRepository } = repositories;
 
-        await Promise.all(
-          AssetTypeInitData.map(async (initData) => {
-            const assetType = await assetTypeRepository.findOne({
-              where: {
-                id: initData.id,
-              },
+      await Promise.allSettled(
+        AssetTypeInitData.map(async (initData) => {
+          const assetType = await assetTypeRepository.findOne({
+            where: {
+              id: initData.id,
+            },
+          });
+
+          if (!assetType) {
+            let newAssetType = await assetTypeRepository.create({
+              ...initData,
+              properties: undefined,
             });
 
-            if (!assetType) {
-              let newAssetType = await assetTypeRepository.create({
-                ...initData,
-                properties: undefined,
-              });
+            newAssetType = await assetTypeRepository.save(newAssetType);
 
-              newAssetType = await assetTypeRepository.save(newAssetType);
+            await Promise.all(
+              initData.properties.map(async (property) => {
+                const newAssetProperty = await assetPropertyRepository.create({
+                  assetTypeId: newAssetType.id,
+                  propertyName: property,
+                });
+                await assetPropertyRepository.save(newAssetProperty);
+              }),
+            );
+            created++;
+          }
+          updated++;
+        }),
+      );
+    });
 
-              await Promise.all(
-                initData.properties.map(async (property) => {
-                  const newAssetProperty = await assetPropertyRepository.create(
-                    {
-                      assetTypeId: newAssetType.id,
-                      propertyName: property,
-                    },
-                  );
-                  await assetPropertyRepository.save(newAssetProperty);
-                }),
-              );
-            }
-          }),
-        );
-      });
-    }
-
-    init();
+    console.log(
+      `>>>>>>>>>>>>>>>>>>>>>>>>>> Create Init Asset Type: { created: ${created}/${total}, updated: ${updated}/${total}  }`,
+    );
   }
 
   async create(payload: CreateAssetTypeDto): Promise<AssetType> {

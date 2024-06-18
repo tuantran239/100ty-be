@@ -10,17 +10,6 @@ export enum InterestPaymentType {
   BEFORE = 'before',
   AFTER = 'after',
 }
-
-export enum DebitStatus {
-  IN_DEBIT = 'inDebt',
-  ON_TIME = 'onTime',
-  LATE_PAYMENT = 'latePayment',
-  COMPLETED = 'completed',
-  BAD_DEBIT = 'badDebit',
-  RISK_DEBIT = 'riskDebit',
-  DELETED = 'deleted',
-}
-
 export interface ServiceFee {
   name: string;
   value: number;
@@ -44,25 +33,4 @@ export interface BatHoResponse extends Omit<BatHo, 'beforeInsert'> {
   badDebitMoney: number;
   moneyPaidNumber: number;
   moneyMustPayNumber: number;
-}
-
-export interface PawnResponse extends Omit<Pawn, 'beforeInsert'> {
-  moneyPaid: number;
-  moneyOnePeriod: number;
-  latePaymentMoney: number;
-  badDebitMoney: number;
-  latePaymentPeriod: number;
-  interestDayToday: number;
-  interestMoneyToday: number;
-}
-
-export interface PaymentHistoryResponse {
-  id: string;
-  rowId: number;
-  startDate: string;
-  endDate: string;
-  totalPaymentAmount: number;
-  customerPaymentAmount: number;
-  paymentStatus: boolean;
-  payDate: string | null;
 }
