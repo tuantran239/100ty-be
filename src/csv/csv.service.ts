@@ -2,11 +2,12 @@ import { Injectable } from '@nestjs/common';
 
 import { Parser } from '@json2csv/plainjs';
 import { filterTypesData } from 'src/cash/cash.controller';
-import { CashFilterType, CashType } from 'src/common/interface';
-import { CashCSVQuery } from 'src/common/interface/query';
+import { CashFilterType } from 'src/common/types';
+import { CashCSVQuery } from 'src/common/types/query';
 import { formatDate } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import { Equal, IsNull, Or } from 'typeorm';
+import { CashType } from 'src/cash/cash.type';
 
 @Injectable()
 export class CsvService {

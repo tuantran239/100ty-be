@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { ResponseData } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 import { TransactionHistoryService } from './transaction-history.service';
 
 @Controller('/api/transaction-history')

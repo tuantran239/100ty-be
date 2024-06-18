@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ContractResponse } from 'src/common/interface';
+import { ContractResponse } from 'src/common/types';
 import { BaseService } from 'src/common/service/base.service';
 import { ContractService } from 'src/contract/contract.service';
 import { DatabaseService } from 'src/database/database.service';

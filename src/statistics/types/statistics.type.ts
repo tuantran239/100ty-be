@@ -143,3 +143,25 @@ export interface StatisticNewHomePreview {
   pieChartStatistics: PieChartStatisticsNewHomePreview;
   contractAwaitingApproval: number;
 }
+
+export enum StatisticsContractFilter {
+  TOTAL_DISBURSEMENT = 'total_disbursement',
+  TOTAL_MUST_RECEIPT = 'total_must_receipt',
+  TOTAL_BAD_DEBIT = 'total_bad_debit',
+  TOTAL_RECEIPT = 'total_receipt',
+  TOTAL_DEDUCTION = 'total_deduction',
+  TOTAL_INTEREST = 'total_interest',
+}
+
+export interface StatisticsContractItem {
+  customer: string;
+  employee: string;
+  contractId: string;
+  amount: number;
+}
+
+export interface StatisticsContractResponse {
+  totalPage: number;
+  totalMoney: number;
+  list_contract: StatisticsContractItem[];
+}

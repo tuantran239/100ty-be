@@ -15,11 +15,8 @@ import { BaseService } from 'src/common/service/base.service';
 import { CreateWareHouseDto } from './dto/create-warehouse.dto';
 import { UpdateWareHouseDto } from './dto/update-warehouse.dto';
 import { ListWarehouseQueryDto } from './dto/list-warehouse-query.dto';
-
-export const INIT_DATA_WAREHOUSE = {
-  name: 'Kho',
-  address: 'Hà Nội',
-};
+import { DatabaseService } from 'src/database/database.service';
+import { InitWarehouseData } from './warehouse.data';
 
 @Injectable()
 export class WarehouseService extends BaseService<
@@ -32,21 +29,38 @@ export class WarehouseService extends BaseService<
   constructor(
     @InjectRepository(Warehouse)
     private readonly warehouseRepository: WarehouseRepository,
+    private databaseService: DatabaseService,
   ) {
     super();
-    const warehouseRepositoryInit = this.warehouseRepository;
+  }
 
-    async function init() {
-      const wareHouse = await warehouseRepositoryInit.findOne({
-        where: { name: Equal(INIT_DATA_WAREHOUSE.name) },
-      });
+  async createInit() {
+    let total = InitWarehouseData.length;
+    let updated = 0;
+    let created = 0;
 
-      if (!wareHouse) {
-        warehouseRepositoryInit.createWarehouse({ ...INIT_DATA_WAREHOUSE });
+    await this.databaseService.runTransaction(async (repositories) => {
+      const { warehouseRepository } = repositories;
+
+      for (let i = 0; i < total; i++) {
+        const initData = InitWarehouseData[i];
+
+        const wareHouse = await warehouseRepository.findOne({
+          where: { name: Equal(initData.name) },
+        });
+
+        if (!wareHouse) {
+          await warehouseRepository.createWarehouse({ ...initData });
+          created++;
+        } else {
+          updated++;
+        }
       }
-    }
+    });
 
-    init();
+    console.log(
+      `>>>>>>>>>>>>>>>>>>>>>>>>>> Create Init Warehouse: { created: ${created}/${total}, updated: ${updated}/${total}  }`,
+    );
   }
 
   async create(payload: CreateWareHouseDto): Promise<Warehouse> {

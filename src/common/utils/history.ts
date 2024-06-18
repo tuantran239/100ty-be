@@ -1,8 +1,6 @@
-import {
-  PaymentStatusHistory,
-  TransactionHistoryType,
-} from '../interface/history';
-import { TotalMoneyPaymentHistory } from '../interface/pawn';
+import { TransactionHistoryType } from '../../transaction-history/transaction-history.type';
+import { TotalMoneyPaymentHistory } from '../../pawn/pawn.type';
+import { PaymentStatusHistory } from 'src/payment-history/payment-history.type';
 
 export const getContentTransactionHistory = (
   type: string,

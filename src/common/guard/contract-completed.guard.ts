@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { Request } from 'express';
 import { DatabaseService } from 'src/database/database.service';
-import { DebitStatus } from '../interface/bat-ho';
+import { DebitStatus } from '../types';
 
 @Injectable()
 export class ContractCompleteGuard implements CanActivate {

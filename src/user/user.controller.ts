@@ -21,8 +21,8 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { ResponseData, RoleId, RoleName } from 'src/common/interface';
-import { UserQuery } from 'src/common/interface/query';
+import { ResponseData } from 'src/common/types';
+import { UserQuery } from 'src/common/types/query';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { getSearch } from 'src/common/utils/query';
 import { RoleService } from 'src/role/role.service';
@@ -31,6 +31,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './user.entity';
 import { UserRepository } from './user.repository';
 import { UserService } from './user.service';
+import { RoleId, RoleName } from 'src/role/role.type';
 
 @ApiTags('User')
 @Controller(RouterUrl.USER.ROOT)

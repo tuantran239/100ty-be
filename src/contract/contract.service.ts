@@ -1,20 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import { ContractInitLabel } from 'src/common/constant/contract';
-import { ContractType } from 'src/common/interface';
-import { DebitStatus } from 'src/common/interface/bat-ho';
+import { ContractType, DebitStatus } from 'src/common/types';
 import {
   Contract,
   SummarizeContract,
   SummarizeContractAmountDetail,
   SummarizeContractRangeTime,
   SummarizeContractType,
-} from 'src/common/interface/contract';
-import {
-  PaymentHistoryType,
-  PaymentStatusHistory,
-  TransactionHistoryType,
-} from 'src/common/interface/history';
+} from 'src/contract/contract.type';
+import { TransactionHistoryType } from 'src/transaction-history/transaction-history.type';
 import {
   calculateMoneyBadDebit,
   calculateMoneyCompleted,
@@ -28,6 +23,7 @@ import { Pawn } from 'src/pawn/pawn.entity';
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
 import { Between, DataSource, Equal, FindManyOptions, IsNull } from 'typeorm';
+import { PaymentHistoryType, PaymentStatusHistory } from 'src/payment-history/payment-history.type';
 
 @Injectable()
 export class ContractService {
@@ -442,47 +438,54 @@ export class ContractService {
     };
 
     const expected = {
-      interestMoney: calculateReduceTotal(
+      interestMoney: calculateReduceTotal<Pick<Contract, 'summarize'>>(
         contracts,
         'summarize.expected.interestMoney',
       ),
-      rootMoney: calculateReduceTotal(
+      rootMoney: calculateReduceTotal<Pick<Contract, 'summarize'>>(
         contracts,
         'summarize.expected.rootMoney',
       ),
-      interestMoneyOneDay: calculateReduceTotal(
+      interestMoneyOneDay: calculateReduceTotal<Pick<Contract, 'summarize'>>(
         contracts,
         'summarize.expected.interestMoneyOneDay',
       ),
     };
 
     const loan = {
-      disbursementMoney: calculateReduceTotal(
+      disbursementMoney: calculateReduceTotal<Pick<Contract, 'summarize'>>(
         contracts,
         'summarize.loan.disbursementMoney',
       ),
-      otherMoney: calculateReduceTotal(contracts, 'summarize.loan.otherMoney'),
-      moreMoney: calculateReduceTotal(contracts, 'summarize.loan.moreMoney'),
+      otherMoney: calculateReduceTotal<Pick<Contract, 'summarize'>>(
+        contracts,
+        'summarize.loan.otherMoney',
+      ),
+      moreMoney: calculateReduceTotal<Pick<Contract, 'summarize'>>(
+        contracts,
+        'summarize.loan.moreMoney',
+      ),
     };
 
     const receipt = {
-      interestMoney: calculateReduceTotal(
+      interestMoney: calculateReduceTotal<Pick<Contract, 'summarize'>>(
         contracts,
         'summarize.receipt.interestMoney',
       ),
-      downRootMoney: calculateReduceTotal(
+
+      downRootMoney: calculateReduceTotal<Pick<Contract, 'summarize'>>(
         contracts,
         'summarize.receipt.downRootMoney',
       ),
-      otherMoney: calculateReduceTotal(
+      otherMoney: calculateReduceTotal<Pick<Contract, 'summarize'>>(
         contracts,
         'summarize.receipt.otherMoney',
       ),
-      deductionMoney: calculateReduceTotal(
+      deductionMoney: calculateReduceTotal<Pick<Contract, 'summarize'>>(
         contracts,
         'summarize.receipt.deductionMoney',
       ),
-      receiptMoney: calculateReduceTotal(
+      receiptMoney: calculateReduceTotal<Pick<Contract, 'summarize'>>(
         contracts,
         'summarize.receipt.receiptMoney',
       ),

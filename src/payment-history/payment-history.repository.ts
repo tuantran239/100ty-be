@@ -9,9 +9,9 @@ import { CreatePaymentHistoryDto } from './dto/create-payment-history';
 import { PayMoneyDto } from './dto/pay-money';
 import { UpdatePaymentHistoryDto } from './dto/update-payment-history';
 import { PaymentHistory } from './payment-history.entity';
-import { ContractType } from 'src/common/interface';
-import { PaymentHistoryType } from 'src/common/interface/history';
+import { ContractType } from 'src/common/types';
 import { convertPostgresDate, formatDate } from 'src/common/utils/time';
+import { PaymentHistoryType } from './payment-history.type';
 
 export interface PaymentHistoryRepository extends Repository<PaymentHistory> {
   this: PaymentHistoryRepository;

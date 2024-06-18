@@ -15,13 +15,8 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LogActionType } from 'src/common/constant/log';
 import RouterUrl from 'src/common/constant/router';
-import {
-  CashFilterType,
-  CashType,
-  GroupCashStatus,
-  ResponseData,
-} from 'src/common/interface';
-import { CashQuery } from 'src/common/interface/query';
+import { CashFilterType, ResponseData } from 'src/common/types';
+import { CashQuery } from 'src/common/types/query';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { convertPostgresDate, formatDate } from 'src/common/utils/time';
 import { LogActionService } from 'src/log-action/log-action.service';
@@ -34,6 +29,8 @@ import { UpdateCashDto } from './dto/update-cash.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cash } from './cash.entity';
 import { CashRepository } from './cash.repository';
+import { GroupCashStatus } from 'src/group-cash/group-cash.type';
+import { CashType } from './cash.type';
 
 const ENTITY_LOG = 'Cash';
 
@@ -96,6 +93,7 @@ export class CashController {
 
       const cash = await this.cashService.create({
         ...payload,
+        userId: me.id,
       });
 
       this.logActionService.create({

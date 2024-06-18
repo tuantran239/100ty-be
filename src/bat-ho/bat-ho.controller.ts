@@ -18,8 +18,7 @@ import { LogActionType } from 'src/common/constant/log';
 import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { CashFilterType, ResponseData, RoleName } from 'src/common/interface';
-import { PaymentStatusHistory } from 'src/common/interface/history';
+import { CashFilterType, ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
 import { mapTransactionHistoryResponse } from 'src/common/utils/map';
@@ -38,6 +37,8 @@ import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BatHoRepository } from './bat-ho.repository';
 import { BatHo } from './bat-ho.entity';
+import { RoleName } from 'src/role/role.type';
+import { PaymentStatusHistory } from 'src/payment-history/payment-history.type';
 
 export const BAT_HO_CODE_PREFIX = 'bh';
 const ENTITY_LOG = 'BatHo';

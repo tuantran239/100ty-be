@@ -17,7 +17,7 @@ import { Request, Response } from 'express';
 import IConfig, { JWTConfig } from 'src/common/config/config.interface';
 import { LogActionType } from 'src/common/constant/log';
 import RouterUrl from 'src/common/constant/router';
-import { ResponseData } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { LogActionService } from 'src/log-action/log-action.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';

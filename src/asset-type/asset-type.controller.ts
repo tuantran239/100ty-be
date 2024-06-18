@@ -14,13 +14,14 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { ResponseData, RoleName } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { AssetTypeService } from './asset-type.service';
 import { CreateAssetTypeDto } from './dto/crerate-asset-type.dto';
 import { Request, Response } from 'express';
 import { UpdateAssetTypeDto } from './dto/update-asset-type.dto';
-import { GroupCashQuery } from 'src/common/interface/query';
+import { GroupCashQuery } from 'src/common/types/query';
+import { RoleName } from 'src/role/role.type';
 
 @Controller(RouterUrl.ASSET_TYPE.ROOT)
 export class AssetTypeController {

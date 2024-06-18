@@ -14,21 +14,16 @@ import {
 import { Pawn } from './pawn.entity';
 import { CreatePawnDto } from './dto/create-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
-import { PawnPaymentType } from 'src/common/interface/profit';
 import { CreatePaymentHistoryDto } from 'src/payment-history/dto/create-payment-history';
-import {
-  PawnInterestType,
-  PawnPaymentPeriodType,
-} from 'src/common/interface/pawn';
+import { PawnInterestType, PawnPaymentPeriodType, PawnPaymentType } from 'src/pawn/pawn.type';
 import { omit } from 'lodash';
-import { ContractType } from 'src/common/interface';
+import { ContractType, DebitStatus } from 'src/common/types';
+import { PawnResponseDto } from './dto/pawn-response.dto';
+import { isLastPaymentHistoryPeriodUnFinish } from 'src/common/utils/calculate';
 import {
   PaymentHistoryType,
   PaymentStatusHistory,
-} from 'src/common/interface/history';
-import { DebitStatus } from 'src/common/interface/bat-ho';
-import { PawnResponseDto } from './dto/pawn-response.dto';
-import { isLastPaymentHistoryPeriodUnFinish } from 'src/common/utils/calculate';
+} from 'src/payment-history/payment-history.type';
 
 interface InterestMoneyPayload {
   loanAmount: number;

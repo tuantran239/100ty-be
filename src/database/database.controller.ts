@@ -12,10 +12,11 @@ import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { DatabaseTokenGuard } from 'src/common/guard/database-token.guard';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { ResponseData, RoleName } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { DatabaseService } from './database.service';
 import { DeleteDataDto } from './dto/delete-data.dto';
+import { RoleName } from 'src/role/role.type';
 
 @Controller(RouterUrl.DATABASE.ROOT)
 export class DatabaseController {

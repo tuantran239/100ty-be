@@ -4,8 +4,8 @@ import { User } from './user.entity';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { RoleId } from 'src/common/interface';
 import { UserResponseDto } from './dto/user-response.dto';
+import { RoleId } from 'src/role/role.type';
 
 export interface UserRepository extends Repository<User> {
   this: Repository<User>;

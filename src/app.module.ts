@@ -40,6 +40,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { CacheCustomModule } from './cache/cache.module';
 import { WarehouseModule } from './warehouse/warehouse.module';
 import { AssetModule } from './asset/asset.module';
+import { InitModule } from './init/init.module';
 
 @Module({
   imports: [
@@ -97,6 +98,7 @@ import { AssetModule } from './asset/asset.module';
     CacheCustomModule,
     WarehouseModule,
     AssetModule,
+    InitModule,
   ],
   providers: [
     {

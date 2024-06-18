@@ -10,7 +10,7 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import RouterUrl from 'src/common/constant/router';
 import { CsvService } from './csv.service';
-import { CashCSVQuery } from 'src/common/interface/query';
+import { CashCSVQuery } from 'src/common/types/query';
 
 @Controller(RouterUrl.CSV.ROOT)
 export class CsvController {

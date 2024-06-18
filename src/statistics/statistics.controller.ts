@@ -13,12 +13,13 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { ResponseData, RoleName } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { User } from 'src/user/user.entity';
 import { StatisticsContractQueryDto } from './dto/statistics-contract-query.dto';
 import { StatisticsProfitQueryDto } from './dto/statistics-profit-query.dto';
 import { StatisticsService } from './statistics.service';
+import { RoleName } from 'src/role/role.type';
 
 @Controller(RouterUrl.STATISTICS.ROOT)
 export class StatisticsController {

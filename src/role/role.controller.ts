@@ -11,7 +11,7 @@ import {
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import RouterUrl from 'src/common/constant/router';
-import { ResponseData } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 import { RoleService } from './role.service';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { UpdateRoleDto } from './dto/update-role.dto';

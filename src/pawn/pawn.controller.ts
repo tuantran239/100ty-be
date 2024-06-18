@@ -13,17 +13,12 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { InitPeriodTypeData } from 'src/common/constant/init-data';
 import { LogActionType } from 'src/common/constant/log';
 import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { ContractCompleteGuard } from 'src/common/guard/contract-completed.guard';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { ResponseData, RoleName } from 'src/common/interface';
-import {
-  PaymentHistoryType,
-  PaymentStatusHistory,
-} from 'src/common/interface/history';
+import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
 import { mapTransactionHistoryResponse } from 'src/common/utils/map';
@@ -42,6 +37,12 @@ import { PawnService } from './pawn.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Pawn } from './pawn.entity';
 import { PawnRepository } from './pawn.repository';
+import { RoleName } from 'src/role/role.type';
+import {
+  PaymentHistoryType,
+  PaymentStatusHistory,
+} from 'src/payment-history/payment-history.type';
+import { InitPeriodTypeData } from './pawn.data';
 
 const ENTITY_LOG = 'Pawn';
 

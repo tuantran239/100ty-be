@@ -12,7 +12,7 @@ import {
 import RouterUrl from 'src/common/constant/router';
 import { AssetService } from './asset.service';
 import { Roles } from 'src/common/decorator/roles.decorator';
-import { ResponseData, RoleName } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
@@ -20,6 +20,7 @@ import { CreateAssetDto } from './dto/create-asset.dto';
 import { Request, Response } from 'express';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 import { ListAssetQueryDto } from './dto/list-asset-query.dto';
+import { RoleName } from 'src/role/role.type';
 
 @Controller(RouterUrl.ASSET.ROOT)
 export class AssetController {

@@ -5,5 +5,6 @@ import { GroupCashService } from './group-cash.service';
 @Module({
   controllers: [GroupCashController],
   providers: [GroupCashService],
+  exports: [GroupCashService],
 })
 export class GroupCashModule {}

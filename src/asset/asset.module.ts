@@ -5,6 +5,6 @@ import { AssetRepositoryProvider } from './asset.repository';
 
 @Module({
   controllers: [AssetController],
-  providers: [AssetService, AssetRepositoryProvider],
+  providers: [AssetService, AssetRepositoryProvider]
 })
 export class AssetModule {}

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
-import { Partner, ServiceFee } from 'src/common/interface/bat-ho';
+import { Partner, ServiceFee } from 'src/bat-ho/bat-ho.type';
 import { CreateCustomerDto } from 'src/customer/dto/create-customer.dto';
 
 export class CreateBatHoDto {

@@ -1,11 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CashFilterType, ContractType } from 'src/common/interface';
-import {
-  PaymentHistoryType,
-  PaymentStatusHistory,
-  TransactionHistoryType,
-} from 'src/common/interface/history';
+import { CashFilterType, ContractType } from 'src/common/types';
+import { TransactionHistoryType } from 'src/transaction-history/transaction-history.type';
 import { BaseService } from 'src/common/service/base.service';
 import { getFullName } from 'src/common/utils/get-full-name';
 import { getNoteTransactionHistory } from 'src/common/utils/history';
@@ -29,6 +25,7 @@ import { PayMoneyDto } from './dto/pay-money';
 import { UpdatePaymentHistoryDto } from './dto/update-payment-history';
 import { PaymentHistory } from './payment-history.entity';
 import { PaymentHistoryRepository } from './payment-history.repository';
+import { PaymentHistoryType, PaymentStatusHistory } from './payment-history.type';
 
 @Injectable()
 export class PaymentHistoryService extends BaseService<

@@ -1,10 +1,5 @@
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
-import { ContractType } from 'src/common/interface';
-import { DebitStatus } from 'src/common/interface/bat-ho';
-import {
-  PaymentHistoryType,
-  PaymentStatusHistory,
-} from 'src/common/interface/history';
+import { ContractType, DebitStatus } from 'src/common/types';
 import {
   convertPostgresDate,
   countFromToDate,
@@ -24,6 +19,7 @@ import { BatHoResponseDto } from './dto/bat-ho-response.dto';
 import { CreateBatHoDto } from './dto/create-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
 import { isLastPaymentHistoryUnFinish } from 'src/common/utils/calculate';
+import { PaymentHistoryType, PaymentStatusHistory } from 'src/payment-history/payment-history.type';
 
 const BAT_HO_RELATIONS = [
   'customer',

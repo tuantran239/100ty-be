@@ -16,7 +16,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { API_URL } from 'src/common/constant/router';
-import { ResponseData } from 'src/common/interface';
+import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { LoggerServerService } from 'src/logger/logger-server.service';
 import { UploadDto } from './dto/upload-dto';

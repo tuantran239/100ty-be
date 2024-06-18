@@ -5,9 +5,9 @@ import { UserService } from 'src/user/user.service';
 import { LoginDto } from './dto/login.dto';
 
 import { I18nContext, I18nService } from 'nestjs-i18n';
-import { RoleName } from 'src/common/interface';
 import { RoleService } from 'src/role/role.service';
 import { RegisterDto } from './dto/register.dto';
+import { RoleName } from 'src/role/role.type';
 
 @Injectable()
 export class AuthService {

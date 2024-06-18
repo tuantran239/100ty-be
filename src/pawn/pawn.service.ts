@@ -1,13 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CashFilterType, ContractType } from 'src/common/interface';
-import { DebitStatus, ServiceFee } from 'src/common/interface/bat-ho';
-import {
-  PaymentHistoryType,
-  PaymentStatusHistory,
-  TransactionHistoryType,
-} from 'src/common/interface/history';
+import { CashFilterType, ContractType, DebitStatus } from 'src/common/types';
+import { ServiceFee } from 'src/bat-ho/bat-ho.type';
+import { TransactionHistoryType } from 'src/transaction-history/transaction-history.type';
 import {
   LoanMoreMoney,
   LoanMoreMoneyHistory,
@@ -16,7 +12,7 @@ import {
   PaymentDownRootMoney,
   PaymentDownRootMoneyHistory,
   SettlementPawn,
-} from 'src/common/interface/pawn';
+} from 'src/pawn/pawn.type';
 import { BaseService } from 'src/common/service/base.service';
 import { getFullName } from 'src/common/utils/get-full-name';
 import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
@@ -53,7 +49,11 @@ import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { Pawn } from './pawn.entity';
 import { PawnRepository } from './pawn.repository';
 import { ContractService } from 'src/contract/contract.service';
-import { INIT_DATA_WAREHOUSE } from 'src/warehouse/warehouse.service';
+import {
+  PaymentHistoryType,
+  PaymentStatusHistory,
+} from 'src/payment-history/payment-history.type';
+import { InitWarehouseData } from 'src/warehouse/warehouse.data';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -173,7 +173,7 @@ export class PawnService extends BaseService<
           });
         } else {
           const warehouse = await warehouseRepository.findOne({
-            where: { name: INIT_DATA_WAREHOUSE.name },
+            where: { name: InitWarehouseData[0].name },
           });
 
           if (warehouse) {
