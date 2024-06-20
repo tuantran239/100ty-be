@@ -8,11 +8,12 @@ import { UserResponseDto } from './dto/user-response.dto';
 import { RoleId } from 'src/role/role.type';
 
 export interface UserRepository extends Repository<User> {
-  this: Repository<User>;
+  this: UserRepository;
   createUser(payload: CreateUserDto): Promise<User>;
   updateUser(payload: UpdateUserDto & { id: string }): Promise<User>;
   filterRole(me: User): any;
   mapUserResponse: (user: User | null) => UserResponseDto | null;
+  checkRoleAction(me: User): boolean;
 }
 
 export const UserRepositoryProvider = {
@@ -25,7 +26,7 @@ export const UserRepositoryProvider = {
 
 export const userCustomRepository: Pick<UserRepository, any> = {
   async createUser(
-    this: Repository<User>,
+    this: UserRepository,
     payload: CreateUserDto,
   ): Promise<User> {
     const { phoneNumber } = payload;
@@ -42,7 +43,7 @@ export const userCustomRepository: Pick<UserRepository, any> = {
   },
 
   async updateUser(
-    this: Repository<User>,
+    this: UserRepository,
     payload: UpdateUserDto & { id: string },
   ): Promise<User> {
     const { id } = payload;
@@ -114,5 +115,15 @@ export const userCustomRepository: Pick<UserRepository, any> = {
     }
 
     return null;
+  },
+
+  checkRoleAction(this: UserRepository, me: User): boolean {
+    const meResponse = this.mapUserResponse(me);
+
+    const meRole = meResponse.role;
+    
+    if (meRole.id === RoleId.SUPER_ADMIN) {
+      return true;
+    }
   },
 };

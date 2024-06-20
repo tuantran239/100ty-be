@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CashFilterType, DebitStatus } from 'src/common/types';
+import { DebitStatus } from 'src/common/types';
 import { TransactionHistoryType } from 'src/transaction-history/transaction-history.type';
 import { BaseService } from 'src/common/service/base.service';
 import { convertPostgresDate, formatDate } from 'src/common/utils/time';
@@ -30,6 +30,7 @@ import { ListBatHoQueryDto } from './dto/list-bat-ho-query.dto';
 import { SettlementBatHoDto } from './dto/settlement-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
 import { PaymentHistoryType, PaymentStatusHistory } from 'src/payment-history/payment-history.type';
+import { CashFilterType } from 'src/cash/cash.type';
 
 @Injectable()
 export class BatHoService extends BaseService<

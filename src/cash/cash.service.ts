@@ -2,15 +2,26 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/service/base.service';
 import {
+  Between,
   DataSource,
   EntityManager,
+  Equal,
   FindManyOptions,
   FindOneOptions,
+  ILike,
+  IsNull,
+  Or,
 } from 'typeorm';
 import { Cash } from './cash.entity';
 import { CashRepository } from './cash.repository';
 import { CreateCashDto } from './dto/create-cash.dto';
 import { UpdateCashDto } from './dto/update-cash.dto';
+import { ListCashQueryDto } from './dto/list-cash-query.dto';
+import { User } from 'src/user/user.entity';
+import { DatabaseService } from 'src/database/database.service';
+import { CashFilterType, CashType } from './cash.type';
+import { convertPostgresDate, formatDate } from 'src/common/utils/time';
+import { GroupCashStatus } from 'src/group-cash/group-cash.type';
 
 @Injectable()
 export class CashService extends BaseService<
@@ -24,6 +35,7 @@ export class CashService extends BaseService<
     private dataSource: DataSource,
     @InjectRepository(Cash)
     private readonly cashRepository: CashRepository,
+    private databaseService: DatabaseService,
   ) {
     super();
     this.manager = this.dataSource.manager;
@@ -61,7 +73,134 @@ export class CashService extends BaseService<
     return this.cashRepository.findOne({ where: { id } });
   }
 
-  retrieveOne(options: FindOneOptions<Cash>): Promise<Cash> {
+  async retrieveOne(options: FindOneOptions<Cash>): Promise<Cash> {
     return this.cashRepository.findOne(options);
+  }
+
+  async listCash(queryDto: ListCashQueryDto, me: User) {
+    const { userRepository, cashRepository } =
+      this.databaseService.getRepositories();
+
+    const user = userRepository.filterRole(me);
+
+    const {
+      traders,
+      staff,
+      fromDate,
+      toDate,
+      page,
+      pageSize,
+      contractType,
+      type,
+      groupId,
+      isContract,
+    } = queryDto;
+
+    const relations = [
+      'batHo',
+      'batHo.user',
+      'batHo.customer',
+      'batHo.user.manager',
+      'group',
+      'pawn',
+      'pawn.user',
+      'pawn.customer',
+      'pawn.user.manager',
+    ];
+
+    const where = [];
+    const from = fromDate ? fromDate : formatDate(new Date());
+    const to = toDate ? toDate : formatDate(new Date());
+
+    let filterCashQuery: any = {
+      user,
+    };
+
+    if (isContract) {
+      filterCashQuery = {
+        filterType: Or(
+          Equal(CashFilterType.PAYMENT_CONTRACT),
+          Equal(CashFilterType.RECEIPT_CONTRACT),
+          Equal(CashFilterType.LOAN_MORE_CONTRACT),
+          Equal(CashFilterType.DOWN_ROOT_MONEY),
+        ),
+      };
+    } else if (groupId && groupId.trim().length > 0) {
+      filterCashQuery = {
+        groupId,
+      };
+    }
+
+    const query = {
+      createAt: Between(convertPostgresDate(from), convertPostgresDate(to)),
+      deleted_at: IsNull(),
+      contractType: contractType,
+      type: type == null ? undefined : type,
+      ...filterCashQuery,
+      isContract: isContract ? Equal(true) : Or(Equal(false), IsNull()),
+      group: isContract
+        ? undefined
+        : {
+            status: GroupCashStatus.ACTIVE,
+          },
+    };
+
+    if (
+      (!traders || (traders as string).trim().length === 0) &&
+      (!staff || (staff as string).trim().length === 0)
+    ) {
+      where.push({
+        ...query,
+      });
+    } else {
+      if (traders) {
+        where.push({
+          ...query,
+          traders: ILike(traders as string),
+        });
+      }
+      if (staff) {
+        where.push({
+          ...query,
+          staff: ILike(staff as string),
+        });
+      }
+    }
+
+    const data = await this.listAndCount({
+      where: [...where],
+      take: pageSize ?? 10,
+      skip: ((page ?? 1) - 1) * (pageSize ?? 10),
+      order: { createAt: 'DESC' },
+      relations,
+    });
+
+    const result = await this.list({
+      where: [...where],
+    });
+
+    const totalMoney = await this.cashRepository.calculateTotal({
+      where: [...where],
+      relations,
+    });
+
+    const count = {
+      payment: result.reduce((total, cash) => {
+        if (cash.type === CashType.PAYMENT) {
+          return total + cash.amount;
+        }
+        return total;
+      }, 0),
+      receipt: result.reduce((total, cash) => {
+        if (cash.type === CashType.RECEIPT) {
+          return total + cash.amount;
+        }
+        return total;
+      }, 0),
+    };
+
+    data[0] = data[0].map((cash) => this.cashRepository.mapCashResponse(cash));
+
+    return { list_cash: data[0], total: data[1], count, totalMoney };
   }
 }

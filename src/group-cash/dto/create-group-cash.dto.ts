@@ -21,4 +21,14 @@ export class CreateGroupCashDto {
   @IsString()
   @IsOptional()
   status?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  type?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  userId?: string;
 }

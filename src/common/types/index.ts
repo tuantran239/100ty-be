@@ -15,24 +15,6 @@ export enum DebitStatus {
   DELETED = 'deleted',
 }
 
-export enum CashFilterType {
-  CONTRACT = 'contract',
-  ORTHER = 'orther',
-  PAYMENT_CONTRACT = 'payment_contract',
-  RECEIPT_CONTRACT = 'receipt_contract',
-  SERVICE_FEE = 'service_fee',
-  PARTNER = 'partner',
-  INIT = 'init',
-  DEDUCTION = 'deduction',
-  PAYMENT_ORTHER = 'payment_orther',
-  RECEIPT_ORTHER = 'receipt_orther',
-  PAY_ROLL = 'payroll',
-  PAY_IP = 'payIp',
-  IMEI = 'imei',
-  LOAN_MORE_CONTRACT = 'loan_more_contract',
-  DOWN_ROOT_MONEY = 'down_root_money',
-}
-
 export enum ContractType {
   BAT_HO = 'bat_ho',
   CAM_DO = 'cam_do',
