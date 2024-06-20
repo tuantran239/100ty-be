@@ -25,6 +25,8 @@ export class InitService {
       await warehouseServiceInit.createInit();
 
       await groupCashServiceInit.createInit();
+
+      await groupCashServiceInit.convertGroupCashContract();
     }
 
     init();

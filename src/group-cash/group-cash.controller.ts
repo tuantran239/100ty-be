@@ -22,22 +22,30 @@ import { RoleName } from 'src/role/role.type';
 import { CreateGroupCashDto } from './dto/create-group-cash.dto';
 import { UpdateGroupCashDto } from './dto/update-group-cash.dto';
 import { GroupCashService } from './group-cash.service';
+import { GroupCashType } from './group-cash.type';
+import { Equal, FindOptionsWhere, IsNull, Not } from 'typeorm';
+import { User } from 'src/user/user.entity';
+import { GroupCash } from './entity/group-cash.entity';
 
 @Controller(RouterUrl.GROUP_CASH.ROOT)
 export class GroupCashController {
-  constructor(
-    private groupCashService: GroupCashService,
-  ) {}
+  constructor(private groupCashService: GroupCashService) {}
 
-  @Roles(RoleName.SUPER_ADMIN)
+  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(RouterUrl.GROUP_CASH.CREATE)
   async create(
     @Body(new BodyValidationPipe()) payload: CreateGroupCashDto,
     @Res() res: Response,
+    @Req() req: Request,
   ) {
     try {
-      const newGroupCash = await this.groupCashService.create(payload);
+      const me = req?.user as User;
+
+      const newGroupCash = await this.groupCashService.create({
+        ...payload,
+        userId: me.id,
+      });
 
       const responseData: ResponseData = {
         message: 'success',
@@ -52,7 +60,7 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN)
+  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(RouterUrl.GROUP_CASH.UPDATE)
   async update(
@@ -78,7 +86,7 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN)
+  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(RouterUrl.GROUP_CASH.DELETE)
   async delete(@Res() res: Response, @Req() req: Request) {
@@ -100,17 +108,33 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN)
+  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(RouterUrl.GROUP_CASH.LIST)
   async list(@Res() res: Response, @Req() req: Request) {
     try {
+      const me = req?.user as User;
+
       const { page, pageSize, status } = req.body as GroupCashQuery;
+
+      const query: FindOptionsWhere<GroupCash> = {
+        type: Not(Equal(GroupCashType.CONTRACT)),
+        user: [
+          {
+            id: me.id,
+          },
+          {
+            id: IsNull(),
+          },
+        ],
+      };
 
       const where = [];
 
       if (status && status.trim().length > 0) {
-        where.push({ status });
+        where.push({ status, ...query });
+      } else {
+        where.push({ ...query });
       }
 
       const data = await this.groupCashService.listAndCount({
@@ -135,7 +159,7 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN)
+  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(RouterUrl.GROUP_CASH.RETRIEVE)
   async getById(@Res() res: Response, @Req() req: Request) {

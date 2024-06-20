@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { BatHoRepository } from 'src/bat-ho/bat-ho.repository';
 import { CashRepository } from 'src/cash/cash.repository';
-import { CashType } from 'src/cash/cash.type';
-import { CashFilterType, ContractType, DebitStatus } from 'src/common/types';
+import { CashFilterType, CashType } from 'src/cash/cash.type';
+import { ContractType, DebitStatus } from 'src/common/types';
 import { calculatePercent, calculateProfit } from 'src/common/utils/calculate';
 import {
   calculateRangeDate,

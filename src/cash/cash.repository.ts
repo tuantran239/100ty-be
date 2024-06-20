@@ -1,11 +1,7 @@
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import { ContractInitLabel } from 'src/common/constant/contract';
-import {
-  CashFilterType,
-  ContractType,
-  SummarizeOptions,
-} from 'src/common/types';
+import { ContractType, SummarizeOptions } from 'src/common/types';
 import { calculateReduceTotal } from 'src/common/utils/calculate';
 import { generatePrefixNumberId } from 'src/common/utils/generated-id';
 import { getFullName } from 'src/common/utils/get-full-name';
@@ -15,6 +11,7 @@ import {
   formatDate,
 } from 'src/common/utils/time';
 import { Customer } from 'src/customer/customer.entity';
+import { InitGroupCashContractData } from 'src/group-cash/group-cash.data';
 import { Pawn } from 'src/pawn/pawn.entity';
 import { User } from 'src/user/user.entity';
 import {
@@ -26,10 +23,13 @@ import {
 } from 'typeorm';
 import { Cash } from './cash.entity';
 import {
+  CashFilterType,
   CashType,
   ContractCash,
   ISummarizeCashContract,
   ISummarizeCashContractDetail,
+  ISummarizeCashOutSite,
+  SummarizeGroupCashDetail,
 } from './cash.type';
 import { CashResponseDto } from './dto/cash-response.dto';
 import { CreateCashDto } from './dto/create-cash.dto';
@@ -45,10 +45,6 @@ const noteContract = (filter: string, contractId: string) => {
       return `Thu tiền đóng hợp đồng ${contractId}`;
     case CashFilterType.DEDUCTION:
       return `Thu tiền cắt hợp đồng ${contractId}`;
-    case CashFilterType.SERVICE_FEE:
-      return `Chi tiền phí làm hợp đồng ${contractId}`;
-    case CashFilterType.PARTNER:
-      return `Chi tiền cho cộng tác viên hợp đồng ${contractId}`;
     case CashFilterType.LOAN_MORE_CONTRACT:
       return `Chi tiền vay thêm hợp đồng ${contractId}`;
     case CashFilterType.DOWN_ROOT_MONEY:
@@ -88,6 +84,10 @@ const createCashContractPayload = (
         type: CashType.PAYMENT,
         note: noteContract(filterCash, contract.contractId),
         filterType: CashFilterType.PAYMENT_CONTRACT,
+        groupId: InitGroupCashContractData.find(
+          (groupCash) =>
+            groupCash.filterType === CashFilterType.PAYMENT_CONTRACT,
+        )?.id,
       };
     case CashFilterType.RECEIPT_CONTRACT:
       return {
@@ -95,6 +95,10 @@ const createCashContractPayload = (
         type: CashType.RECEIPT,
         note: noteContract(filterCash, contract.contractId),
         filterType: CashFilterType.RECEIPT_CONTRACT,
+        groupId: InitGroupCashContractData.find(
+          (groupCash) =>
+            groupCash.filterType === CashFilterType.RECEIPT_CONTRACT,
+        )?.id,
       };
     case CashFilterType.LOAN_MORE_CONTRACT:
       return {
@@ -102,6 +106,10 @@ const createCashContractPayload = (
         type: CashType.PAYMENT,
         note: noteContract(filterCash, contract.contractId),
         filterType: CashFilterType.LOAN_MORE_CONTRACT,
+        groupId: InitGroupCashContractData.find(
+          (groupCash) =>
+            groupCash.filterType === CashFilterType.LOAN_MORE_CONTRACT,
+        )?.id,
       };
     case CashFilterType.DOWN_ROOT_MONEY:
       return {
@@ -109,6 +117,10 @@ const createCashContractPayload = (
         type: CashType.RECEIPT,
         note: noteContract(filterCash, contract.contractId),
         filterType: CashFilterType.DOWN_ROOT_MONEY,
+        groupId: InitGroupCashContractData.find(
+          (groupCash) =>
+            groupCash.filterType === CashFilterType.DOWN_ROOT_MONEY,
+        )?.id,
       };
     case CashFilterType.DEDUCTION:
       return {
@@ -117,6 +129,9 @@ const createCashContractPayload = (
         isDeductionMoney: true,
         note: noteContract(filterCash, contract.contractId),
         filterType: CashFilterType.DEDUCTION,
+        groupId: InitGroupCashContractData.find(
+          (groupCash) => groupCash.filterType === CashFilterType.DEDUCTION,
+        )?.id,
       };
     case CashFilterType.SERVICE_FEE:
       return {
@@ -170,6 +185,10 @@ export interface CashRepository extends Repository<Cash> {
   summarizeCashContract(
     options: SummarizeOptions,
   ): Promise<ISummarizeCashContract>;
+
+  summarizeCashOutSite(
+    options: SummarizeOptions,
+  ): Promise<ISummarizeCashOutSite>;
 }
 
 export const CashRepositoryProvider = {
@@ -401,7 +420,7 @@ export const CashCustomRepository: Pick<CashRepository, any> = {
       isContract: true,
     };
 
-    const cashes = await this.find({ where });
+    const cashes = await this.find({ where, relations: ['group'] });
 
     const cashesReceipt = cashes.filter(
       (cash) => cash.type === CashType.RECEIPT,
@@ -410,6 +429,26 @@ export const CashCustomRepository: Pick<CashRepository, any> = {
     const cashesPayment = cashes.filter(
       (cash) => cash.type === CashType.PAYMENT,
     );
+
+    const groupCashDetails: SummarizeGroupCashDetail[] = [];
+
+    for (let i = 0; i < cashes.length; i++) {
+      const cash = cashes[i];
+      const groupCashIndex = groupCashDetails.findIndex(
+        (group) => group.key === cash.groupId,
+      );
+
+      if (groupCashIndex === -1) {
+        groupCashDetails.push({
+          key: cash.groupId,
+          label: cash.group?.groupName ?? '',
+          cashType: cash.type,
+          total: cash.amount,
+        });
+      } else {
+        groupCashDetails[groupCashIndex].total += cash.amount;
+      }
+    }
 
     const all = {
       receiptTotal: calculateReduceTotal<Pick<Cash, 'amount'>>(
@@ -420,6 +459,7 @@ export const CashCustomRepository: Pick<CashRepository, any> = {
         cashesPayment,
         'amount',
       ),
+      groupCashDetails,
     };
 
     const details: ISummarizeCashContractDetail[] = [];
@@ -428,6 +468,29 @@ export const CashCustomRepository: Pick<CashRepository, any> = {
 
     for (let i = 0; i < contractTypes.length; i++) {
       const type = contractTypes[i];
+
+      const cashesType = cashes.filter((cash) => cash.contractType === type);
+
+      const groupCashDetails: SummarizeGroupCashDetail[] = [];
+
+      for (let i = 0; i < cashesType.length; i++) {
+        const cash = cashesType[i];
+        const groupCashIndex = groupCashDetails.findIndex(
+          (group) => group.key === cash.groupId,
+        );
+
+        if (groupCashIndex === -1) {
+          groupCashDetails.push({
+            key: cash.groupId,
+            label: cash.group?.groupName ?? '',
+            cashType: cash.type,
+            total: cash.amount,
+          });
+        } else {
+          groupCashDetails[groupCashIndex].total += cash.amount;
+        }
+      }
+
       details.push({
         key: type,
         label: ContractInitLabel[type],
@@ -439,13 +502,77 @@ export const CashCustomRepository: Pick<CashRepository, any> = {
           cashesPayment.filter((c) => c.contractType === type),
           'amount',
         ),
-        groupCash: [],
+        groupCashDetails,
       });
     }
 
     return {
       all,
       details,
+    };
+  },
+
+  async summarizeCashOutSite(
+    options: SummarizeOptions,
+  ): Promise<ISummarizeCashOutSite> {
+    const { date, type, user } = options;
+
+    const isAllUndefined = Object.values(date).every(
+      (value) => value === undefined,
+    );
+
+    const { fromDate, toDate } = calculateRangeDate(date, type);
+
+    const where: FindOptionsWhere<Cash> = {
+      user,
+      createAt: isAllUndefined ? undefined : Between(fromDate, toDate),
+      isContract: true,
+    };
+
+    const cashes = await this.find({ where, relations: ['group'] });
+
+    const cashesReceipt = cashes.filter(
+      (cash) => cash.type === CashType.RECEIPT,
+    );
+
+    const cashesPayment = cashes.filter(
+      (cash) => cash.type === CashType.PAYMENT,
+    );
+
+    const groupCashDetails: SummarizeGroupCashDetail[] = [];
+
+    for (let i = 0; i < cashes.length; i++) {
+      const cash = cashes[i];
+      const groupCashIndex = groupCashDetails.findIndex(
+        (group) => group.key === cash.groupId,
+      );
+
+      if (groupCashIndex === -1) {
+        groupCashDetails.push({
+          key: cash.groupId,
+          label: cash.group?.groupName ?? '',
+          cashType: cash.type,
+          total: cash.amount,
+        });
+      } else {
+        groupCashDetails[groupCashIndex].total += cash.amount;
+      }
+    }
+
+    const receiptTotal = calculateReduceTotal<Pick<Cash, 'amount'>>(
+      cashesReceipt,
+      'amount',
+    );
+
+    const paymentTotal = calculateReduceTotal<Pick<Cash, 'amount'>>(
+      cashesPayment,
+      'amount',
+    );
+
+    return {
+      receiptTotal,
+      paymentTotal,
+      groupCashDetails,
     };
   },
 };

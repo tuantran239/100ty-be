@@ -15,7 +15,11 @@ import { Pawn } from './pawn.entity';
 import { CreatePawnDto } from './dto/create-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
 import { CreatePaymentHistoryDto } from 'src/payment-history/dto/create-payment-history';
-import { PawnInterestType, PawnPaymentPeriodType, PawnPaymentType } from 'src/pawn/pawn.type';
+import {
+  PawnInterestType,
+  PawnPaymentPeriodType,
+  PawnPaymentType,
+} from 'src/pawn/pawn.type';
 import { omit } from 'lodash';
 import { ContractType, DebitStatus } from 'src/common/types';
 import { PawnResponseDto } from './dto/pawn-response.dto';

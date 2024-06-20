@@ -1,5 +1,5 @@
-import { CashFilterType } from 'src/common/types';
-import { GroupCashId } from './group-cash.type';
+import { CashFilterType, CashType } from 'src/cash/cash.type';
+import { GroupCashContractId, GroupCashId, GroupCashType } from './group-cash.type';
 
 export const InitGroupCashData = [
   {
@@ -31,5 +31,43 @@ export const InitGroupCashData = [
     groupName: 'Tiền quỹ',
     filterType: CashFilterType.INIT,
     cashType: 'receipt',
+  },
+];
+
+export const InitGroupCashContractData = [
+  {
+    id: GroupCashContractId.PAYMENT_CONTRACT,
+    groupName: 'Tiền giải ngân',
+    filterType: CashFilterType.PAYMENT_CONTRACT,
+    cashType: 'payment',
+    type: GroupCashType.CONTRACT
+  },
+  {
+    id: GroupCashContractId.RECEIPT_CONTRACT,
+    groupName: 'Tiền thu hợp đồng',
+    filterType: CashFilterType.RECEIPT_CONTRACT,
+    cashType: CashType.RECEIPT,
+    type: GroupCashType.CONTRACT
+  },
+  {
+    id: GroupCashContractId.DEDUCTION,
+    groupName: 'Tiền cắt trước',
+    filterType: CashFilterType.DEDUCTION,
+    cashType: CashType.RECEIPT,
+    type: GroupCashType.CONTRACT
+  },
+  {
+    id: GroupCashContractId.LOAN_MORE_CONTRACT,
+    groupName: 'Tiền vay thêm',
+    filterType: CashFilterType.LOAN_MORE_CONTRACT,
+    cashType: 'payment',
+    type: GroupCashType.CONTRACT
+  },
+  {
+    id: GroupCashContractId.DOWN_ROOT_MONEY,
+    groupName: 'Tiền trả bớt gốc',
+    filterType: CashFilterType.DOWN_ROOT_MONEY,
+    cashType: 'receipt',
+    type: GroupCashType.CONTRACT
   },
 ];

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CashFilterType, ContractType, DebitStatus } from 'src/common/types';
+import { ContractType, DebitStatus } from 'src/common/types';
 import { ServiceFee } from 'src/bat-ho/bat-ho.type';
 import { TransactionHistoryType } from 'src/transaction-history/transaction-history.type';
 import {
@@ -54,6 +54,7 @@ import {
   PaymentStatusHistory,
 } from 'src/payment-history/payment-history.type';
 import { InitWarehouseData } from 'src/warehouse/warehouse.data';
+import { CashFilterType } from 'src/cash/cash.type';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -1120,7 +1121,7 @@ export class PawnService extends BaseService<
         await paymentHistoryRepository.createPaymentHistory({
           rowId: pawnPaymentHistories.length + 1,
           pawnId: id,
-          payMoney: payload.otherMoney,
+          payMoney: 0,
           payNeed: payload.otherMoney,
           startDate: convertPostgresDate(payload.loanDate),
           endDate: convertPostgresDate(payload.loanDate),
