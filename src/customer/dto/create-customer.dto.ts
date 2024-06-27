@@ -46,4 +46,9 @@ export class CreateCustomerDto {
   @ApiProperty()
   @IsOptional()
   customerInfo?: Record<string, unknown>;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  userId?: string;
 }

@@ -127,7 +127,9 @@ export class GroupCashService extends BaseService<
 
   async create(payload: CreateGroupCashDto): Promise<GroupCash> {
     const groupCash = await this.groupCashRepository.findOne({
-      where: { id: payload.id },
+      where: {
+        id: payload.id,
+      },
     });
 
     if (groupCash) {
@@ -168,7 +170,9 @@ export class GroupCashService extends BaseService<
     return this.groupCashRepository.findAndCount(options);
   }
 
-  async listGroupOption(options: FindManyOptions<GroupCash>): Promise<GroupCash[]> {
+  async listGroupOption(
+    options: FindManyOptions<GroupCash>,
+  ): Promise<GroupCash[]> {
     return this.groupCashRepository.find(options);
   }
 

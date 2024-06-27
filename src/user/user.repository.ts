@@ -1,5 +1,5 @@
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { User } from './user.entity';
 import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
@@ -11,7 +11,7 @@ export interface UserRepository extends Repository<User> {
   this: UserRepository;
   createUser(payload: CreateUserDto): Promise<User>;
   updateUser(payload: UpdateUserDto & { id: string }): Promise<User>;
-  filterRole(me: User): any;
+  filterRole(me: User, checkInit?: boolean): any;
   mapUserResponse: (user: User | null) => UserResponseDto | null;
   checkRoleAction(me: User): boolean;
 }
@@ -75,15 +75,23 @@ export const userCustomRepository: Pick<UserRepository, any> = {
     return user;
   },
 
-  filterRole(me: User): any {
-    let user = undefined;
+  filterRole(me: User, checkInit?: boolean): any {
+    let user: any = undefined;
 
     const role = me.roles[0];
 
     if (role.id === RoleId.ADMIN) {
       user = [{ id: me.id }, { managerId: me.id }];
     } else if (role.id === RoleId.USER) {
-      user = { id: me.id };
+      user = [{ id: me.id }];
+    }
+
+    if (checkInit) {
+      if (user) {
+        user.push({
+          id: IsNull(),
+        });
+      }
     }
 
     return user;
@@ -121,7 +129,7 @@ export const userCustomRepository: Pick<UserRepository, any> = {
     const meResponse = this.mapUserResponse(me);
 
     const meRole = meResponse.role;
-    
+
     if (meRole.id === RoleId.SUPER_ADMIN) {
       return true;
     }

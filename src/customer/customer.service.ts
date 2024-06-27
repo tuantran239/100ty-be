@@ -17,6 +17,7 @@ import { CustomerRepository } from './customer.repository';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { formatDate } from 'src/common/utils/time';
+import { User } from 'src/user/user.entity';
 
 @Injectable()
 export class CustomerService extends BaseService<
@@ -35,6 +36,27 @@ export class CustomerService extends BaseService<
   ) {
     super();
     this.manager = this.dataSource.manager;
+  }
+
+  async convertCustomerUser() {
+    let updated = 0;
+    let total = 0;
+
+    this.databaseService.runTransaction(async (repositories) => {
+      const { customerRepository } = repositories;
+
+      const customers = await this.customerRepository.find({
+        where: { userId: IsNull() }
+      });
+
+      total = customers.length;
+
+      await Promise.all(customers.map(async (customer) => {
+
+      }))
+    });
+
+
   }
 
   async create(payload: CreateCustomerDto): Promise<Customer> {
@@ -72,9 +94,13 @@ export class CustomerService extends BaseService<
     return this.customerRepository.findOne(options);
   }
 
-  async getTransactionHistory(id: string, contractType?: string) {
+  async getTransactionHistory(id: string, me: User, contractType?: string) {
+    const user = this.databaseService
+      .getRepositories()
+      .userRepository.filterRole(me);
+
     const customer = await this.customerRepository.checkCustomerExist(
-      { where: { id } },
+      { where: { id, user } },
       { message: 'Không tìm thấy khách hàng' },
     );
 

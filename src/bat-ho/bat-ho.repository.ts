@@ -19,7 +19,11 @@ import { BatHoResponseDto } from './dto/bat-ho-response.dto';
 import { CreateBatHoDto } from './dto/create-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
 import { isLastPaymentHistoryUnFinish } from 'src/common/utils/calculate';
-import { PaymentHistoryType, PaymentStatusHistory } from 'src/payment-history/payment-history.type';
+import {
+  PaymentHistoryType,
+  PaymentStatusHistory,
+} from 'src/payment-history/payment-history.type';
+import { UserRepository } from 'src/user/user.repository';
 
 const BAT_HO_RELATIONS = [
   'customer',

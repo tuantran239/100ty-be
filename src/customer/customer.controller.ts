@@ -49,9 +49,15 @@ export class CustomerController {
   async createCustomer(
     @Body(new BodyValidationPipe()) payload: CreateCustomerDto,
     @Res() res: Response,
+    @Req() req: Request,
   ) {
     try {
-      const customer = await this.customerService.create(payload);
+      const me = req.user as User;
+
+      const customer = await this.customerService.create({
+        ...payload,
+        userId: me.id,
+      });
       const responseData: ResponseData = {
         message: 'success',
         data: { customer },
@@ -65,14 +71,25 @@ export class CustomerController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Get(RouterUrl.CUSTOMER.RETRIEVE)
   async getCustomer(@Res() res: Response, @Req() req: Request) {
     try {
+      const me = req.user as User;
+
+      const user = this.databaseService
+        .getRepositories()
+        .userRepository.filterRole(me);
+
       const { id } = req.params;
 
       const customer = await this.customerService.retrieveOne({
-        where: [{ id }, { personalID: id }, { phoneNumber: id }],
+        where: [
+          { id, user },
+          { personalID: id, user },
+          { phoneNumber: id, user },
+        ],
         relations: ['batHos'],
       });
 
@@ -110,7 +127,7 @@ export class CustomerController {
 
       const where = [];
 
-      const query = { isDebt: isDebt };
+      const query = { isDebt: isDebt, user };
 
       if (!Number.isNaN(searchType)) {
         where.push({ ...query, personalID: getSearch(search, 'both') });
@@ -185,7 +202,8 @@ export class CustomerController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(RouterUrl.CUSTOMER.UPDATE)
   async updateCustomer(
     @Body(new BodyValidationPipe()) payload: UpdateCustomerDto,
@@ -210,16 +228,20 @@ export class CustomerController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Get(RouterUrl.CUSTOMER.TRANSACTION_HISTORY)
   async getTransactionHistory(@Res() res: Response, @Req() req: Request) {
     try {
+      const me = req.user as User;
+
       const { id } = req.params;
 
       const { contractType } = req.query;
 
       const list_contract = await this.customerService.getTransactionHistory(
         id,
+        me,
         contractType as string,
       );
 

@@ -2,10 +2,14 @@ import { BatHo } from 'src/bat-ho/bat-ho.entity';
 import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Pawn } from 'src/pawn/pawn.entity';
-import { BeforeInsert, Column, Entity, OneToMany } from 'typeorm';
+import { User } from 'src/user/user.entity';
+import { BeforeInsert, Column, Entity, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 
 @Entity('customer')
 export class Customer extends SoftDeletableEntity {
+  @Column()
+  userId?: string;
+
   @Column()
   firstName: string;
 
@@ -47,6 +51,10 @@ export class Customer extends SoftDeletableEntity {
 
   @OneToMany(() => Pawn, (pawn) => pawn.customer)
   pawns: Pawn[];
+
+  @OneToOne(() => User)
+  @JoinColumn()
+  user?: User;
 
   @BeforeInsert()
   private beforeInsert(): void {
