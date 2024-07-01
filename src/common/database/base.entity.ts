@@ -5,9 +5,9 @@ export class BaseEntity {
   @PrimaryColumn()
   id: string;
 
-  @Column()
+  @Column({ name: 'created_at' })
   created_at: Date;
 
-  @Column()
+  @Column({ name: 'updated_at' })
   updated_at: Date;
 }

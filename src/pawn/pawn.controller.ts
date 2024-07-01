@@ -11,20 +11,25 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LogActionType } from 'src/common/constant/log';
-import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { ContractCompleteGuard } from 'src/common/guard/contract-completed.guard';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { ResponseData } from 'src/common/types';
 import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
 import { mapTransactionHistoryResponse } from 'src/common/utils/map';
 import { formatDate } from 'src/common/utils/time';
 import { LogActionService } from 'src/log-action/log-action.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
+import {
+  PaymentHistoryType,
+  PaymentStatusHistory,
+} from 'src/payment-history/payment-history.type';
+import { RoleName } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
 import { CreatePawnDto } from './dto/create-pawn.dto';
 import { ExtendedPeriodConfirmDto } from './dto/extended-period-confirm.dto';
@@ -33,20 +38,15 @@ import { LoanMoreMoneyDto } from './dto/loan-more-money.dto';
 import { PaymentDownRootMoneyDto } from './dto/payment-down-root-money.dto';
 import { SettlementPawnDto } from './dto/settlement-pawn.dto';
 import { UpdatePawnDto } from './dto/update-pawn.dto';
-import { PawnService } from './pawn.service';
-import { InjectRepository } from '@nestjs/typeorm';
+import { InitPeriodTypeData } from './pawn.data';
 import { Pawn } from './pawn.entity';
 import { PawnRepository } from './pawn.repository';
-import { RoleName } from 'src/role/role.type';
-import {
-  PaymentHistoryType,
-  PaymentStatusHistory,
-} from 'src/payment-history/payment-history.type';
-import { InitPeriodTypeData } from './pawn.data';
+import { PawnRouter } from './pawn.router';
+import { PawnService } from './pawn.service';
 
 const ENTITY_LOG = 'Pawn';
 
-@Controller(RouterUrl.PAWN.ROOT)
+@Controller(PawnRouter.ROOT)
 export class PawnController {
   constructor(
     private pawnService: PawnService,
@@ -58,7 +58,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.BAT_HO.CREATE)
+  @Post(PawnRouter.CREATE)
   async createPawn(
     @Body(new BodyValidationPipe()) payload: CreatePawnDto,
     @Res() res: Response,
@@ -96,7 +96,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Put(RouterUrl.PAWN.UPDATE)
+  @Put(PawnRouter.UPDATE)
   async updateCash(
     @Body(new BodyValidationPipe()) payload: UpdatePawnDto,
     @Res() res: Response,
@@ -130,7 +130,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.BAT_HO.LIST)
+  @Post(PawnRouter.LIST)
   async listPawn(
     @Body(new BodyValidationPipe()) payload: ListPawnQueryDto,
     @Res() res: Response,
@@ -173,7 +173,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.BAT_HO.INFO)
+  @Get(PawnRouter.INFO)
   async getBatHoInfo(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -284,7 +284,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Delete(RouterUrl.PAWN.DELETE)
+  @Delete(PawnRouter.DELETE)
   async deleteBatHo(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -310,7 +310,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Delete(RouterUrl.PAWN.REMOVE)
+  @Delete(PawnRouter.REMOVE)
   async removeBatHo(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -336,7 +336,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.PAWN.PERIOD_TYPE)
+  @Get(PawnRouter.PERIOD_TYPE)
   async listPeriodType(@Res() res: Response) {
     try {
       const responseData: ResponseData = {
@@ -358,7 +358,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.PAWN.SETTLEMENT_REQUEST)
+  @Get(PawnRouter.SETTLEMENT_REQUEST)
   async settlementRequest(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -384,7 +384,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Put(RouterUrl.PAWN.SETTLEMENT_CHANGE)
+  @Put(PawnRouter.SETTLEMENT_CHANGE)
   async settlementChange(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -412,7 +412,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.PAWN.SETTLEMENT_CONFIRM)
+  @Post(PawnRouter.SETTLEMENT_CONFIRM)
   async settlementConfirm(
     @Body(new BodyValidationPipe()) payload: SettlementPawnDto,
     @Res() res: Response,
@@ -442,7 +442,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.PAWN.PAYMENT_DOWN_REQUEST)
+  @Get(PawnRouter.PAYMENT_DOWN_REQUEST)
   async paymentDownRootMoneyRequest(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -468,7 +468,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.PAWN.PAYMENT_DOWN_CONFIRM)
+  @Post(PawnRouter.PAYMENT_DOWN_CONFIRM)
   async paymentDownRootMoneyConfirm(
     @Body(new BodyValidationPipe()) payload: PaymentDownRootMoneyDto,
     @Res() res: Response,
@@ -501,7 +501,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.PAWN.LOAN_MORE_REQUEST)
+  @Get(PawnRouter.LOAN_MORE_REQUEST)
   async loanMoreMoneyRequest(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -527,7 +527,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.PAWN.LOAN_MORE_CONFIRM)
+  @Post(PawnRouter.LOAN_MORE_CONFIRM)
   async loanMoreMoneyConfirm(
     @Body(new BodyValidationPipe()) payload: LoanMoreMoneyDto,
     @Res() res: Response,
@@ -557,7 +557,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.PAWN.EXTENDED_PERIOD_REQUEST)
+  @Get(PawnRouter.EXTENDED_PERIOD_REQUEST)
   async extendedPeriodRequest(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -583,7 +583,7 @@ export class PawnController {
 
   @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.PAWN.EXTENDED_PERIOD_CONFIRM)
+  @Post(PawnRouter.EXTENDED_PERIOD_CONFIRM)
   async extendedPeriodConfirm(
     @Body(new BodyValidationPipe()) payload: ExtendedPeriodConfirmDto,
     @Res() res: Response,

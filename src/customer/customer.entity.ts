@@ -1,5 +1,5 @@
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
-import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity';
+import { SoftDeletableEntity } from 'src/common/database/soft-deletable.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Pawn } from 'src/pawn/pawn.entity';
 import { User } from 'src/user/user.entity';

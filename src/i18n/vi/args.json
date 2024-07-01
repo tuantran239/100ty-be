@@ -1,0 +1,18 @@
+{
+  "entity": {
+    "user": "Người dùng",
+    "role": "Vai trò",
+    "permission": "Quyền"
+  },
+  "field": {
+    "email": "Email",
+    "password": "Mật khẩu",
+    "username": "Tên người dùng",
+    "name": "Tên",
+    "code": "Mã",
+    "action_type": "Dạng hành động",
+    "subject_type": "Dạng đối tượng",
+    "phone_number": "SĐT",
+    "role_id": "Mã vai trò"
+  }
+}

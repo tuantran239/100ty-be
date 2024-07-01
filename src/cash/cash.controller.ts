@@ -15,7 +15,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LogActionType } from 'src/common/constant/log';
-import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
@@ -26,6 +25,7 @@ import { RoleName } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
 import { Cash } from './cash.entity';
 import { CashRepository } from './cash.repository';
+import { CashRouter } from './cash.router';
 import { CashService } from './cash.service';
 import { CreateCashDto } from './dto/create-cash.dto';
 import { ListCashQueryDto } from './dto/list-cash-query.dto';
@@ -33,7 +33,7 @@ import { UpdateCashDto } from './dto/update-cash.dto';
 
 const ENTITY_LOG = 'Cash';
 @ApiTags('Cash')
-@Controller(RouterUrl.CASH.ROOT)
+@Controller(CashRouter.ROOT)
 export class CashController {
   constructor(
     private cashService: CashService,
@@ -45,7 +45,7 @@ export class CashController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.CASH.CREATE)
+  @Post(CashRouter.CREATE)
   async createCash(
     @Body(new BodyValidationPipe()) payload: CreateCashDto,
     @Res() res: Response,
@@ -90,7 +90,7 @@ export class CashController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Put(RouterUrl.CASH.UPDATE)
+  @Put(CashRouter.UPDATE)
   async updateCash(
     @Body(new BodyValidationPipe()) payload: UpdateCashDto,
     @Res() res: Response,
@@ -134,7 +134,7 @@ export class CashController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.CASH.LIST)
+  @Post(CashRouter.LIST)
   async listCash(
     @Body(new BodyValidationPipe()) payload: ListCashQueryDto,
     @Res() res: Response,
@@ -165,7 +165,7 @@ export class CashController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.CASH.RETRIEVE)
+  @Get(CashRouter.RETRIEVE)
   async getCash(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -191,7 +191,7 @@ export class CashController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Delete(RouterUrl.CASH.DELETE)
+  @Delete(CashRouter.DELETE)
   async deleteCash(@Res() res: Response, @Req() req: Request) {
     try {
       const me = req.user as User;

@@ -6,19 +6,19 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { LogActionService } from './log-action.service';
-import RouterUrl from 'src/common/constant/router';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { LogActionQuery } from 'src/common/types/query';
-import { ResponseData } from 'src/common/types';
 import { Response } from 'express';
+import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { ResponseData } from 'src/common/types';
+import { LogActionQuery } from 'src/common/types/query';
+import { LogActionRouter } from './log-action.router';
+import { LogActionService } from './log-action.service';
 
-@Controller(RouterUrl.LOG_ACTION.ROOT)
+@Controller(LogActionRouter.ROOT)
 export class LogActionController {
   constructor(private logActionService: LogActionService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.LOG_ACTION.LIST)
+  @Post(LogActionRouter.LIST)
   async listDevice(@Res() res: Response, @Req() req: Request) {
     try {
       const { page, pageSize, type } = req.body as LogActionQuery;

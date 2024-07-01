@@ -1,35 +1,35 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
   InternalServerErrorException,
   Post,
   Put,
+  Req,
   Res,
   UseGuards,
-  Req,
-  Delete,
-  Get,
 } from '@nestjs/common';
+import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import { AssetTypeService } from './asset-type.service';
-import { CreateAssetTypeDto } from './dto/crerate-asset-type.dto';
-import { Request, Response } from 'express';
-import { UpdateAssetTypeDto } from './dto/update-asset-type.dto';
+import { ResponseData } from 'src/common/types';
 import { GroupCashQuery } from 'src/common/types/query';
 import { RoleName } from 'src/role/role.type';
+import { AssetTypeRouter } from './asset-type.router';
+import { AssetTypeService } from './asset-type.service';
+import { CreateAssetTypeDto } from './dto/create-asset-type.dto';
+import { UpdateAssetTypeDto } from './dto/update-asset-type.dto';
 
-@Controller(RouterUrl.ASSET_TYPE.ROOT)
+@Controller(AssetTypeRouter.ROOT)
 export class AssetTypeController {
   constructor(private assetTypeService: AssetTypeService) {}
 
   @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post(RouterUrl.ASSET_TYPE.CREATE)
+  @Post(AssetTypeRouter.CREATE)
   async create(
     @Body(new BodyValidationPipe()) payload: CreateAssetTypeDto,
     @Res() res: Response,
@@ -52,7 +52,7 @@ export class AssetTypeController {
 
   @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Put(RouterUrl.ASSET_TYPE.UPDATE)
+  @Put(AssetTypeRouter.UPDATE)
   async update(
     @Body(new BodyValidationPipe()) payload: UpdateAssetTypeDto,
     @Res() res: Response,
@@ -78,7 +78,7 @@ export class AssetTypeController {
 
   @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Delete(RouterUrl.ASSET_TYPE.DELETE)
+  @Delete(AssetTypeRouter.DELETE)
   async delete(@Res() res: Response, @Req() req: Request) {
     try {
       const { id } = req.params;
@@ -100,7 +100,7 @@ export class AssetTypeController {
 
   @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN, RoleName.USER)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post(RouterUrl.ASSET_TYPE.LIST)
+  @Post(AssetTypeRouter.LIST)
   async list(@Res() res: Response, @Req() req: Request) {
     try {
       const { page, pageSize, status } = req.body as GroupCashQuery;
@@ -136,7 +136,7 @@ export class AssetTypeController {
 
   @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get(RouterUrl.ASSET_TYPE.RETRIEVE)
+  @Get(AssetTypeRouter.RETRIEVE)
   async getById(@Res() res: Response, @Req() req: Request) {
     try {
       const { id } = req.params;

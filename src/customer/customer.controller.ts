@@ -10,30 +10,30 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
+import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import { CustomerQuery } from 'src/common/types/query';
-import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { getSearchName } from 'src/common/utils/get-full-name';
 import { getSearch } from 'src/common/utils/query';
+import { ContractService } from 'src/contract/contract.service';
+import { DatabaseService } from 'src/database/database.service';
+import { RoleName } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
+import { IsNull } from 'typeorm';
+import { Customer } from './customer.entity';
+import { CustomerRepository } from './customer.repository';
+import { CustomerRouter } from './customer.router';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { ContractService } from 'src/contract/contract.service';
-import { IsNull } from 'typeorm';
-import { getSearchName } from 'src/common/utils/get-full-name';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Customer } from './customer.entity';
-import { CustomerRepository } from './customer.repository';
-import { RoleName } from 'src/role/role.type';
-import { DatabaseService } from 'src/database/database.service';
 
 @ApiTags('Customer')
-@Controller(RouterUrl.CUSTOMER.ROOT)
+@Controller(CustomerRouter.ROOT)
 export class CustomerController {
   constructor(
     private customerService: CustomerService,
@@ -45,7 +45,7 @@ export class CustomerController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.CUSTOMER.CREATE)
+  @Post(CustomerRouter.CREATE)
   async createCustomer(
     @Body(new BodyValidationPipe()) payload: CreateCustomerDto,
     @Res() res: Response,
@@ -73,7 +73,7 @@ export class CustomerController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.CUSTOMER.RETRIEVE)
+  @Get(CustomerRouter.RETRIEVE)
   async getCustomer(@Res() res: Response, @Req() req: Request) {
     try {
       const me = req.user as User;
@@ -112,7 +112,7 @@ export class CustomerController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.CUSTOMER.LIST)
+  @Post(CustomerRouter.LIST)
   async listCustomer(@Res() res: Response, @Req() req: Request) {
     try {
       const me = req.user as User;
@@ -204,7 +204,7 @@ export class CustomerController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.CUSTOMER.UPDATE)
+  @Post(CustomerRouter.UPDATE)
   async updateCustomer(
     @Body(new BodyValidationPipe()) payload: UpdateCustomerDto,
     @Res() res: Response,
@@ -230,7 +230,7 @@ export class CustomerController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.CUSTOMER.TRANSACTION_HISTORY)
+  @Get(CustomerRouter.TRANSACTION_HISTORY)
   async getTransactionHistory(@Res() res: Response, @Req() req: Request) {
     try {
       const me = req.user as User;

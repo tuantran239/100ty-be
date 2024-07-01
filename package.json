@@ -21,7 +21,8 @@
     "typeorm": "npm run build && npx typeorm -d dist/db/data.source.js",
     "migration:generate": "npm run typeorm -- migration:generate",
     "migration:run": "npm run typeorm -- migration:run",
-    "create:token": "node create-secret-database-token"
+    "create:token": "node create-secret-database-token",
+    "generate-typesafe": "ts-node ./src/common/utils/generate-typesafe"
   },
   "dependencies": {
     "@json2csv/plainjs": "^7.0.6",

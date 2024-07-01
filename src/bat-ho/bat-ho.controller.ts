@@ -12,40 +12,40 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { CashFilterType } from 'src/cash/cash.type';
 import { LogActionType } from 'src/common/constant/log';
-import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { ResponseData } from 'src/common/types';
 import { calculateTotalMoneyPaymentHistory } from 'src/common/utils/history';
 import { mapTransactionHistoryResponse } from 'src/common/utils/map';
 import { convertPostgresDate, formatDate } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
 import { LogActionService } from 'src/log-action/log-action.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
+import { PaymentStatusHistory } from 'src/payment-history/payment-history.type';
+import { RoleName } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
 import { IsNull } from 'typeorm';
+import { BatHo } from './bat-ho.entity';
+import { BatHoRepository } from './bat-ho.repository';
+import { BatHoRouter } from './bat-ho.router';
 import { BatHoService } from './bat-ho.service';
 import { CreateBatHoDto } from './dto/create-bat-ho.dto';
 import { ListBatHoQueryDto } from './dto/list-bat-ho-query.dto';
 import { ReverseBatHoDto } from './dto/reverse-bat-ho.dto';
 import { SettlementBatHoDto } from './dto/settlement-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { BatHoRepository } from './bat-ho.repository';
-import { BatHo } from './bat-ho.entity';
-import { RoleName } from 'src/role/role.type';
-import { PaymentStatusHistory } from 'src/payment-history/payment-history.type';
-import { CashFilterType } from 'src/cash/cash.type';
 
 export const BAT_HO_CODE_PREFIX = 'bh';
 const ENTITY_LOG = 'BatHo';
 
 @ApiTags('Bat Ho')
-@Controller(RouterUrl.BAT_HO.ROOT)
+@Controller(BatHoRouter.ROOT)
 export class BatHoController {
   constructor(
     private batHoService: BatHoService,
@@ -57,7 +57,7 @@ export class BatHoController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.BAT_HO.CREATE)
+  @Post(BatHoRouter.CREATE)
   async createBatHo(
     @Body(new BodyValidationPipe()) payload: CreateBatHoDto,
     @Res() res: Response,
@@ -100,7 +100,7 @@ export class BatHoController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Put(RouterUrl.BAT_HO.UPDATE)
+  @Put(BatHoRouter.UPDATE)
   async updateBatHo(
     @Body(new BodyValidationPipe()) payload: UpdateBatHoDto,
     @Res() res: Response,
@@ -134,7 +134,7 @@ export class BatHoController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.BAT_HO.LIST)
+  @Post(BatHoRouter.LIST)
   async listBatHo(
     @Body(new BodyValidationPipe()) payload: ListBatHoQueryDto,
     @Res() res: Response,
@@ -179,7 +179,7 @@ export class BatHoController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Delete(RouterUrl.BAT_HO.DELETE)
+  @Delete(BatHoRouter.DELETE)
   async deleteBatHo(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -205,7 +205,7 @@ export class BatHoController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.BAT_HO.INFO)
+  @Get(BatHoRouter.INFO)
   async getBatHoInfo(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -314,7 +314,7 @@ export class BatHoController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.BAT_HO.SETTLEMENT)
+  @Post(BatHoRouter.SETTLEMENT)
   async settlementBatHo(
     @Body(new BodyValidationPipe()) payload: SettlementBatHoDto,
     @Res() res: Response,
@@ -344,7 +344,7 @@ export class BatHoController {
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.BAT_HO.REVERSE_CONTRACT)
+  @Post(BatHoRouter.REVERSE_CONTRACT)
   async reverseBatHo(
     @Body(new BodyValidationPipe()) payload: ReverseBatHoDto,
     @Res() res: Response,

@@ -11,24 +11,24 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import RouterUrl from 'src/common/constant/router';
 import { Roles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
-import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import { CreateWareHouseDto } from './dto/create-warehouse.dto';
-import { WarehouseService } from './warehouse.service';
-import { UpdateWareHouseDto } from './dto/update-warehouse.dto';
-import { ListWarehouseQueryDto } from './dto/list-warehouse-query.dto';
+import { ResponseData } from 'src/common/types';
 import { RoleName } from 'src/role/role.type';
+import { CreateWareHouseDto } from './dto/create-warehouse.dto';
+import { ListWarehouseQueryDto } from './dto/list-warehouse-query.dto';
+import { UpdateWareHouseDto } from './dto/update-warehouse.dto';
+import { WarehouseRouter } from './warehouse.router';
+import { WarehouseService } from './warehouse.service';
 
-@Controller(RouterUrl.WAREHOUSE.ROOT)
+@Controller(WarehouseRouter.ROOT)
 export class WarehouseController {
   constructor(private warehouseService: WarehouseService) {}
 
   @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post(RouterUrl.WAREHOUSE.CREATE)
+  @Post(WarehouseRouter.CREATE)
   async create(
     @Body(new BodyValidationPipe()) payload: CreateWareHouseDto,
     @Res() res: Response,
@@ -51,7 +51,7 @@ export class WarehouseController {
 
   @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Put(RouterUrl.ASSET_TYPE.UPDATE)
+  @Put(WarehouseRouter.UPDATE)
   async update(
     @Body(new BodyValidationPipe()) payload: UpdateWareHouseDto,
     @Res() res: Response,
@@ -77,7 +77,7 @@ export class WarehouseController {
 
   @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN, RoleName.USER)
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post(RouterUrl.ASSET_TYPE.LIST)
+  @Post(WarehouseRouter.LIST)
   async list(
     @Body(new BodyValidationPipe()) query: ListWarehouseQueryDto,
     @Res() res: Response,

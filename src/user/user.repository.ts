@@ -1,137 +1,102 @@
+import { InjectRepository } from '@nestjs/typeorm';
+import {
+  BaseRepository,
+  CheckValid,
+  CreateAndSaveCheckValid,
+  MapPayload,
+} from 'src/common/repository/base.repository';
+import { hashPassword } from 'src/common/utils/hash';
+import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
+import { RoleId } from 'src/role/role.type';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { IsNull, Repository } from 'typeorm';
-import { User } from './user.entity';
-import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
-import { RoleId } from 'src/role/role.type';
+import { User } from './user.entity';
 
-export interface UserRepository extends Repository<User> {
-  this: UserRepository;
-  createUser(payload: CreateUserDto): Promise<User>;
-  updateUser(payload: UpdateUserDto & { id: string }): Promise<User>;
-  filterRole(me: User, checkInit?: boolean): any;
-  mapUserResponse: (user: User | null) => UserResponseDto | null;
-  checkRoleAction(me: User): boolean;
+const USER_RELATIONS = ['role'];
+
+export class UserRepository extends BaseRepository<
+  User,
+  CreateUserDto,
+  UpdateUserDto,
+  UserResponseDto
+> {
+  constructor(
+    @InjectRepository(User)
+    protected repository: Repository<User>,
+    public i18n: I18nCustomService,
+  ) {
+    super(repository, USER_RELATIONS, i18n);
+  }
+
+  setCheckValid(payload: CreateUserDto | UpdateUserDto): CheckValid<User> {
+    const createAndSave: CreateAndSaveCheckValid<User>[] = [
+      {
+        type: 'unique',
+        message: this.i18n.getMessage('errors.common.existed', {
+          field: this.i18n.getMessage('args.field.phone_number'),
+          entity: this.i18n.getMessage('args.entity.user'),
+          value: payload.phoneNumber,
+        }),
+        options: {
+          where: {
+            phoneNumber: payload.phoneNumber,
+          },
+        },
+      },
+    ];
+
+    if (payload.roleId) {
+      createAndSave.push({
+        type: 'enum_type',
+        message: this.i18n.getMessage('errors.common.not_valid', {
+          field: this.i18n.getMessage('args.field.role_id'),
+        }),
+        options: {
+          enumType: RoleId,
+          inputs: [payload.roleId],
+        },
+      });
+    }
+
+    return { createAndSave };
+  }
+
+  mapResponse(payload: User): UserResponseDto {
+    const role = payload.role;
+
+    let permissions = [];
+
+    if (role) {
+      permissions = role?.permissions ?? [];
+
+      role.permissions = undefined;
+    }
+
+    const userData = {
+      ...payload,
+      role,
+      password: undefined,
+      permissions,
+    };
+
+    return {
+      ...userData,
+    } as UserResponseDto;
+  }
+
+  async mapPayload(
+    data: MapPayload<CreateUserDto, UpdateUserDto>,
+  ): Promise<any> {
+    const { type, payload } = data;
+
+    if (type === 'create') {
+      payload.roleId = payload.roleId ?? RoleId.USER;
+      payload.password = await hashPassword(payload.password);
+      return payload;
+    } else if (type === 'update') {
+      return payload;
+    }
+  }
 }
-
-export const UserRepositoryProvider = {
-  provide: getRepositoryToken(User),
-  inject: [getDataSourceToken()],
-  useFactory(dataSource: DataSource) {
-    return dataSource.getRepository(User).extend(userCustomRepository);
-  },
-};
-
-export const userCustomRepository: Pick<UserRepository, any> = {
-  async createUser(
-    this: UserRepository,
-    payload: CreateUserDto,
-  ): Promise<User> {
-    const { phoneNumber } = payload;
-
-    const userExist = await this.findOne({ where: { phoneNumber } });
-
-    if (userExist) {
-      throw new Error(`User ${phoneNumber} already exists`);
-    }
-
-    const newUser = await this.create(payload);
-
-    return await this.save(newUser);
-  },
-
-  async updateUser(
-    this: UserRepository,
-    payload: UpdateUserDto & { id: string },
-  ): Promise<User> {
-    const { id } = payload;
-
-    const user = await this.findOne({ where: { id } });
-
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    const keysPayload = Object.keys(payload);
-
-    for (let i = 0; i < keysPayload.length; i++) {
-      const key = keysPayload[i];
-
-      const payloadValue = payload[key];
-
-      const userValue = user[key];
-
-      if (userValue !== undefined && userValue !== payloadValue) {
-        user[key] = payloadValue;
-      }
-    }
-
-    user.updated_at = new Date();
-
-    await this.save(user);
-
-    return user;
-  },
-
-  filterRole(me: User, checkInit?: boolean): any {
-    let user: any = undefined;
-
-    const role = me.roles[0];
-
-    if (role.id === RoleId.ADMIN) {
-      user = [{ id: me.id }, { managerId: me.id }];
-    } else if (role.id === RoleId.USER) {
-      user = [{ id: me.id }];
-    }
-
-    if (checkInit) {
-      if (user) {
-        user.push({
-          id: IsNull(),
-        });
-      }
-    }
-
-    return user;
-  },
-
-  mapUserResponse(user: User | null): UserResponseDto | null {
-    if (user) {
-      const role = user?.roles[0];
-
-      let permissions = [];
-
-      if (role) {
-        permissions = role?.permissions ?? [];
-
-        role.permissions = undefined;
-      }
-
-      const userData = {
-        ...user,
-        role,
-        password: undefined,
-        permissions,
-        roles: undefined,
-      };
-
-      return {
-        ...userData,
-      } as UserResponseDto;
-    }
-
-    return null;
-  },
-
-  checkRoleAction(this: UserRepository, me: User): boolean {
-    const meResponse = this.mapUserResponse(me);
-
-    const meRole = meResponse.role;
-
-    if (meRole.id === RoleId.SUPER_ADMIN) {
-      return true;
-    }
-  },
-};

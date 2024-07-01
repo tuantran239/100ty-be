@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import {
   BadRequestException,
   Body,
@@ -16,20 +15,20 @@ import { ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import IConfig, { JWTConfig } from 'src/common/config/config.interface';
 import { LogActionType } from 'src/common/constant/log';
-import RouterUrl from 'src/common/constant/router';
-import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { ResponseData } from 'src/common/types';
+import { DatabaseService } from 'src/database/database.service';
 import { LogActionService } from 'src/log-action/log-action.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
 import { UserService } from 'src/user/user.service';
+import { AuthRouter } from './auth.router';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { DatabaseService } from 'src/database/database.service';
 
 @ApiTags('Auth')
-@Controller(RouterUrl.AUTH.ROOT)
+@Controller(AuthRouter.ROOT)
 export class AuthController {
   constructor(
     private authService: AuthService,
@@ -41,7 +40,7 @@ export class AuthController {
     private databaseService: DatabaseService,
   ) {}
 
-  @Post(RouterUrl.AUTH.LOGIN)
+  @Post(AuthRouter.LOGIN)
   async login(
     @Body(new BodyValidationPipe()) payload: LoginDto,
     @Res() res: Response,
@@ -94,7 +93,7 @@ export class AuthController {
           token,
           user: this.databaseService
             .getRepositories()
-            .userRepository.mapUserResponse(user),
+            .userRepository.mapResponse(user),
         },
         message: 'success',
         statusCode: 200,
@@ -110,7 +109,7 @@ export class AuthController {
     }
   }
 
-  @Post(RouterUrl.AUTH.REGISTER)
+  @Post(AuthRouter.REGISTER)
   async register(
     @Body(new BodyValidationPipe()) payload: RegisterDto,
     @Res() res: Response,
@@ -148,12 +147,12 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(RouterUrl.AUTH.ME)
+  @Get(AuthRouter.ME)
   async me(@Res() res: Response, @Req() req) {
     try {
       const user = await this.userService.retrieveOne({
         where: { id: req?.user?.user_id },
-        relations: ['roles'],
+        relations: ['role'],
       });
 
       if (!user) {
@@ -165,7 +164,7 @@ export class AuthController {
         data: {
           user: this.databaseService
             .getRepositories()
-            .userRepository.mapUserResponse(user),
+            .userRepository.mapResponse(user),
         },
         message: 'success',
         statusCode: 200,
@@ -178,7 +177,7 @@ export class AuthController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.AUTH.LOGOUT)
+  @Post(AuthRouter.LOGOUT)
   async logout(@Res() res: Response, @Req() req) {
     try {
       const responseData: ResponseData = {

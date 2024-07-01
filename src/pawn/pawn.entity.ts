@@ -1,5 +1,5 @@
 import { AssetType } from 'src/asset-type/entities/asset-type.entity';
-import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity';
+import { SoftDeletableEntity } from 'src/common/database/soft-deletable.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Customer } from 'src/customer/customer.entity';
 import { ExtendedPeriodHistory } from 'src/extended-period-history/extended-period-history.entity';

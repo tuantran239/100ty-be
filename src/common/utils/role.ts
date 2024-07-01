@@ -5,7 +5,7 @@ import { IsNull } from 'typeorm';
 export const filterRole = (me: User, checkInit?: boolean) => {
   let user: any = undefined;
 
-  const role = me.roles[0];
+  const role = me.role;
 
   if (role.id === RoleId.ADMIN) {
     user = [{ id: me.id }, { managerId: me.id }];

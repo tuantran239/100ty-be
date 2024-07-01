@@ -8,7 +8,7 @@ import {
   OneToMany,
   OneToOne,
 } from 'typeorm';
-import { SoftDeletableEntity } from '../common/database/solf-deletetable.entity';
+import { SoftDeletableEntity } from '../common/database/soft-deletable.entity';
 import { generateEntityId } from '../common/utils/generated-id';
 import { Role } from 'src/role/entities/role.entity';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
@@ -31,23 +31,16 @@ export class User extends SoftDeletableEntity {
   @Column()
   managerId?: string;
 
-  @ManyToMany(() => Role, (role) => role.users)
-  @JoinTable({
-    name: 'user_role',
-    inverseJoinColumn: {
-      name: 'role_id',
-      referencedColumnName: 'id',
-    },
-    joinColumn: {
-      name: 'user_id',
-      referencedColumnName: 'id',
-    },
-  })
-  roles: Role[];
+  @Column()
+  roleId?: string;
 
   @OneToOne(() => User)
   @JoinColumn()
   manager: User;
+
+  @OneToOne(() => Role)
+  @JoinColumn()
+  role: Role;
 
   @OneToMany(() => BatHo, (batHo) => batHo.user)
   contractsBatHo: BatHo[];

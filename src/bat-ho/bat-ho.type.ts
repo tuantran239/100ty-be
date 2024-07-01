@@ -1,5 +1,4 @@
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
-import { Pawn } from 'src/pawn/pawn.entity';
 
 export enum BatHoPaymentMethod {
   DAY = 'day',

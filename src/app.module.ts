@@ -41,6 +41,7 @@ import { CacheCustomModule } from './cache/cache.module';
 import { WarehouseModule } from './warehouse/warehouse.module';
 import { AssetModule } from './asset/asset.module';
 import { InitModule } from './init/init.module';
+import { StoreModule } from './store/store.module';
 
 @Module({
   imports: [
@@ -99,6 +100,7 @@ import { InitModule } from './init/init.module';
     WarehouseModule,
     AssetModule,
     InitModule,
+    StoreModule,
   ],
   providers: [
     {

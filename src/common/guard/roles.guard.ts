@@ -1,32 +1,29 @@
 import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { User } from 'src/user/user.entity';
-import { ROLES_KEY } from '../decorator/roles.decorator';
-import { RoleName } from 'src/role/role.type';
+import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
+import { UserResponseDto } from 'src/user/dto/user-response.dto';
+import { ICheckRole, ROLES_KEY } from '../decorator/roles.decorator';
+import { checkRoleValid } from '../utils/validate';
+import { Request } from 'express';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+  constructor(
+    private reflector: Reflector,
+    private i18n: I18nCustomService,
+    private dataSource: DataSource,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const requiredRoles = this.reflector.getAllAndOverride<RoleName[]>(
+    const requiredRoles = this.reflector.getAllAndOverride<ICheckRole[]>(
       ROLES_KEY,
       [context.getHandler(), context.getClass()],
     );
 
-    if (!requiredRoles) {
-      return true;
-    }
+    const req = context.switchToHttp().getRequest() as Request;
 
-    const user = context.switchToHttp().getRequest().user as User;
-
-    const isAuthorization = requiredRoles.some((role) =>
-      user.roles?.some((userRole) => userRole.name == role),
-    );
-
-    if (!isAuthorization) {
-      throw new Error('Truy cập bị từ chối, bạn không đủ quyền.');
-    }
+    checkRoleValid(req, requiredRoles, this.i18n, this.dataSource);
 
     return true;
   }

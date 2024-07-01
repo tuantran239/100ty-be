@@ -2,7 +2,6 @@ import { Global, Module } from '@nestjs/common';
 import { DatabaseService } from './database.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseController } from './database.controller';
-import { UserRepositoryProvider } from 'src/user/user.repository';
 import { CustomerRepositoryProvider } from 'src/customer/customer.repository';
 import { BatHoRepositoryProvider } from 'src/bat-ho/bat-ho.repository';
 import { CashRepositoryProvider } from 'src/cash/cash.repository';
@@ -11,13 +10,17 @@ import { TransactionHistoryRepositoryProvider } from 'src/transaction-history/tr
 import { PawnRepositoryProvider } from 'src/pawn/pawn.repository';
 import { WarehouseRepositoryProvider } from 'src/warehouse/warehouse.repository';
 import { AssetRepositoryProvider } from 'src/asset/asset.repository';
+import { UserRepository } from 'src/user/user.repository';
+import { User } from 'src/user/user.entity';
+import { Role } from 'src/role/entities/role.entity';
+import { Customer } from 'src/customer/customer.entity';
+import { I18nCustomModule } from 'src/i18n-custom/i18n-custom.module';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature()],
+  imports: [TypeOrmModule.forFeature([User, Role, Customer]), I18nCustomModule],
   providers: [
     DatabaseService,
-    UserRepositoryProvider,
     CustomerRepositoryProvider,
     BatHoRepositoryProvider,
     CashRepositoryProvider,
@@ -26,6 +29,7 @@ import { AssetRepositoryProvider } from 'src/asset/asset.repository';
     PawnRepositoryProvider,
     WarehouseRepositoryProvider,
     AssetRepositoryProvider,
+    UserRepository
   ],
   exports: [DatabaseService],
   controllers: [DatabaseController],

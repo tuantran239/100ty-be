@@ -10,14 +10,14 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import RouterUrl from 'src/common/constant/router';
-import { ResponseData } from 'src/common/types';
-import { RoleService } from './role.service';
-import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import { UpdateRoleDto } from './dto/update-role.dto';
 import { CacheService } from 'src/cache/cache.service';
+import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { ResponseData } from 'src/common/types';
+import { UpdateRoleDto } from './dto/update-role.dto';
+import { RoleRouter } from './role.router';
+import { RoleService } from './role.service';
 
-@Controller(RouterUrl.ROLE.ROOT)
+@Controller(RoleRouter.ROOT)
 export class RoleController {
   constructor(
     private roleService: RoleService,
@@ -25,7 +25,7 @@ export class RoleController {
   ) {}
 
   @UseGuards(JwtAuthGuard)
-  @Get(RouterUrl.ROLE.LIST)
+  @Get(RoleRouter.LIST)
   async listCustomer(@Res() res: Response) {
     try {
       const roles = await this.roleService.list({});
@@ -44,7 +44,7 @@ export class RoleController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Put(RouterUrl.ROLE.UPDATE)
+  @Put(RoleRouter.UPDATE)
   async updateRole(
     @Body(new BodyValidationPipe()) payload: UpdateRoleDto,
     @Res() res: Response,

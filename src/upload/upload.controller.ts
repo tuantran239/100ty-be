@@ -15,11 +15,11 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
-import { API_URL } from 'src/common/constant/router';
-import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { ResponseData } from 'src/common/types';
 import { LoggerServerService } from 'src/logger/logger-server.service';
 import { UploadDto } from './dto/upload-dto';
+import { UploadRouter } from './upload.router';
 
 const file_validators = [
   new MaxFileSizeValidator({
@@ -34,14 +34,14 @@ const file_validators = [
 const ENTITY_LOG = 'Upload';
 
 @ApiTags('Upload')
-@Controller(`${API_URL}/upload`)
+@Controller(UploadRouter.ROOT)
 export class UploadController {
   constructor(
     private cloudinaryService: CloudinaryService,
     private logger: LoggerServerService,
   ) {}
 
-  @Post()
+  @Post(UploadRouter.SINGLE)
   @UseInterceptors(FileInterceptor('file'))
   async upload(
     @UploadedFile(
@@ -85,7 +85,7 @@ export class UploadController {
     }
   }
 
-  @Post('/multi')
+  @Post(UploadRouter.MULTI)
   @UseInterceptors(FilesInterceptor('file'))
   async uploadMulti(
     @UploadedFiles(

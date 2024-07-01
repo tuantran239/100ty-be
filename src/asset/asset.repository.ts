@@ -6,13 +6,7 @@ import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 import { Warehouse } from 'src/warehouse/warehouse.entity';
 import { WarehouseStatus } from 'src/warehouse/warehouse.repository';
-
-export enum AssetStatus {
-  PAWN = 'pawn',
-  LIQUIDATED = 'liquidated',
-  COMPLETED = 'completed',
-  IMPORT_GOODS = 'import_goods',
-}
+import { AssetStatus } from './asset.type';
 
 export interface AssetRepository extends Repository<Asset> {
   this: AssetRepository;

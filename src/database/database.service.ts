@@ -2,8 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AssetProperty } from 'src/asset-type/entities/asset-property.entity';
 import { AssetType } from 'src/asset-type/entities/asset-type.entity';
+import { Asset } from 'src/asset/asset.entity';
+import { AssetRepository } from 'src/asset/asset.repository';
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
+import { BatHoRepository } from 'src/bat-ho/bat-ho.repository';
 import { Cash } from 'src/cash/cash.entity';
+import { CashRepository } from 'src/cash/cash.repository';
+import { BaseRepository } from 'src/common/repository/base.repository';
 import { Customer } from 'src/customer/customer.entity';
 import { CustomerRepository } from 'src/customer/customer.repository';
 import { Device } from 'src/device/device.entity';
@@ -12,23 +17,19 @@ import { GroupCash } from 'src/group-cash/entity/group-cash.entity';
 import { HostServer } from 'src/host-server/host-server.entity';
 import { LogAction } from 'src/log-action/log-action.entity';
 import { Pawn } from 'src/pawn/pawn.entity';
+import { PawnRepository } from 'src/pawn/pawn.repository';
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
+import { PaymentHistoryRepository } from 'src/payment-history/payment-history.repository';
 import { Role } from 'src/role/entities/role.entity';
+import { UserRole } from 'src/role/entities/user-role.entity';
 import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
-import { User } from 'src/user/user.entity';
+import { TransactionHistoryRepository } from 'src/transaction-history/transaction-history.repository';
 import { UserRepository } from 'src/user/user.repository';
+import { Warehouse } from 'src/warehouse/warehouse.entity';
+import { WarehouseRepository } from 'src/warehouse/warehouse.repository';
 import { DataSource, Repository } from 'typeorm';
 import { DeleteDataDto } from './dto/delete-data.dto';
-import { BatHoRepository } from 'src/bat-ho/bat-ho.repository';
-import { CashRepository } from 'src/cash/cash.repository';
-import { PaymentHistoryRepository } from 'src/payment-history/payment-history.repository';
-import { TransactionHistoryRepository } from 'src/transaction-history/transaction-history.repository';
-import { PawnRepository } from 'src/pawn/pawn.repository';
-import { WarehouseRepository } from 'src/warehouse/warehouse.repository';
-import { Warehouse } from 'src/warehouse/warehouse.entity';
-import { AssetRepository } from 'src/asset/asset.repository';
-import { Asset } from 'src/asset/asset.entity';
-import { UserRole } from 'src/role/entities/user-role.entity';
+import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 
 export interface DataSourceRepository {
   batHoRepository: BatHoRepository;
@@ -59,8 +60,6 @@ export class DatabaseService {
     private dataSource: DataSource,
     @InjectRepository(Customer)
     private readonly customerRepository: CustomerRepository,
-    @InjectRepository(User)
-    private readonly userRepository: UserRepository,
     @InjectRepository(BatHo)
     private readonly batHoRepository: BatHoRepository,
     @InjectRepository(Cash)
@@ -75,6 +74,8 @@ export class DatabaseService {
     private readonly warehouseRepository: WarehouseRepository,
     @InjectRepository(Asset)
     private readonly assetRepository: AssetRepository,
+    private readonly userRepository: UserRepository,
+    private readonly i18n: I18nCustomService,
   ) {
     this.repositories = {
       batHoRepository: this.batHoRepository,
@@ -99,6 +100,25 @@ export class DatabaseService {
       assetRepository: this.assetRepository,
       userRoleRepository: this.dataSource.manager.getRepository(UserRole),
     };
+  }
+
+  private getExtendRepository<CR extends BaseRepository<any, any, any, any>>(
+    customRepository: CR,
+  ) {
+    return {
+      createAndSave: customRepository.createAndSave,
+      updateAndSave: customRepository.updateAndSave,
+      getRelations: customRepository.getRelations,
+      deleteSoft: customRepository.deleteSoft,
+      deleteData: customRepository.deleteData,
+      findOrThrowError: customRepository.findOrThrowError,
+      checkValidMethod: customRepository.checkValidMethod,
+      checkValidWithAction: customRepository.checkValidWithAction,
+      mapResponse: customRepository.mapResponse,
+      mapPayload: customRepository.mapPayload,
+      setCheckValid: customRepository.setCheckValid,
+      i18n: customRepository.i18n,
+    } as CR;
   }
 
   async runTransaction(
@@ -128,8 +148,10 @@ export class DatabaseService {
         .getRepository(TransactionHistory)
         .extend(this.transactionHistoryRepository),
       userRepository: queryRunner.manager
-        .getRepository(User)
-        .extend(this.userRepository),
+        .getRepository(this.userRepository.target)
+        .extend({
+          ...this.getExtendRepository(this.userRepository),
+        }) as UserRepository,
       groupCashRepository: queryRunner.manager.getRepository(GroupCash),
       pawnRepository: queryRunner.manager
         .getRepository(Pawn)

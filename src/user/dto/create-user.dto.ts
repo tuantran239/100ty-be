@@ -35,4 +35,9 @@ export class CreateUserDto {
   @MinLength(6)
   @IsNotEmpty()
   password: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  roleId?: string;
 }
