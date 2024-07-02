@@ -20,7 +20,7 @@ export class AuthService {
     let user: User | undefined = undefined;
 
     user = await this.userService.retrieveOne({
-      where: [{ username: username }, { username }],
+      where: [{ username }],
       relations: ['role'],
     });
 

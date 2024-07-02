@@ -45,9 +45,22 @@ export class UserRepository extends BaseRepository<
           },
         },
       },
+      {
+        type: 'unique',
+        message: this.i18n.getMessage('errors.common.existed', {
+          field: this.i18n.getMessage('args.field.username'),
+          entity: this.i18n.getMessage('args.entity.user'),
+          value: payload.username,
+        }),
+        options: {
+          where: {
+            username: payload.username,
+          },
+        },
+      },
     ];
 
-    if (payload.roleId) {
+    if (payload.role_id) {
       createAndSave.push({
         type: 'enum_type',
         message: this.i18n.getMessage('errors.common.not_valid', {
@@ -55,7 +68,7 @@ export class UserRepository extends BaseRepository<
         }),
         options: {
           enumType: RoleId,
-          inputs: [payload.roleId],
+          inputs: [payload.role_id],
         },
       });
     }
@@ -92,9 +105,9 @@ export class UserRepository extends BaseRepository<
     const { type, payload } = data;
 
     if (type === 'create') {
-      payload.roleId = payload.roleId ?? RoleId.USER;
+      (payload as any).roleId = payload.role_id ?? RoleId.USER;
       payload.password = await hashPassword(payload.password);
-      return payload;
+      return payload as any;
     } else if (type === 'update') {
       return payload;
     }

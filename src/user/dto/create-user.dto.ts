@@ -39,5 +39,5 @@ export class CreateUserDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  roleId?: string;
+  role_id?: string;
 }

@@ -11,6 +11,8 @@ import { convertConstraintsToErrorMessage } from './convert';
 import { DataSource } from 'typeorm';
 import { Request } from 'express';
 import { User } from 'src/user/user.entity';
+import { RoleId } from 'src/role/role.type';
+import { InitRoleData } from 'src/role/role.data';
 
 export const checkEnumTypeValid = (
   enumType: Record<string, string>,
@@ -67,14 +69,32 @@ export const checkRoleValid = async (
 
   const id = req.params.id as string;
 
-  const requiredRoleMe = requiredRoles.find(
-    (role) => role.id === me.role.id,
-  );
+  const requiredRoleMe = requiredRoles.find((role) => role.id === me.role.id);
 
   if (!requiredRoleMe) {
     throw new ForbiddenException(
-      i18n.getMessage('errors.common.access_denied'),
+      i18n.getMessage('errors.common.access_denied_permission'),
     );
+  }
+
+  if (requiredRoleMe.conditions?.levelRole && req.body?.role_id) {
+    const roleId = req.body.role_id;
+
+    const role = InitRoleData.find((role) => role.id === roleId);
+
+    if (!role) {
+      throw new ForbiddenException(
+        i18n.getMessage('errors.common.not_valid', {
+          field: i18n.getMessage('args.field.role_id'),
+        }),
+      );
+    }
+
+    if (me.role.level <= role.level && me.roleId !== RoleId.SUPER_ADMIN) {
+      throw new ForbiddenException(
+        i18n.getMessage('errors.common.access_denied_permission'),
+      );
+    }
   }
 
   if (id && requiredRoleMe.conditions) {
@@ -105,7 +125,7 @@ export const checkRoleValid = async (
     if (levelRole) {
       if (user.role.level < me.role.level) {
         throw new ForbiddenException(
-          i18n.getMessage('errors.common.access_denied'),
+          i18n.getMessage('errors.common.access_denied_permission'),
         );
       }
     }
@@ -113,7 +133,7 @@ export const checkRoleValid = async (
     if (createdBy) {
       if (user.id !== me.id && user.managerId !== me.id) {
         throw new ForbiddenException(
-          i18n.getMessage('errors.common.access_denied'),
+          i18n.getMessage('errors.common.access_denied_permission'),
         );
       }
     }

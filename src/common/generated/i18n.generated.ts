@@ -13,6 +13,7 @@ export type I18nTranslations = {
             "not_empty": string;
             "not_match": string;
             "access_denied": string;
+            "access_denied_permission": string;
         };
     };
     "args": {

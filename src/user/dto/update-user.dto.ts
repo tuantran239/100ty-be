@@ -30,5 +30,5 @@ export class UpdateUserDto {
   @ApiProperty()
   @IsString()
   @IsOptional()
-  roleId?: string;
+  role_id?: string;
 }

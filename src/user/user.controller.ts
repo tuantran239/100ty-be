@@ -24,13 +24,14 @@ import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import { UserQuery } from 'src/common/types/query';
 import { getSearch } from 'src/common/utils/query';
-import { RoleId, RoleName } from 'src/role/role.type';
+import { RoleId } from 'src/role/role.type';
 import { IsNull } from 'typeorm';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './user.entity';
 import { UserRepository } from './user.repository';
 import { UserRouter } from './user.router';
 import { UserService } from './user.service';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @ApiTags('User')
 @Controller(UserRouter.ROOT)
@@ -71,7 +72,7 @@ export class UserController {
 
       const responseData: ResponseData = {
         message: 'success',
-        data: { user: newUser },
+        data: { user: this.userService.repository.mapResponse(newUser) },
         error: null,
         statusCode: 200,
       };
@@ -140,7 +141,7 @@ export class UserController {
     try {
       const { page, pageSize, search } = req.body as UserQuery;
 
-      const me = req?.user as User;
+      const me = req?.user as UserResponseDto
 
       const searchType = parseInt((search as string) ?? '');
 

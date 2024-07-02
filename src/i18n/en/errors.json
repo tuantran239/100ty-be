@@ -5,6 +5,7 @@
     "not_valid": "{field} not valid",
     "not_empty": "{field} is required",
     "not_match": "{field} not match",
-    "access_denied": "Access denied"
+    "access_denied": "Access denied",
+    "access_denied_permission": "Access denied, you not enough permission"
   }
 }
