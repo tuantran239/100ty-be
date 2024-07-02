@@ -41,9 +41,19 @@ export class UserController {
     @InjectRepository(User) private readonly userRepository: UserRepository,
   ) {}
 
-  @CheckRoles([{
-    id: RoleId.SUPER_ADMIN
-  }])
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new User(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new User(),
+      conditions: {
+        levelRole: true,
+      },
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(UserRouter.CREATE)
   async createUser(
@@ -73,28 +83,27 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new User(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new User(),
+      conditions: {
+        levelRole: true,
+        createdBy: true
+      },
+    },
+  )
   @Get(UserRouter.RETRIEVE)
   async retrieveUser(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
 
-      const me = req?.user as User;
-
-      const userRole = me?.role;
-
-      if (userRole.id === RoleId.ADMIN) {
-        const user = await this.userService.retrieveOne({
-          where: { id, managerId: me.id },
-        });
-
-        if (!user) {
-          throw new Error(`Nhân viên không thuộc quản lí của admin`);
-        }
-      }
-
       const user = await this.userService.retrieveOne({
-        where: { id: req.params.id },
+        where: { id },
         relations: ['role'],
       });
 
@@ -112,7 +121,20 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new User(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new User(),
+      conditions: {
+        levelRole: true,
+        createdBy: true
+      },
+    },
+  )
   @Post(UserRouter.LIST)
   async listUser(@Res() res: Response, @Req() req: Request) {
     try {
@@ -159,7 +181,20 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new User(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new User(),
+      conditions: {
+        levelRole: true,
+        createdBy: true
+      },
+    },
+  )
   @Put(UserRouter.UPDATE)
   async updateUser(
     @Body(new BodyValidationPipe()) payload: UpdateUserDto,
@@ -221,7 +256,20 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new User(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new User(),
+      conditions: {
+        levelRole: true,
+        createdBy: true
+      },
+    },
+  )
   @Delete(UserRouter.DELETE)
   async deleteUser(@Res() res: Response, @Req() req: Request) {
     try {

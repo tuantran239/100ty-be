@@ -20,6 +20,9 @@ import { CreateHostServerDto } from './dto/create-host-server.dto';
 import { UpdateHostServerDto } from './dto/update-host-server.dto';
 import { HostServerRouter } from './host-server.router';
 import { HostServerService } from './host-server.service';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
+import { RoleId } from 'src/role/role.type';
+import { HostServer } from './host-server.entity';
 
 const ENTITY_LOG = 'HostServer';
 
@@ -31,6 +34,14 @@ export class HostServerController {
     private logger: LoggerServerService,
   ) {}
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Post(HostServerRouter.CREATE)
   async createHostServer(
@@ -61,6 +72,18 @@ export class HostServerController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new HostServer(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Put(HostServerRouter.UPDATE)
   async updateDevice(
@@ -94,6 +117,18 @@ export class HostServerController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new HostServer(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Post(HostServerRouter.LIST)
   async listDevice(@Res() res: Response, @Req() req: Request) {
@@ -122,6 +157,18 @@ export class HostServerController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new HostServer(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Get(HostServerRouter.RETRIEVE)
   async getDevice(@Res() res: Response, @Req() req: Request) {
@@ -147,6 +194,18 @@ export class HostServerController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new HostServer(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Delete(HostServerRouter.DELETE)
   async deleteDevice(@Res() res: Response, @Req() req: Request) {

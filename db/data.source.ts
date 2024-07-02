@@ -18,6 +18,9 @@ export const dataBaseSourceOptions: DataSourceOptions = {
     query_timeout: 2000,
     statement_timeout: 2000,
   },
+  ssl: {
+    rejectUnauthorized: false,
+  },
 };
 
 export const dataSourceOptions: DataSourceOptions = {
@@ -35,6 +38,9 @@ export const dataSourceOptions: DataSourceOptions = {
     connectionTimeoutMillis: 5000,
     query_timeout: 2000,
     statement_timeout: 2000,
+  },
+  ssl: {
+    rejectUnauthorized: false,
   },
 };
 

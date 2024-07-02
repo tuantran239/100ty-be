@@ -8,7 +8,7 @@ export interface ICheckRole {
     levelRole?: boolean;
     createdBy?: boolean;
   };
-  entity: any;
+  entity?: any;
 }
 
 export const CheckRoles = (...roles: ICheckRole[]) =>

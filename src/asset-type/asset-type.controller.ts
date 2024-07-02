@@ -12,22 +12,26 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { Roles } from 'src/common/decorator/roles.decorator';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import { GroupCashQuery } from 'src/common/types/query';
-import { RoleName } from 'src/role/role.type';
+import { RoleId, RoleName } from 'src/role/role.type';
 import { AssetTypeRouter } from './asset-type.router';
 import { AssetTypeService } from './asset-type.service';
 import { CreateAssetTypeDto } from './dto/create-asset-type.dto';
 import { UpdateAssetTypeDto } from './dto/update-asset-type.dto';
+import { AssetType } from './entities/asset-type.entity';
 
 @Controller(AssetTypeRouter.ROOT)
 export class AssetTypeController {
   constructor(private assetTypeService: AssetTypeService) {}
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles({
+    id: RoleId.SUPER_ADMIN,
+    entity: new AssetType(),
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(AssetTypeRouter.CREATE)
   async create(
@@ -50,7 +54,10 @@ export class AssetTypeController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles({
+    id: RoleId.SUPER_ADMIN,
+    entity: new AssetType(),
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(AssetTypeRouter.UPDATE)
   async update(
@@ -76,7 +83,10 @@ export class AssetTypeController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles({
+    id: RoleId.SUPER_ADMIN,
+    entity: new AssetType(),
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(AssetTypeRouter.DELETE)
   async delete(@Res() res: Response, @Req() req: Request) {
@@ -98,7 +108,20 @@ export class AssetTypeController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN, RoleName.USER)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new AssetType(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new AssetType(),
+    },
+    {
+      id: RoleId.USER,
+      entity: new AssetType(),
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(AssetTypeRouter.LIST)
   async list(@Res() res: Response, @Req() req: Request) {
@@ -134,7 +157,20 @@ export class AssetTypeController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new AssetType(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new AssetType(),
+    },
+    {
+      id: RoleId.USER,
+      entity: new AssetType(),
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(AssetTypeRouter.RETRIEVE)
   async getById(@Res() res: Response, @Req() req: Request) {

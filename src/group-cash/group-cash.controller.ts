@@ -12,13 +12,13 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { Roles } from 'src/common/decorator/roles.decorator';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import { GroupCashQuery } from 'src/common/types/query';
 import { DatabaseService } from 'src/database/database.service';
-import { RoleName } from 'src/role/role.type';
+import { RoleId } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
 import { Equal, FindOptionsWhere, Not } from 'typeorm';
 import { CreateGroupCashDto } from './dto/create-group-cash.dto';
@@ -35,7 +35,12 @@ export class GroupCashController {
     private databaseService: DatabaseService,
   ) {}
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new GroupCash(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(GroupCashRouter.CREATE)
   async create(
@@ -65,7 +70,12 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new GroupCash(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(GroupCashRouter.UPDATE)
   async update(
@@ -91,7 +101,12 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new GroupCash(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(GroupCashRouter.DELETE)
   async delete(@Res() res: Response, @Req() req: Request) {
@@ -113,7 +128,16 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new GroupCash(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new GroupCash(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(GroupCashRouter.LIST)
   async list(@Res() res: Response, @Req() req: Request) {
@@ -161,7 +185,16 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new GroupCash(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new GroupCash(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(GroupCashRouter.RETRIEVE)
   async getById(@Res() res: Response, @Req() req: Request) {

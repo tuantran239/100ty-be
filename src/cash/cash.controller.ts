@@ -15,13 +15,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LogActionType } from 'src/common/constant/log';
-import { Roles } from 'src/common/decorator/roles.decorator';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import { LogActionService } from 'src/log-action/log-action.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
-import { RoleName } from 'src/role/role.type';
+import { RoleId, RoleName } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
 import { Cash } from './cash.entity';
 import { CashRepository } from './cash.repository';
@@ -43,8 +43,15 @@ export class CashController {
     private readonly cashRepository: CashRepository,
   ) {}
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(CashRouter.CREATE)
   async createCash(
     @Body(new BodyValidationPipe()) payload: CreateCashDto,
@@ -88,8 +95,19 @@ export class CashController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Cash(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Put(CashRouter.UPDATE)
   async updateCash(
     @Body(new BodyValidationPipe()) payload: UpdateCashDto,
@@ -132,8 +150,19 @@ export class CashController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Cash(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(CashRouter.LIST)
   async listCash(
     @Body(new BodyValidationPipe()) payload: ListCashQueryDto,
@@ -163,8 +192,19 @@ export class CashController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Cash(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Get(CashRouter.RETRIEVE)
   async getCash(@Res() res: Response, @Req() req: Request) {
     try {
@@ -189,8 +229,19 @@ export class CashController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Cash(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Delete(CashRouter.DELETE)
   async deleteCash(@Res() res: Response, @Req() req: Request) {
     try {

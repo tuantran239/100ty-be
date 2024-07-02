@@ -17,10 +17,13 @@ import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { UserResponseDto } from 'src/user/dto/user-response.dto';
 import { BaseRouterUrl } from '../constant/router';
 import { BaseRepository } from '../repository/base.repository';
-import { NewBaseService } from '../service/new-base.service';
+import { BaseService } from '../service/base.service';
 import { ResponseData } from '../types';
 import { checkBodyValid, checkRoleValid } from '../utils/validate';
+import { ICheckRole } from '../decorator/roles.decorator';
+import { DataSource } from 'typeorm';
 import { SoftDeletableEntity } from '../database/soft-deletable.entity';
+import { NewBaseService } from '../service/new-base.service';
 
 @Controller()
 export class BaseAuthController<
@@ -35,6 +38,7 @@ export class BaseAuthController<
   constructor(
     private readonly service: S,
     private readonly repository: CR,
+    protected dataSource: DataSource,
     private readonly _i18n: I18nCustomService,
     private readonly dto: {
       CreateDto: C;
@@ -42,17 +46,14 @@ export class BaseAuthController<
       QueryDto: Q;
     },
     private roles: {
-      create: string[];
-      update: string[];
-      list: string[];
-      retrieve: string[];
-      remove: string[];
-      delete: string[];
+      create: ICheckRole[];
+      update: ICheckRole[];
+      list: ICheckRole[];
+      retrieve: ICheckRole[];
+      remove: ICheckRole[];
+      delete: ICheckRole[];
     },
-    private isDeleteDatabase: boolean = false,
-  ) {
-    this.isDeleteDatabase = isDeleteDatabase;
-  }
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @Post(BaseRouterUrl.CREATE)
@@ -64,7 +65,7 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(this.roles.create, me);
+      checkRoleValid(req, this.roles.create, this._i18n, this.dataSource);
 
       await checkBodyValid(this.dto.CreateDto, payload, this._i18n);
 
@@ -89,7 +90,7 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(this.roles.update, me);
+      checkRoleValid(req, this.roles.update, this._i18n, this.dataSource);
 
       await checkBodyValid(this.dto.UpdateDto, payload, this._i18n);
 
@@ -116,13 +117,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(this.roles.list, me);
+      checkRoleValid(req, this.roles.list, this._i18n, this.dataSource);
 
       await checkBodyValid(this.dto.QueryDto, req.query as Q, this._i18n);
 
       const query = req.query as Q;
 
-      const data = await this.service.list(query);
+      const data = await this.service.listByQuery({ ...query, me });
 
       const responseData: ResponseData = {
         message: 'success',
@@ -143,13 +144,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(this.roles.retrieve, me);
+      checkRoleValid(req, this.roles.retrieve, this._i18n, this.dataSource);
 
       const { id } = req.params;
 
       const options = { where: { id } } as any;
 
-      const record = await this.service.retrieve(options);
+      const record = await this.service.retrieveMapResponse(options);
 
       const responseData: ResponseData = {
         message: 'success',
@@ -170,7 +171,7 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(this.roles.remove, me);
+      checkRoleValid(req, this.roles.remove, this._i18n, this.dataSource);
 
       const { id } = req.params;
 
@@ -195,11 +196,7 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(this.roles.delete, me);
-
-      if (!this.isDeleteDatabase) {
-        throw new Error('Method not supported');
-      }
+      checkRoleValid(req, this.roles.delete, this._i18n, this.dataSource);
 
       const { id } = req.params;
 

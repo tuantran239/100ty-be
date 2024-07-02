@@ -11,22 +11,28 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { Roles } from 'src/common/decorator/roles.decorator';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
-import { RoleName } from 'src/role/role.type';
+import { RoleId, RoleName } from 'src/role/role.type';
 import { CreateWareHouseDto } from './dto/create-warehouse.dto';
 import { ListWarehouseQueryDto } from './dto/list-warehouse-query.dto';
 import { UpdateWareHouseDto } from './dto/update-warehouse.dto';
 import { WarehouseRouter } from './warehouse.router';
 import { WarehouseService } from './warehouse.service';
+import { Warehouse } from './warehouse.entity';
 
 @Controller(WarehouseRouter.ROOT)
 export class WarehouseController {
   constructor(private warehouseService: WarehouseService) {}
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Warehouse(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(WarehouseRouter.CREATE)
   async create(
@@ -49,7 +55,12 @@ export class WarehouseController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Warehouse(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(WarehouseRouter.UPDATE)
   async update(
@@ -75,7 +86,20 @@ export class WarehouseController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN, RoleName.USER)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Warehouse(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Warehouse(),
+    },
+    {
+      id: RoleId.USER,
+      entity: new Warehouse(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(WarehouseRouter.LIST)
   async list(

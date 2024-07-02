@@ -32,6 +32,8 @@ import { PayMoneyDto } from './dto/pay-money';
 import { PaymentHistoryRouter } from './payment-history.router';
 import { PaymentHistoryService } from './payment-history.service';
 import { PaymentHistoryType } from './payment-history.type';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
+import { PaymentHistory } from './payment-history.entity';
 
 const ENTITY_LOG = 'PaymentHistory';
 
@@ -44,6 +46,25 @@ export class PaymentHistoryController {
     private databaseService: DatabaseService,
   ) {}
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Get(PaymentHistoryRouter.RETRIEVE)
   async getCustomer(@Res() res: Response, @Req() req: Request) {
@@ -75,6 +96,25 @@ export class PaymentHistoryController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Post(PaymentHistoryRouter.LIST)
   async listCustomer(@Res() res: Response, @Req() req: Request) {
@@ -113,6 +153,25 @@ export class PaymentHistoryController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Put(PaymentHistoryRouter.UPDATE)
   async payLoanMoney(
@@ -182,6 +241,25 @@ export class PaymentHistoryController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Post(PaymentHistoryRouter.LIST_FINISH_TODAY)
   async listPaymentHistoryFinish(@Res() res: Response, @Req() req) {
@@ -275,6 +353,25 @@ export class PaymentHistoryController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Post(PaymentHistoryRouter.CONVERT_TYPE)
   async convertType(@Res() res: Response) {

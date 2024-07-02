@@ -20,6 +20,9 @@ import { DeviceRouter } from './device.router';
 import { DeviceService } from './device.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
+import { RoleId } from 'src/role/role.type';
+import { Device } from './device.entity';
 
 const ENTITY_LOG = 'Device';
 
@@ -31,6 +34,14 @@ export class DeviceController {
     private logger: LoggerServerService,
   ) {}
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Post(DeviceRouter.CREATE)
   async createDevice(
@@ -61,6 +72,18 @@ export class DeviceController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Device(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Put(DeviceRouter.UPDATE)
   async updateDevice(
@@ -94,6 +117,18 @@ export class DeviceController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Device(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Post(DeviceRouter.LIST)
   async listDevice(@Res() res: Response, @Req() req: Request) {
@@ -122,6 +157,18 @@ export class DeviceController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Device(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Get(DeviceRouter.RETRIEVE)
   async getDevice(@Res() res: Response, @Req() req: Request) {
@@ -147,6 +194,18 @@ export class DeviceController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Device(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Delete(DeviceRouter.DELETE)
   async deleteDevice(@Res() res: Response, @Req() req: Request) {

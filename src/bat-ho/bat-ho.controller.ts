@@ -17,7 +17,7 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CashFilterType } from 'src/cash/cash.type';
 import { LogActionType } from 'src/common/constant/log';
-import { Roles } from 'src/common/decorator/roles.decorator';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
@@ -28,7 +28,7 @@ import { DatabaseService } from 'src/database/database.service';
 import { LogActionService } from 'src/log-action/log-action.service';
 import { LoggerServerService } from 'src/logger/logger-server.service';
 import { PaymentStatusHistory } from 'src/payment-history/payment-history.type';
-import { RoleName } from 'src/role/role.type';
+import { RoleId, RoleName } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
 import { IsNull } from 'typeorm';
 import { BatHo } from './bat-ho.entity';
@@ -55,8 +55,18 @@ export class BatHoController {
     @InjectRepository(BatHo) private readonly batHoRepository: BatHoRepository,
   ) {}
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+    },
+    {
+      id: RoleId.USER,
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(BatHoRouter.CREATE)
   async createBatHo(
     @Body(new BodyValidationPipe()) payload: CreateBatHoDto,
@@ -98,8 +108,26 @@ export class BatHoController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Put(BatHoRouter.UPDATE)
   async updateBatHo(
     @Body(new BodyValidationPipe()) payload: UpdateBatHoDto,
@@ -132,8 +160,26 @@ export class BatHoController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(BatHoRouter.LIST)
   async listBatHo(
     @Body(new BodyValidationPipe()) payload: ListBatHoQueryDto,
@@ -178,6 +224,25 @@ export class BatHoController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Delete(BatHoRouter.DELETE)
   async deleteBatHo(@Res() res: Response, @Req() req: Request) {
@@ -203,8 +268,26 @@ export class BatHoController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Get(BatHoRouter.INFO)
   async getBatHoInfo(@Res() res: Response, @Req() req: Request) {
     try {
@@ -313,6 +396,25 @@ export class BatHoController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Post(BatHoRouter.SETTLEMENT)
   async settlementBatHo(
@@ -342,8 +444,26 @@ export class BatHoController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(BatHoRouter.REVERSE_CONTRACT)
   async reverseBatHo(
     @Body(new BodyValidationPipe()) payload: ReverseBatHoDto,
@@ -402,6 +522,25 @@ export class BatHoController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new BatHo(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Post('/check-contract-receipt')
   async checkContractReceipt(@Res() res: Response) {

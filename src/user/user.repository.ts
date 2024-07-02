@@ -27,7 +27,7 @@ export class UserRepository extends BaseRepository<
     protected repository: Repository<User>,
     public i18n: I18nCustomService,
   ) {
-    super(repository, USER_RELATIONS, i18n);
+    super(repository, USER_RELATIONS, i18n, new User());
   }
 
   setCheckValid(payload: CreateUserDto | UpdateUserDto): CheckValid<User> {

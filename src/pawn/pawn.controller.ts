@@ -15,7 +15,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LogActionType } from 'src/common/constant/log';
-import { Roles } from 'src/common/decorator/roles.decorator';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { ContractCompleteGuard } from 'src/common/guard/contract-completed.guard';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
@@ -29,7 +29,7 @@ import {
   PaymentHistoryType,
   PaymentStatusHistory,
 } from 'src/payment-history/payment-history.type';
-import { RoleName } from 'src/role/role.type';
+import { RoleId, RoleName } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
 import { CreatePawnDto } from './dto/create-pawn.dto';
 import { ExtendedPeriodConfirmDto } from './dto/extended-period-confirm.dto';
@@ -56,8 +56,19 @@ export class PawnController {
     private readonly pawnRepository: PawnRepository,
   ) {}
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+     
+    },
+    {
+      id: RoleId.USER,
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(PawnRouter.CREATE)
   async createPawn(
     @Body(new BodyValidationPipe()) payload: CreatePawnDto,
@@ -94,8 +105,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Put(PawnRouter.UPDATE)
   async updateCash(
     @Body(new BodyValidationPipe()) payload: UpdatePawnDto,
@@ -128,8 +157,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(PawnRouter.LIST)
   async listPawn(
     @Body(new BodyValidationPipe()) payload: ListPawnQueryDto,
@@ -171,8 +218,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Get(PawnRouter.INFO)
   async getBatHoInfo(@Res() res: Response, @Req() req: Request) {
     try {
@@ -282,8 +347,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Delete(PawnRouter.DELETE)
   async deleteBatHo(@Res() res: Response, @Req() req: Request) {
     try {
@@ -308,8 +391,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Delete(PawnRouter.REMOVE)
   async removeBatHo(@Res() res: Response, @Req() req: Request) {
     try {
@@ -334,8 +435,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Get(PawnRouter.PERIOD_TYPE)
   async listPeriodType(@Res() res: Response) {
     try {
@@ -356,8 +475,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Get(PawnRouter.SETTLEMENT_REQUEST)
   async settlementRequest(@Res() res: Response, @Req() req: Request) {
     try {
@@ -382,8 +519,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Put(PawnRouter.SETTLEMENT_CHANGE)
   async settlementChange(@Res() res: Response, @Req() req: Request) {
     try {
@@ -410,8 +565,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(PawnRouter.SETTLEMENT_CONFIRM)
   async settlementConfirm(
     @Body(new BodyValidationPipe()) payload: SettlementPawnDto,
@@ -440,8 +613,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Get(PawnRouter.PAYMENT_DOWN_REQUEST)
   async paymentDownRootMoneyRequest(@Res() res: Response, @Req() req: Request) {
     try {
@@ -466,8 +657,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(PawnRouter.PAYMENT_DOWN_CONFIRM)
   async paymentDownRootMoneyConfirm(
     @Body(new BodyValidationPipe()) payload: PaymentDownRootMoneyDto,
@@ -499,8 +708,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Get(PawnRouter.LOAN_MORE_REQUEST)
   async loanMoreMoneyRequest(@Res() res: Response, @Req() req: Request) {
     try {
@@ -525,8 +752,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(PawnRouter.LOAN_MORE_CONFIRM)
   async loanMoreMoneyConfirm(
     @Body(new BodyValidationPipe()) payload: LoanMoreMoneyDto,
@@ -555,8 +800,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Get(PawnRouter.EXTENDED_PERIOD_REQUEST)
   async extendedPeriodRequest(@Res() res: Response, @Req() req: Request) {
     try {
@@ -581,8 +844,26 @@ export class PawnController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new Pawn(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard, ContractCompleteGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
   @Post(PawnRouter.EXTENDED_PERIOD_CONFIRM)
   async extendedPeriodConfirm(
     @Body(new BodyValidationPipe()) payload: ExtendedPeriodConfirmDto,

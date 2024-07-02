@@ -40,6 +40,7 @@ export abstract class BaseRepository<
     protected repository: Repository<E>,
     private relations: string[],
     public i18n: I18nCustomService,
+    public entity: E
   ) {
     super(repository.target, repository.manager, repository.queryRunner);
   }

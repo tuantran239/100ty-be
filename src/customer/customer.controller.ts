@@ -13,7 +13,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { Roles } from 'src/common/decorator/roles.decorator';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
@@ -22,7 +22,7 @@ import { getSearchName } from 'src/common/utils/get-full-name';
 import { getSearch } from 'src/common/utils/query';
 import { ContractService } from 'src/contract/contract.service';
 import { DatabaseService } from 'src/database/database.service';
-import { RoleName } from 'src/role/role.type';
+import { RoleId, RoleName } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
 import { IsNull } from 'typeorm';
 import { Customer } from './customer.entity';
@@ -44,7 +44,26 @@ export class CustomerController {
   ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Customer()
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    },
+    {
+      id: RoleId.USER,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    }
+  )
   @Post(CustomerRouter.CREATE)
   async createCustomer(
     @Body(new BodyValidationPipe()) payload: CreateCustomerDto,
@@ -72,7 +91,26 @@ export class CustomerController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Customer()
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    },
+    {
+      id: RoleId.USER,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    }
+  )
   @Get(CustomerRouter.RETRIEVE)
   async getCustomer(@Res() res: Response, @Req() req: Request) {
     try {
@@ -111,7 +149,20 @@ export class CustomerController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Customer()
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Customer(),
+    },
+    {
+      id: RoleId.USER,
+      entity: new Customer(),
+    }
+  )
   @Post(CustomerRouter.LIST)
   async listCustomer(@Res() res: Response, @Req() req: Request) {
     try {
@@ -203,7 +254,26 @@ export class CustomerController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Customer()
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    },
+    {
+      id: RoleId.USER,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    }
+  )
   @Post(CustomerRouter.UPDATE)
   async updateCustomer(
     @Body(new BodyValidationPipe()) payload: UpdateCustomerDto,
@@ -229,7 +299,26 @@ export class CustomerController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Customer()
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    },
+    {
+      id: RoleId.USER,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    }
+  )
   @Get(CustomerRouter.TRANSACTION_HISTORY)
   async getTransactionHistory(@Res() res: Response, @Req() req: Request) {
     try {

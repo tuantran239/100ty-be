@@ -16,6 +16,8 @@ import { ResponseData } from 'src/common/types';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { RoleRouter } from './role.router';
 import { RoleService } from './role.service';
+import { RoleId } from './role.type';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 
 @Controller(RoleRouter.ROOT)
 export class RoleController {
@@ -24,6 +26,17 @@ export class RoleController {
     private cacheService: CacheService,
   ) {}
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN
+    },
+    {
+      id: RoleId.USER,
+    },
+  )
   @UseGuards(JwtAuthGuard)
   @Get(RoleRouter.LIST)
   async listCustomer(@Res() res: Response) {
@@ -43,6 +56,11 @@ export class RoleController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    }
+  )
   @UseGuards(JwtAuthGuard)
   @Put(RoleRouter.UPDATE)
   async updateRole(
