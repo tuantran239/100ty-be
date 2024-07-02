@@ -29,7 +29,10 @@ import { CreateBatHoDto } from './dto/create-bat-ho.dto';
 import { ListBatHoQueryDto } from './dto/list-bat-ho-query.dto';
 import { SettlementBatHoDto } from './dto/settlement-bat-ho.dto';
 import { UpdateBatHoDto } from './dto/update-bat-ho.dto';
-import { PaymentHistoryType, PaymentStatusHistory } from 'src/payment-history/payment-history.type';
+import {
+  PaymentHistoryType,
+  PaymentStatusHistory,
+} from 'src/payment-history/payment-history.type';
 import { CashFilterType } from 'src/cash/cash.type';
 
 @Injectable()
@@ -80,6 +83,7 @@ export class BatHoService extends BaseService<
         } else {
           const newCustomer = await customerRepository.createCustomer({
             ...payload.customer,
+            userId: payload.userId,
           });
 
           payloadData = {

@@ -1,8 +1,11 @@
 {
-  "auth": {
-    "email_exists": "Email này đã tồn tại, vui lòng thử lại với email khác.",
-    "username_exists": "Tên người dùng đã tồn tại, vui lòng thử lại tên người dùng khác.",
-    "username_email_not_match": "Tên người dùng hoặc email không đúng, vui lòng thử lại.",
-    "password_not_match": "Mật khẩu không đúng, vui lòng thử lại."
+  "common": {
+    "not_found": "Không tìm thấy {entity}",
+    "existed": "{entity} với {field} {value} đã tồn tại, vui lòng thử lại",
+    "not_valid": "{field} không hợp lệ",
+    "not_empty": "{field} không được để trống",
+    "not_match": "{field} không trùng khớp",
+    "access_denied": "Truy cập bị từ chối",
+    "access_denied_permission": "Truy cập bị từ chối bạn không đủ quyền"
   }
 }

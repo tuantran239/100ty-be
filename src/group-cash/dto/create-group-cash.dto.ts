@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { BaseDto } from 'src/common/dto/base.dto';
 
-export class CreateGroupCashDto {
+export class CreateGroupCashDto extends BaseDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()

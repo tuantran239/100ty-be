@@ -13,26 +13,37 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import RouterUrl from 'src/common/constant/router';
-import { ResponseData } from 'src/common/types';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { ResponseData } from 'src/common/types';
 import { LoggerServerService } from 'src/logger/logger-server.service';
+import { DeviceRouter } from './device.router';
 import { DeviceService } from './device.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
+import { RoleId } from 'src/role/role.type';
+import { Device } from './device.entity';
 
 const ENTITY_LOG = 'Device';
 
 @ApiTags('Device')
-@Controller(RouterUrl.DEVICE.ROOT)
+@Controller(DeviceRouter.ROOT)
 export class DeviceController {
   constructor(
     private deviceService: DeviceService,
     private logger: LoggerServerService,
   ) {}
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.DEVICE.CREATE)
+  @Post(DeviceRouter.CREATE)
   async createDevice(
     @Body(new BodyValidationPipe()) payload: CreateDeviceDto,
     @Res() res: Response,
@@ -61,8 +72,20 @@ export class DeviceController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Device(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Put(RouterUrl.DEVICE.UPDATE)
+  @Put(DeviceRouter.UPDATE)
   async updateDevice(
     @Body(new BodyValidationPipe()) payload: UpdateDeviceDto,
     @Res() res: Response,
@@ -94,8 +117,20 @@ export class DeviceController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Device(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.DEVICE.LIST)
+  @Post(DeviceRouter.LIST)
   async listDevice(@Res() res: Response, @Req() req: Request) {
     try {
       const { page, pageSize } = req.body;
@@ -122,8 +157,20 @@ export class DeviceController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Device(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Get(RouterUrl.DEVICE.RETRIEVE)
+  @Get(DeviceRouter.RETRIEVE)
   async getDevice(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -147,8 +194,20 @@ export class DeviceController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Device(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Delete(RouterUrl.DEVICE.DELETE)
+  @Delete(DeviceRouter.DELETE)
   async deleteDevice(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;

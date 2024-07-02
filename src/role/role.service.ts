@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { BaseService } from 'src/common/service/base.service';
+import { DatabaseService } from 'src/database/database.service';
 import {
   DataSource,
   DeleteResult,
@@ -12,7 +13,6 @@ import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { Role } from './entities/role.entity';
 import { UserRole } from './entities/user-role.entity';
-import { DatabaseService } from 'src/database/database.service';
 import { InitRoleData } from './role.data';
 
 @Injectable()
@@ -114,7 +114,6 @@ export class RoleService extends BaseService<
   }
 
   listAndCount(options: FindManyOptions<Role>): Promise<[Role[], number]> {
-    console.log(options);
     throw new Error('Method not implemented.');
   }
 

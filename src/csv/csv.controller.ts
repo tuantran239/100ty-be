@@ -8,16 +8,16 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import RouterUrl from 'src/common/constant/router';
-import { CsvService } from './csv.service';
 import { CashCSVQuery } from 'src/common/types/query';
+import { CsvService } from './csv.service';
+import { CsvRouter } from './csv.router';
 
-@Controller(RouterUrl.CSV.ROOT)
+@Controller(CsvRouter.ROOT)
 export class CsvController {
   constructor(private csvService: CsvService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Get(RouterUrl.CSV.EXPORT_CASH)
+  @Get(CsvRouter.EXPORT_CASH)
   async getCashFilterType(@Res() res: Response, @Req() req: Request) {
     try {
       const query = req.query as CashCSVQuery;

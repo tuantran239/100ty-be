@@ -1,4 +1,4 @@
-import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity';
+import { SoftDeletableEntity } from 'src/common/database/soft-deletable.entity';
 import { Pawn } from 'src/pawn/pawn.entity';
 import { Column, Entity, OneToMany } from 'typeorm';
 import { AssetProperty } from './asset-property.entity';

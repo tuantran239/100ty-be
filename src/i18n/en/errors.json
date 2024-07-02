@@ -1,8 +1,11 @@
 {
-  "auth": {
-    "email_exists": "Email already exist, please try another email.",
-    "username_exists": "Username already exist, please try another username.",
-    "username_email_not_match": "Username or email not match, please try another.",
-    "password_not_match": "Password not match, please try another."
+  "common": {
+    "not_found": "{entity} not found",
+    "existed": "{entity} with {field} {value} existed, please try another",
+    "not_valid": "{field} not valid",
+    "not_empty": "{field} is required",
+    "not_match": "{field} not match",
+    "access_denied": "Access denied",
+    "access_denied_permission": "Access denied, you not enough permission"
   }
 }

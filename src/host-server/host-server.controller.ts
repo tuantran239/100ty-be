@@ -11,28 +11,39 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import RouterUrl from 'src/common/constant/router';
-import { HostServerService } from './host-server.service';
-import { LoggerServerService } from 'src/logger/logger-server.service';
+import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
-import { CreateHostServerDto } from './dto/create-host-server.dto';
-import { Request, Response } from 'express';
 import { ResponseData } from 'src/common/types';
+import { LoggerServerService } from 'src/logger/logger-server.service';
+import { CreateHostServerDto } from './dto/create-host-server.dto';
 import { UpdateHostServerDto } from './dto/update-host-server.dto';
+import { HostServerRouter } from './host-server.router';
+import { HostServerService } from './host-server.service';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
+import { RoleId } from 'src/role/role.type';
+import { HostServer } from './host-server.entity';
 
 const ENTITY_LOG = 'HostServer';
 
 @ApiTags('HostServer')
-@Controller(RouterUrl.HOST_SERVER.ROOT)
+@Controller(HostServerRouter.ROOT)
 export class HostServerController {
   constructor(
     private hostServerService: HostServerService,
     private logger: LoggerServerService,
   ) {}
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.HOST_SERVER.CREATE)
+  @Post(HostServerRouter.CREATE)
   async createHostServer(
     @Body(new BodyValidationPipe()) payload: CreateHostServerDto,
     @Res() res: Response,
@@ -61,8 +72,20 @@ export class HostServerController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new HostServer(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Put(RouterUrl.HOST_SERVER.UPDATE)
+  @Put(HostServerRouter.UPDATE)
   async updateDevice(
     @Body(new BodyValidationPipe()) payload: UpdateHostServerDto,
     @Res() res: Response,
@@ -94,8 +117,20 @@ export class HostServerController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new HostServer(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.HOST_SERVER.LIST)
+  @Post(HostServerRouter.LIST)
   async listDevice(@Res() res: Response, @Req() req: Request) {
     try {
       const { page, pageSize } = req.body;
@@ -122,8 +157,20 @@ export class HostServerController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new HostServer(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Get(RouterUrl.HOST_SERVER.RETRIEVE)
+  @Get(HostServerRouter.RETRIEVE)
   async getDevice(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
@@ -147,8 +194,20 @@ export class HostServerController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new HostServer(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Delete(RouterUrl.HOST_SERVER.DELETE)
+  @Delete(HostServerRouter.DELETE)
   async deleteDevice(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;

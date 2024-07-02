@@ -1,4 +1,4 @@
-import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity';
+import { SoftDeletableEntity } from 'src/common/database/soft-deletable.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { BeforeInsert, Column, Entity } from 'typeorm';
 

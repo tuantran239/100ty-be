@@ -109,6 +109,7 @@ export class PawnService extends BaseService<
         } else {
           const newCustomer = await customerRepository.createCustomer({
             ...payload.customer,
+            userId,
           });
 
           payloadData = {

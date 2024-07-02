@@ -10,30 +10,30 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { InjectRepository } from '@nestjs/typeorm';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import RouterUrl from 'src/common/constant/router';
-import { Roles } from 'src/common/decorator/roles.decorator';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
+import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import { CustomerQuery } from 'src/common/types/query';
-import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
+import { getSearchName } from 'src/common/utils/get-full-name';
 import { getSearch } from 'src/common/utils/query';
+import { ContractService } from 'src/contract/contract.service';
+import { DatabaseService } from 'src/database/database.service';
+import { RoleId } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
+import { IsNull } from 'typeorm';
+import { Customer } from './customer.entity';
+import { CustomerRepository } from './customer.repository';
+import { CustomerRouter } from './customer.router';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { ContractService } from 'src/contract/contract.service';
-import { IsNull } from 'typeorm';
-import { getSearchName } from 'src/common/utils/get-full-name';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Customer } from './customer.entity';
-import { CustomerRepository } from './customer.repository';
-import { RoleName } from 'src/role/role.type';
-import { DatabaseService } from 'src/database/database.service';
 
 @ApiTags('Customer')
-@Controller(RouterUrl.CUSTOMER.ROOT)
+@Controller(CustomerRouter.ROOT)
 export class CustomerController {
   constructor(
     private customerService: CustomerService,
@@ -44,14 +44,39 @@ export class CustomerController {
   ) {}
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.CUSTOMER.CREATE)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Customer()
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    },
+    {
+      id: RoleId.USER,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    }
+  )
+  @Post(CustomerRouter.CREATE)
   async createCustomer(
     @Body(new BodyValidationPipe()) payload: CreateCustomerDto,
     @Res() res: Response,
+    @Req() req: Request,
   ) {
     try {
-      const customer = await this.customerService.create(payload);
+      const me = req.user as User;
+
+      const customer = await this.customerService.create({
+        ...payload,
+        userId: me.id,
+      });
       const responseData: ResponseData = {
         message: 'success',
         data: { customer },
@@ -65,14 +90,44 @@ export class CustomerController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get(RouterUrl.CUSTOMER.RETRIEVE)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Customer()
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    },
+    {
+      id: RoleId.USER,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    }
+  )
+  @Get(CustomerRouter.RETRIEVE)
   async getCustomer(@Res() res: Response, @Req() req: Request) {
     try {
+      const me = req.user as User;
+
+      const user = this.databaseService
+        .getRepositories()
+        .userRepository.filterRole(me);
+
       const { id } = req.params;
 
       const customer = await this.customerService.retrieveOne({
-        where: [{ id }, { personalID: id }, { phoneNumber: id }],
+        where: [
+          { id, user },
+          { personalID: id, user },
+          { phoneNumber: id, user },
+        ],
         relations: ['batHos'],
       });
 
@@ -94,8 +149,21 @@ export class CustomerController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.USER, RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.CUSTOMER.LIST)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Customer()
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Customer(),
+    },
+    {
+      id: RoleId.USER,
+      entity: new Customer(),
+    }
+  )
+  @Post(CustomerRouter.LIST)
   async listCustomer(@Res() res: Response, @Req() req: Request) {
     try {
       const me = req.user as User;
@@ -110,7 +178,7 @@ export class CustomerController {
 
       const where = [];
 
-      const query = { isDebt: isDebt };
+      const query = { isDebt: isDebt, user };
 
       if (!Number.isNaN(searchType)) {
         where.push({ ...query, personalID: getSearch(search, 'both') });
@@ -185,8 +253,28 @@ export class CustomerController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.CUSTOMER.UPDATE)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Customer()
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    },
+    {
+      id: RoleId.USER,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    }
+  )
+  @Post(CustomerRouter.UPDATE)
   async updateCustomer(
     @Body(new BodyValidationPipe()) payload: UpdateCustomerDto,
     @Res() res: Response,
@@ -210,16 +298,39 @@ export class CustomerController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
-  @Get(RouterUrl.CUSTOMER.TRANSACTION_HISTORY)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new Customer()
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    },
+    {
+      id: RoleId.USER,
+      entity: new Customer(),
+      conditions: {
+        createdBy: true
+      },
+    }
+  )
+  @Get(CustomerRouter.TRANSACTION_HISTORY)
   async getTransactionHistory(@Res() res: Response, @Req() req: Request) {
     try {
+      const me = req.user as User;
+
       const { id } = req.params;
 
       const { contractType } = req.query;
 
       const list_contract = await this.customerService.getTransactionHistory(
         id,
+        me,
         contractType as string,
       );
 

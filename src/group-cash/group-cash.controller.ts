@@ -12,28 +12,37 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import RouterUrl from 'src/common/constant/router';
-import { Roles } from 'src/common/decorator/roles.decorator';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import { GroupCashQuery } from 'src/common/types/query';
-import { RoleName } from 'src/role/role.type';
+import { DatabaseService } from 'src/database/database.service';
+import { RoleId } from 'src/role/role.type';
+import { User } from 'src/user/user.entity';
+import { Equal, FindOptionsWhere, Not } from 'typeorm';
 import { CreateGroupCashDto } from './dto/create-group-cash.dto';
 import { UpdateGroupCashDto } from './dto/update-group-cash.dto';
+import { GroupCash } from './entity/group-cash.entity';
+import { GroupCashRouter } from './group-cash.router';
 import { GroupCashService } from './group-cash.service';
 import { GroupCashType } from './group-cash.type';
-import { Equal, FindOptionsWhere, IsNull, Not } from 'typeorm';
-import { User } from 'src/user/user.entity';
-import { GroupCash } from './entity/group-cash.entity';
 
-@Controller(RouterUrl.GROUP_CASH.ROOT)
+@Controller(GroupCashRouter.ROOT)
 export class GroupCashController {
-  constructor(private groupCashService: GroupCashService) {}
+  constructor(
+    private groupCashService: GroupCashService,
+    private databaseService: DatabaseService,
+  ) {}
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new GroupCash(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post(RouterUrl.GROUP_CASH.CREATE)
+  @Post(GroupCashRouter.CREATE)
   async create(
     @Body(new BodyValidationPipe()) payload: CreateGroupCashDto,
     @Res() res: Response,
@@ -45,6 +54,7 @@ export class GroupCashController {
       const newGroupCash = await this.groupCashService.create({
         ...payload,
         userId: me.id,
+        me,
       });
 
       const responseData: ResponseData = {
@@ -60,9 +70,14 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new GroupCash(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Put(RouterUrl.GROUP_CASH.UPDATE)
+  @Put(GroupCashRouter.UPDATE)
   async update(
     @Body(new BodyValidationPipe()) payload: UpdateGroupCashDto,
     @Res() res: Response,
@@ -86,9 +101,14 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new GroupCash(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Delete(RouterUrl.GROUP_CASH.DELETE)
+  @Delete(GroupCashRouter.DELETE)
   async delete(@Res() res: Response, @Req() req: Request) {
     try {
       const { id } = req.params;
@@ -108,25 +128,31 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new GroupCash(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new GroupCash(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post(RouterUrl.GROUP_CASH.LIST)
+  @Post(GroupCashRouter.LIST)
   async list(@Res() res: Response, @Req() req: Request) {
     try {
+      const { userRepository } = this.databaseService.getRepositories();
+
       const me = req?.user as User;
 
       const { page, pageSize, status } = req.body as GroupCashQuery;
 
+      const user = userRepository.filterRole(me);
+
       const query: FindOptionsWhere<GroupCash> = {
         type: Not(Equal(GroupCashType.CONTRACT)),
-        user: [
-          {
-            id: me.id,
-          },
-          {
-            id: IsNull(),
-          },
-        ],
+        user,
       };
 
       const where = [];
@@ -159,9 +185,18 @@ export class GroupCashController {
     }
   }
 
-  @Roles(RoleName.SUPER_ADMIN, RoleName.ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new GroupCash(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new GroupCash(),
+    }
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Get(RouterUrl.GROUP_CASH.RETRIEVE)
+  @Get(GroupCashRouter.RETRIEVE)
   async getById(@Res() res: Response, @Req() req: Request) {
     try {
       const { id } = req.params;

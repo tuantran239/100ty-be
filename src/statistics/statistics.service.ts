@@ -191,7 +191,7 @@ export class StatisticsService {
       where: {
         deleted_at: IsNull(),
       },
-      relations: ['roles'],
+      relations: ['role'],
     });
 
     const customers = await this.customerRepository.find({
@@ -273,11 +273,11 @@ export class StatisticsService {
 
     const employeeTotal =
       users.filter(
-        (user) => user.roles[0].id == RoleId.USER && user.managerId == me.id,
+        (user) => user.role.id == RoleId.USER && user.managerId == me.id,
       ).length ?? 0;
 
     const storeTotal =
-      users.filter((user) => user.roles[0].id == RoleId.ADMIN).length ?? 0;
+      users.filter((user) => user.role.id == RoleId.ADMIN).length ?? 0;
 
     const moneyContractMustReceipt = expectedRevenue - receiptContract;
     const moneyContractMustReceiptWithDeductionMoney =

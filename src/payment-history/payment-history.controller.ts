@@ -12,30 +12,32 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import RouterUrl from 'src/common/constant/router';
+import { LogActionType } from 'src/common/constant/log';
+import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import {
   PaymentHistoryFinishQuery,
   PaymentHistoryQuery,
 } from 'src/common/types/query';
-import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { mapPaymentHistoryResponse } from 'src/common/utils/map';
-import { LoggerServerService } from 'src/logger/logger-server.service';
-import { PayMoneyDto } from './dto/pay-money';
-import { PaymentHistoryService } from './payment-history.service';
-import { LogActionService } from 'src/log-action/log-action.service';
-import { LogActionType } from 'src/common/constant/log';
-import { User } from 'src/user/user.entity';
-import { convertPostgresDate, formatDate } from 'src/common/utils/time';
 import { getSearch } from 'src/common/utils/query';
+import { convertPostgresDate, formatDate } from 'src/common/utils/time';
 import { DatabaseService } from 'src/database/database.service';
-import { IsNull } from 'typeorm';
+import { LogActionService } from 'src/log-action/log-action.service';
+import { LoggerServerService } from 'src/logger/logger-server.service';
 import { RoleId } from 'src/role/role.type';
+import { User } from 'src/user/user.entity';
+import { IsNull } from 'typeorm';
+import { PayMoneyDto } from './dto/pay-money';
+import { PaymentHistoryRouter } from './payment-history.router';
+import { PaymentHistoryService } from './payment-history.service';
 import { PaymentHistoryType } from './payment-history.type';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
+import { PaymentHistory } from './payment-history.entity';
 
 const ENTITY_LOG = 'PaymentHistory';
 
-@Controller(RouterUrl.PAYMENT_HISTORY.ROOT)
+@Controller(PaymentHistoryRouter.ROOT)
 export class PaymentHistoryController {
   constructor(
     private logger: LoggerServerService,
@@ -44,8 +46,27 @@ export class PaymentHistoryController {
     private databaseService: DatabaseService,
   ) {}
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Get(RouterUrl.PAYMENT_HISTORY.RETRIEVE)
+  @Get(PaymentHistoryRouter.RETRIEVE)
   async getCustomer(@Res() res: Response, @Req() req: Request) {
     try {
       const { id } = req.params;
@@ -75,8 +96,27 @@ export class PaymentHistoryController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.PAYMENT_HISTORY.LIST)
+  @Post(PaymentHistoryRouter.LIST)
   async listCustomer(@Res() res: Response, @Req() req: Request) {
     try {
       const { contractId, pageSize, page } = req.body as PaymentHistoryQuery;
@@ -113,8 +153,27 @@ export class PaymentHistoryController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Put(RouterUrl.PAYMENT_HISTORY.UPDATE)
+  @Put(PaymentHistoryRouter.UPDATE)
   async payLoanMoney(
     @Body(new BodyValidationPipe()) payload: PayMoneyDto,
     @Res() res: Response,
@@ -182,13 +241,32 @@ export class PaymentHistoryController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.PAYMENT_HISTORY.LIST_FINISH_TODAY)
+  @Post(PaymentHistoryRouter.LIST_FINISH_TODAY)
   async listPaymentHistoryFinish(@Res() res: Response, @Req() req) {
     try {
       const me = req.user as User;
 
-      const role = me.roles[0];
+      const role = me.role;
 
       let user = undefined;
 
@@ -275,8 +353,27 @@ export class PaymentHistoryController {
     }
   }
 
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+    {
+      id: RoleId.USER,
+      entity: new PaymentHistory(),
+      conditions: {
+        createdBy: true
+      }
+    },
+  )
   @UseGuards(JwtAuthGuard)
-  @Post(RouterUrl.PAYMENT_HISTORY.CONVERT_TYPE)
+  @Post(PaymentHistoryRouter.CONVERT_TYPE)
   async convertType(@Res() res: Response) {
     try {
       const data = await this.databaseService.runTransaction(

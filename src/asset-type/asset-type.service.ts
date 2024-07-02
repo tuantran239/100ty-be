@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BaseService } from 'src/common/service/base.service';
 import { AssetType } from './entities/asset-type.entity';
-import { CreateAssetTypeDto } from './dto/crerate-asset-type.dto';
+import { CreateAssetTypeDto } from './dto/create-asset-type.dto';
 import { UpdateAssetTypeDto } from './dto/update-asset-type.dto';
 import {
   EntityManager,

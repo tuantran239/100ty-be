@@ -9,13 +9,14 @@ import { Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ResponseData } from 'src/common/types';
 import { TransactionHistoryService } from './transaction-history.service';
+import { TransactionHistoryRouter } from './transaction-history.router';
 
-@Controller('/api/transaction-history')
+@Controller(TransactionHistoryRouter.ROOT)
 export class TransactionHistoryController {
   constructor(private transactionHistoryService: TransactionHistoryService) {}
 
   @UseGuards(JwtAuthGuard)
-  @Post('/convert-transaction-history-payment-history')
+  @Post(TransactionHistoryRouter.CONVERT_TRANSACTION_HISTORY_PAYMENT_HISTORY)
   async convertTransactionPaymentHistory(@Res() res: Response) {
     try {
       const data =
@@ -34,7 +35,7 @@ export class TransactionHistoryController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Post('/update-contract-type')
+  @Post(TransactionHistoryRouter.UPDATE_CONTRACT_TYPE)
   async updateContractType(@Res() res: Response) {
     try {
       const data = await this.transactionHistoryService.updateContractType();

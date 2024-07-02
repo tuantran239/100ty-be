@@ -1,4 +1,4 @@
-import { SoftDeletableEntity } from 'src/common/database/solf-deletetable.entity';
+import { SoftDeletableEntity } from 'src/common/database/soft-deletable.entity';
 import { Partner, ServiceFee } from 'src/bat-ho/bat-ho.type';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Customer } from 'src/customer/customer.entity';

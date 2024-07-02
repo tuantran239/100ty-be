@@ -54,4 +54,9 @@ export class UpdateCustomerDto {
   @ApiProperty()
   @IsOptional()
   debtMoney?: number;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  userId?: string;
 }

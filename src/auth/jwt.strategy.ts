@@ -3,17 +3,15 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import IConfig, { JWTConfig } from 'src/common/config/config.interface';
+import { UserService } from 'src/user/user.service';
 
 import 'dotenv/config';
-import { UserService } from 'src/user/user.service';
-import { CacheService } from 'src/cache/cache.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly configService: ConfigService<IConfig>,
     private userService: UserService,
-    private cacheService: CacheService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -25,13 +23,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     const user = await this.userService.retrieveOne({
       where: { id: payload.userId },
-      relations: ['roles'],
+      relations: ['role'],
     });
 
     if (!user) {
-      throw new InternalServerErrorException(`Người dùng không tồn tại.`);
+      throw new InternalServerErrorException(
+        this.userService.repository.i18n.getMessage('errors.common.not_found', {
+          entity:
+            this.userService.repository.i18n.getMessage('args.entity.user'),
+        }),
+      );
     }
 
-    return { user_id: user.id, ...user };
+    const userResponse = this.userService.repository.mapResponse(user);
+
+    return { user_id: user.id, ...userResponse };
   }
 }

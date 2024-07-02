@@ -18,87 +18,61 @@ import { Request, Response } from 'express';
 import { I18nContext, I18nService } from 'nestjs-i18n';
 import { RegisterDto } from 'src/auth/dto/register.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import RouterUrl from 'src/common/constant/router';
-import { Roles } from 'src/common/decorator/roles.decorator';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
+import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import { UserQuery } from 'src/common/types/query';
-import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { getSearch } from 'src/common/utils/query';
-import { RoleService } from 'src/role/role.service';
+import { RoleId } from 'src/role/role.type';
 import { IsNull } from 'typeorm';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './user.entity';
 import { UserRepository } from './user.repository';
+import { UserRouter } from './user.router';
 import { UserService } from './user.service';
-import { RoleId, RoleName } from 'src/role/role.type';
+import { UserResponseDto } from './dto/user-response.dto';
 
 @ApiTags('User')
-@Controller(RouterUrl.USER.ROOT)
+@Controller(UserRouter.ROOT)
 export class UserController {
   constructor(
     private userService: UserService,
-    private roleService: RoleService,
     private readonly i18n: I18nService,
     @InjectRepository(User) private readonly userRepository: UserRepository,
   ) {}
 
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new User(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new User(),
+      conditions: {
+        levelRole: true,
+      },
+    },
+  )
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Post(RouterUrl.USER.CREATE)
+  @Post(UserRouter.CREATE)
   async createUser(
     @Body(new BodyValidationPipe()) payload: RegisterDto,
     @Res() res: Response,
     @Req() req,
   ) {
     try {
-      const meId = req?.user?.user_id ?? '';
       const me = req?.user as User;
-
-      const { username, password, role_id } = payload;
-
-      await this.roleService.checkLevelRole(me?.roles[0]?.id, role_id, true);
-
-      const userUsername = await this.userService.retrieveOne({
-        where: { username },
-      });
-
-      if (userUsername) {
-        throw new BadRequestException(
-          this.i18n.t('errors.auth.username_exists', {
-            lang: I18nContext.current().lang,
-          }),
-        );
-      }
-
-      const salt = await bcrypt.genSalt();
-
-      const hashPassword = await bcrypt.hash(password, salt);
-
-      payload.password = hashPassword;
 
       const newUser = await this.userService.create({
         ...payload,
-        managerId: meId,
+        managerId: me.id,
       });
-
-      if (role_id) {
-        await this.roleService.createUserRole({ role_id, user_id: newUser.id });
-      } else {
-        const role = await this.roleService.retrieveOne({
-          where: { name: RoleName.USER },
-        });
-        if (role) {
-          await this.roleService.createUserRole({
-            role_id: role.id,
-            user_id: newUser.id,
-          });
-        }
-      }
 
       const responseData: ResponseData = {
         message: 'success',
-        data: { user: newUser },
+        data: { user: this.userService.repository.mapResponse(newUser) },
         error: null,
         statusCode: 200,
       };
@@ -110,34 +84,33 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Get(RouterUrl.USER.RETRIEVE)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new User(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new User(),
+      conditions: {
+        levelRole: true,
+        createdBy: true
+      },
+    },
+  )
+  @Get(UserRouter.RETRIEVE)
   async retrieveUser(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
 
-      const me = req?.user as User;
-
-      const userRole = me?.roles[0];
-
-      if (userRole.id === RoleId.ADMIN) {
-        const user = await this.userService.retrieveOne({
-          where: { id, managerId: me.id },
-        });
-
-        if (!user) {
-          throw new Error(`Nhân viên không thuộc quản lí của admin`);
-        }
-      }
-
       const user = await this.userService.retrieveOne({
-        where: { id: req.params.id },
-        relations: ['roles'],
+        where: { id },
+        relations: ['role'],
       });
 
       const responseData: ResponseData = {
         message: 'success',
-        data: this.userRepository.mapUserResponse(user),
+        data: this.userRepository.mapResponse(user),
         error: null,
         statusCode: 200,
       };
@@ -149,20 +122,33 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Post(RouterUrl.USER.LIST)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new User(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new User(),
+      conditions: {
+        levelRole: true,
+        createdBy: true
+      },
+    },
+  )
+  @Post(UserRouter.LIST)
   async listUser(@Res() res: Response, @Req() req: Request) {
     try {
       const { page, pageSize, search } = req.body as UserQuery;
 
-      const me = req?.user as User;
+      const me = req?.user as UserResponseDto
 
       const searchType = parseInt((search as string) ?? '');
 
       const where = [];
 
       const query = {
-        managerId: me?.roles[0]?.id == RoleId.ADMIN ? me?.id : undefined,
+        managerId: me?.role?.id == RoleId.ADMIN ? me?.id : undefined,
         deleted_at: IsNull(),
       };
 
@@ -177,7 +163,7 @@ export class UserController {
 
       const data = await this.userService.listAndCount({
         where,
-        relations: ['roles'],
+        relations: ['role'],
         take: pageSize ?? 10,
         skip: ((page ?? 1) - 1) * (pageSize ?? 10),
       });
@@ -196,8 +182,21 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Put(RouterUrl.USER.UPDATE)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new User(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new User(),
+      conditions: {
+        levelRole: true,
+        createdBy: true
+      },
+    },
+  )
+  @Put(UserRouter.UPDATE)
   async updateUser(
     @Body(new BodyValidationPipe()) payload: UpdateUserDto,
     @Res() res: Response,
@@ -208,7 +207,7 @@ export class UserController {
 
       const me = req?.user as User;
 
-      const userRole = me?.roles[0];
+      const userRole = me?.role;
 
       if (userRole.id === RoleId.ADMIN) {
         const user = await this.userService.retrieveOne({
@@ -258,15 +257,28 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(RoleName.ADMIN, RoleName.SUPER_ADMIN)
-  @Delete(RouterUrl.USER.DELETE)
+  @CheckRoles(
+    {
+      id: RoleId.SUPER_ADMIN,
+      entity: new User(),
+    },
+    {
+      id: RoleId.ADMIN,
+      entity: new User(),
+      conditions: {
+        levelRole: true,
+        createdBy: true
+      },
+    },
+  )
+  @Delete(UserRouter.DELETE)
   async deleteUser(@Res() res: Response, @Req() req: Request) {
     try {
       const id = req.params.id;
 
       const me = req?.user as User;
 
-      const userRole = me?.roles[0];
+      const userRole = me?.role;
 
       if (userRole.id === RoleId.ADMIN) {
         const user = await this.userService.retrieveOne({

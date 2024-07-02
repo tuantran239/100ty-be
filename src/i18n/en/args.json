@@ -1,0 +1,18 @@
+{
+  "entity": {
+    "user": "User",
+    "role": "Role",
+    "permission": "Permission"
+  },
+  "field": {
+    "email": "Email",
+    "password": "Password",
+    "username": "Username",
+    "name": "Name",
+    "code": "Code",
+    "action_type": "Action type",
+    "subject_type": "Subject type",
+    "phone_number": "Phone number",
+    "role_id": "Role id"
+  }
+}
