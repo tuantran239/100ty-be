@@ -22,7 +22,7 @@ import { ResponseData } from '../types';
 import { checkBodyValid, checkRoleValid } from '../utils/validate';
 import { ICheckRole } from '../decorator/roles.decorator';
 import { DataSource } from 'typeorm';
-import { SoftDeletableEntity } from '../database/soft-deletable.entity';
+import { SoftDeletableEntity } from '../entity/soft-deletable.entity';
 import { NewBaseService } from '../service/new-base.service';
 
 @Controller()

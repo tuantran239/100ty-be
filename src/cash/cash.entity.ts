@@ -1,5 +1,5 @@
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
-import { SoftDeletableEntity } from 'src/common/database/soft-deletable.entity';
+import { BaseStoreEntity } from 'src/common/entity/base-store.entity';
 import { paymentHistoriesCash } from 'src/common/types';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { GroupCash } from 'src/group-cash/entity/group-cash.entity';
@@ -8,7 +8,7 @@ import { User } from 'src/user/user.entity';
 import { BeforeInsert, Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 
 @Entity('cash')
-export class Cash extends SoftDeletableEntity {
+export class Cash extends BaseStoreEntity {
   @Column()
   code: string;
 

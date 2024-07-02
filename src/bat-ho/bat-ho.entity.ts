@@ -1,5 +1,5 @@
-import { SoftDeletableEntity } from 'src/common/database/soft-deletable.entity';
 import { Partner, ServiceFee } from 'src/bat-ho/bat-ho.type';
+import { BaseStoreEntity } from 'src/common/entity/base-store.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Customer } from 'src/customer/customer.entity';
 import { Device } from 'src/device/device.entity';
@@ -18,7 +18,7 @@ import {
 } from 'typeorm';
 
 @Entity('bat_ho')
-export class BatHo extends SoftDeletableEntity {
+export class BatHo extends BaseStoreEntity {
   @Column()
   customerId: string;
 

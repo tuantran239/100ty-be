@@ -1,4 +1,4 @@
-import { SoftDeletableEntity } from 'src/common/database/soft-deletable.entity';
+import { SoftDeletableEntity } from 'src/common/entity/soft-deletable.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Customer } from 'src/customer/customer.entity';
 import { Pawn } from 'src/pawn/pawn.entity';

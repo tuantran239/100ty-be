@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { FindOneOptions, FindOptionsWhere, Repository } from 'typeorm';
-import { SoftDeletableEntity } from '../database/soft-deletable.entity';
+import { SoftDeletableEntity } from '../entity/soft-deletable.entity';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { checkEnumTypeValid } from '../utils/validate';
 import { UserResponseDto } from 'src/user/dto/user-response.dto';

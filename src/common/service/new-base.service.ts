@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { FindManyOptions, FindOneOptions } from 'typeorm';
 import { BaseRepository } from '../repository/base.repository';
-import { SoftDeletableEntity } from '../database/soft-deletable.entity';
+import { SoftDeletableEntity } from '../entity/soft-deletable.entity';
 
 @Injectable()
 export abstract class NewBaseService<

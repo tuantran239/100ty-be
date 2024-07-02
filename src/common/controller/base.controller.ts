@@ -19,7 +19,7 @@ import { BaseRepository } from '../repository/base.repository';
 import { NewBaseService } from '../service/new-base.service';
 import { ResponseData } from '../types';
 import { checkBodyValid } from '../utils/validate';
-import { SoftDeletableEntity } from '../database/soft-deletable.entity';
+import { SoftDeletableEntity } from '../entity/soft-deletable.entity';
 
 @Controller()
 export class BaseController<
