@@ -22,7 +22,7 @@ import { getSearchName } from 'src/common/utils/get-full-name';
 import { getSearch } from 'src/common/utils/query';
 import { ContractService } from 'src/contract/contract.service';
 import { DatabaseService } from 'src/database/database.service';
-import { RoleId, RoleName } from 'src/role/role.type';
+import { RoleId } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
 import { IsNull } from 'typeorm';
 import { Customer } from './customer.entity';

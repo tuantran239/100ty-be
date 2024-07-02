@@ -18,9 +18,9 @@ export const dataBaseSourceOptions: DataSourceOptions = {
     query_timeout: 2000,
     statement_timeout: 2000,
   },
-  ssl: {
+  ssl: process.env.SSL ? {
     rejectUnauthorized: false,
-  },
+  } : undefined,
 };
 
 export const dataSourceOptions: DataSourceOptions = {
@@ -39,9 +39,9 @@ export const dataSourceOptions: DataSourceOptions = {
     query_timeout: 2000,
     statement_timeout: 2000,
   },
-  ssl: {
+  ssl: process.env.SSL ? {
     rejectUnauthorized: false,
-  },
+  } : undefined,
 };
 
 export default new DataSource(dataBaseSourceOptions);
