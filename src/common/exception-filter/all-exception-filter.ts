@@ -7,10 +7,14 @@ import {
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { ResponseData } from '../types';
+import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
+  constructor(
+    private readonly httpAdapterHost: HttpAdapterHost,
+    private i18n: I18nCustomService,
+  ) {}
 
   catch(exception: any, host: ArgumentsHost): void {
     const { httpAdapter } = this.httpAdapterHost;
@@ -25,7 +29,9 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const responseBody: ResponseData = {
       data: null,
       message: 'error',
-      error: exception?.response?.message ?? 'Internal Server Error',
+      error:
+        exception?.response?.message ??
+        this.i18n.getMessage('errors.common.internal_server'),
       statusCode: httpStatus,
     };
 

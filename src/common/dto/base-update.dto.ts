@@ -1,8 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { User } from 'src/user/user.entity';
+import { BaseDto } from './base.dto';
 
-export class BaseUpdateDto {
+export class BaseUpdateDto extends BaseDto {
   @ApiProperty()
   id: string;
 }

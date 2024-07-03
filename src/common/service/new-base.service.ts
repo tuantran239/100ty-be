@@ -1,14 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { FindManyOptions, FindOneOptions } from 'typeorm';
-import { BaseRepository } from '../repository/base.repository';
-import { SoftDeletableEntity } from '../entity/soft-deletable.entity';
 import { BaseStoreEntity } from '../entity/base-store.entity';
+import { BaseWorkspaceEntity } from '../entity/base-workspace.entity';
+import { BaseRepository } from '../repository/base.repository';
+import { BaseCreateDto } from '../dto/base-create.dto';
+import { BaseUpdateDto } from '../dto/base-update.dto';
 
 @Injectable()
 export abstract class NewBaseService<
-  E extends SoftDeletableEntity | BaseStoreEntity,
-  C,
-  U,
+  E extends Record<string, any> | BaseWorkspaceEntity | BaseStoreEntity,
+  C extends Record<string, any> | BaseCreateDto,
+  U extends Record<string, any> | BaseUpdateDto,
   Q,
   R,
   CR extends BaseRepository<E, C, U, R>,
@@ -33,11 +35,10 @@ export abstract class NewBaseService<
   }
 
   async delete(id: string): Promise<E> {
-
     if (!this.isDeleteDatabase) {
       throw new Error('Method not supported');
     }
-    
+
     return await this.repository.deleteData({ where: { id } } as any);
   }
 

@@ -1,9 +1,9 @@
-import { SoftDeletableEntity } from 'src/common/entity/soft-deletable.entity';
+import { BaseWorkspaceEntity } from 'src/common/entity/base-workspace.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { BeforeInsert, Column, Entity } from 'typeorm';
 
 @Entity('host_server')
-export class HostServer extends SoftDeletableEntity {
+export class HostServer extends BaseWorkspaceEntity {
   @Column()
   name: string;
 

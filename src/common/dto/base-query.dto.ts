@@ -1,6 +1,7 @@
 import { IsNumber, IsOptional } from 'class-validator';
+import { BaseDto } from './base.dto';
 
-export class BaseQueryDto {
+export class BaseQueryDto extends BaseDto {
   @IsNumber()
   @IsOptional()
   page?: number;

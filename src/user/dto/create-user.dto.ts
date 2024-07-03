@@ -7,8 +7,9 @@ import {
 } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
+import { BaseCreateDto } from 'src/common/dto/base-create.dto';
 
-export class CreateUserDto {
+export class CreateUserDto extends BaseCreateDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()

@@ -6,9 +6,9 @@ import { GroupCashModule } from 'src/group-cash/group-cash.module';
 import { RoleModule } from 'src/role/role.module';
 import { UserModule } from 'src/user/user.module';
 import { WarehouseModule } from 'src/warehouse/warehouse.module';
+import { InitController } from './init.controller';
 
 @Module({
-  providers: [InitService],
   imports: [
     AssetTypeModule,
     RoleModule,
@@ -16,5 +16,7 @@ import { WarehouseModule } from 'src/warehouse/warehouse.module';
     GroupCashModule,
     UserModule,
   ],
+  providers: [InitService],
+  controllers: [InitController],
 })
 export class InitModule {}

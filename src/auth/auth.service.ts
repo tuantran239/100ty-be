@@ -11,7 +11,7 @@ import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 export class AuthService {
   constructor(
     private userService: UserService,
-    private readonly i18n: I18nCustomService,
+    private readonly i18n: I18nCustomService
   ) {}
 
   async login(payload: LoginDto): Promise<User> {

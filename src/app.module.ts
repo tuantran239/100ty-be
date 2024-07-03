@@ -42,6 +42,7 @@ import { WarehouseModule } from './warehouse/warehouse.module';
 import { AssetModule } from './asset/asset.module';
 import { InitModule } from './init/init.module';
 import { StoreModule } from './store/store.module';
+import { WorkspaceModule } from './workspace/workspace.module';
 
 @Module({
   imports: [
@@ -101,6 +102,7 @@ import { StoreModule } from './store/store.module';
     AssetModule,
     InitModule,
     StoreModule,
+    WorkspaceModule,
   ],
   providers: [
     {

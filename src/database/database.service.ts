@@ -31,6 +31,7 @@ import { DataSource, Repository } from 'typeorm';
 import { DeleteDataDto } from './dto/delete-data.dto';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { StoreRepository } from 'src/store/store.repository';
+import { WorkspaceRepository } from 'src/workspace/workspace.repository';
 
 export interface DataSourceRepository {
   batHoRepository: BatHoRepository;
@@ -52,6 +53,7 @@ export interface DataSourceRepository {
   assetRepository: AssetRepository;
   userRoleRepository: Repository<UserRole>;
   storeRepository: StoreRepository;
+  workspaceRepository: WorkspaceRepository;
 }
 
 @Injectable()
@@ -78,6 +80,7 @@ export class DatabaseService {
     private readonly assetRepository: AssetRepository,
     private readonly userRepository: UserRepository,
     private readonly storeRepository: StoreRepository,
+    private readonly workspaceRepository: WorkspaceRepository,
     private readonly i18n: I18nCustomService,
   ) {
     this.repositories = {
@@ -103,6 +106,7 @@ export class DatabaseService {
       assetRepository: this.assetRepository,
       userRoleRepository: this.dataSource.manager.getRepository(UserRole),
       storeRepository: this.storeRepository,
+      workspaceRepository: this.workspaceRepository,
     };
   }
 
@@ -121,6 +125,9 @@ export class DatabaseService {
       mapResponse: customRepository.mapResponse,
       mapPayload: customRepository.mapPayload,
       setCheckValid: customRepository.setCheckValid,
+      filterRole: customRepository.filterRole,
+      convertDefaultOptions: customRepository.convertDefaultOptions,
+      setQueryDefault: customRepository.setQueryDefault,
       i18n: customRepository.i18n,
     } as CR;
   }
@@ -178,6 +185,11 @@ export class DatabaseService {
         .extend({
           ...this.getExtendRepository(this.storeRepository),
         }) as StoreRepository,
+      workspaceRepository: queryRunner.manager
+        .getRepository(this.workspaceRepository.target)
+        .extend({
+          ...this.getExtendRepository(this.workspaceRepository),
+        }) as WorkspaceRepository,
     };
 
     try {

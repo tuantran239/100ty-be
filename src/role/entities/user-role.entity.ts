@@ -1,10 +1,10 @@
-import { SoftDeletableEntity } from 'src/common/entity/soft-deletable.entity';
+import { BaseWorkspaceEntity } from 'src/common/entity/base-workspace.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { BeforeInsert, Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 import { Role } from './role.entity';
 
 @Entity('user_role')
-export class UserRole extends SoftDeletableEntity {
+export class UserRole extends BaseWorkspaceEntity {
   @Column()
   user_id: string;
 

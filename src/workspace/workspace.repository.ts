@@ -7,34 +7,36 @@ import {
 } from 'src/common/repository/base.repository';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { FindOptionsWhere, Repository } from 'typeorm';
-import { CreateStoreDto } from './dto/create-store.dto';
-import { StoreResponseDto } from './dto/store-response.dto';
-import { UpdateStoreDto } from './dto/update-store.dto';
-import { Store } from './store.entity';
 import { ActiveStatus } from 'src/common/types/status';
+import { Workspace } from './workspace.entity';
+import { CreateWorkspaceDto } from './dto/create-workspace.dto';
+import { UpdateWorkspaceDto } from './dto/update-workspace.dto';
+import { WorkspaceResponseDto } from './dto/workspace-response.dto';
 
 const STORE_RELATIONS = [];
 
-export class StoreRepository extends BaseRepository<
-  Store,
-  CreateStoreDto,
-  UpdateStoreDto,
-  StoreResponseDto
+export class WorkspaceRepository extends BaseRepository<
+  Workspace,
+  CreateWorkspaceDto,
+  UpdateWorkspaceDto,
+  WorkspaceResponseDto
 > {
   constructor(
-    @InjectRepository(Store)
-    protected repository: Repository<Store>,
+    @InjectRepository(Workspace)
+    protected repository: Repository<Workspace>,
     public i18n: I18nCustomService,
   ) {
-    super(repository, STORE_RELATIONS, i18n, new Store());
+    super(repository, STORE_RELATIONS, i18n, new Workspace());
   }
 
-  setCheckValid(payload: CreateStoreDto | UpdateStoreDto): CheckValid<Store> {
-    const codeUnique: CreateAndSaveCheckValid<Store> = {
+  setCheckValid(
+    payload: CreateWorkspaceDto | UpdateWorkspaceDto,
+  ): CheckValid<Workspace> {
+    const codeUnique: CreateAndSaveCheckValid<Workspace> = {
       type: 'unique',
       message: this.i18n.getMessage('errors.common.existed', {
         field: this.i18n.getMessage('args.field.code'),
-        entity: this.i18n.getMessage('args.entity.store'),
+        entity: this.i18n.getMessage('args.entity.workspace'),
         value: payload.code,
       }),
       options: {
@@ -43,10 +45,9 @@ export class StoreRepository extends BaseRepository<
         },
       },
       field: 'code',
-      payload,
     };
 
-    const statusEnumType: CreateAndSaveCheckValid<Store> = {
+    const statusEnumType: CreateAndSaveCheckValid<Workspace> = {
       type: 'enum_type',
       message: this.i18n.getMessage('errors.common.not_valid', {
         field: this.i18n.getMessage('args.field.status'),
@@ -58,26 +59,23 @@ export class StoreRepository extends BaseRepository<
       field: 'status',
     };
 
-    const storeNotFound: CreateAndSaveCheckValid<Store> = {
+    const notFound: CreateAndSaveCheckValid<Workspace> = {
       type: 'not_found',
       message: this.i18n.getMessage('errors.common.not_found', {
-        field: this.i18n.getMessage('args.field.id'),
-        entity: this.i18n.getMessage('args.entity.store'),
-        value: (payload as UpdateStoreDto).id,
+        entity: this.i18n.getMessage('args.entity.workspace'),
       }),
       options: {
         where: {
-          id: (payload as UpdateStoreDto).id,
+          id: (payload as UpdateWorkspaceDto).id,
         },
       },
       field: 'id',
-      payload,
     };
 
-    const createAndSave: CreateAndSaveCheckValid<Store>[] = [codeUnique];
+    const createAndSave: CreateAndSaveCheckValid<Workspace>[] = [codeUnique];
 
-    const updateAndSave: CreateAndSaveCheckValid<Store>[] = [
-      storeNotFound,
+    const updateAndSave: CreateAndSaveCheckValid<Workspace>[] = [
+      notFound,
       codeUnique,
       statusEnumType,
     ];
@@ -90,23 +88,22 @@ export class StoreRepository extends BaseRepository<
   }
 
   setQueryDefault(
-    payload?: Record<string, any> | CreateStoreDto | UpdateStoreDto,
-  ): FindOptionsWhere<Store> {
-    return {
-      workspaceId: payload.workspaceId,
-    };
+    payload?: Record<string, any> | CreateWorkspaceDto | UpdateWorkspaceDto,
+  ): FindOptionsWhere<Workspace> {
+    return {};
   }
 
-  mapResponse(payload: Store): StoreResponseDto {
+  mapResponse(payload: Workspace): WorkspaceResponseDto {
     return payload;
   }
 
   async mapPayload(
-    data: MapPayload<CreateStoreDto, UpdateStoreDto>,
+    data: MapPayload<CreateWorkspaceDto, UpdateWorkspaceDto>,
   ): Promise<any> {
     const { type, payload } = data;
 
     if (type === 'create') {
+      payload.status = payload.status ?? ActiveStatus.ACTIVE;
       return payload as any;
     } else if (type === 'update') {
       return payload;

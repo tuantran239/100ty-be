@@ -2,7 +2,8 @@
   "entity": {
     "user": "Người dùng",
     "role": "Vai trò",
-    "store": "Cửa hàng"
+    "store": "Cửa hàng",
+    "workspace": "Không gian làm việc"
   },
   "field": {
     "email": "Email",

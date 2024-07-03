@@ -1,10 +1,10 @@
-import { SoftDeletableEntity } from 'src/common/entity/soft-deletable.entity';
+import { BaseWorkspaceEntity } from 'src/common/entity/base-workspace.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { BeforeInsert, Column, Entity, ManyToOne } from 'typeorm';
 import { AssetType } from './asset-type.entity';
 
 @Entity('asset_property')
-export class AssetProperty extends SoftDeletableEntity {
+export class AssetProperty extends BaseWorkspaceEntity {
   @Column()
   propertyName: string;
 

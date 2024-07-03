@@ -1,15 +1,15 @@
 import {
-    BadRequestException,
-    Body,
-    Controller,
-    Delete,
-    Get,
-    InternalServerErrorException,
-    Post,
-    Put,
-    Req,
-    Res,
-    UsePipes,
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  InternalServerErrorException,
+  Post,
+  Put,
+  Req,
+  Res,
+  UsePipes,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
@@ -19,11 +19,12 @@ import { BaseRepository } from '../repository/base.repository';
 import { NewBaseService } from '../service/new-base.service';
 import { ResponseData } from '../types';
 import { checkBodyValid } from '../utils/validate';
-import { SoftDeletableEntity } from '../entity/soft-deletable.entity';
+import { BaseWorkspaceEntity } from '../entity/base-workspace.entity';
+import { BaseStoreEntity } from '../entity/base-store.entity';
 
 @Controller()
 export class BaseController<
-  E extends SoftDeletableEntity,
+  E extends Record<string, any> | BaseWorkspaceEntity | BaseStoreEntity,
   C,
   U,
   Q,
@@ -40,8 +41,7 @@ export class BaseController<
       UpdateDto: U;
       QueryDto: Q;
     },
-  ) {
-  }
+  ) {}
 
   @Post(BaseRouterUrl.CREATE)
   @UsePipes(BodyValidationPipe)
@@ -157,7 +157,6 @@ export class BaseController<
   @Delete(BaseRouterUrl.DELETE)
   async delete(@Req() req: Request, @Res() res: Response) {
     try {
-
       const { id } = req.params;
 
       const record = await this.service.delete(id);

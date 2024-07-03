@@ -1,19 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
-import { User } from 'src/user/user.entity';
+import { BaseQueryDto } from 'src/common/dto/base-query.dto';
 
-export class BaseDto {
+export class ListWorkspaceQueryDto extends BaseQueryDto {
   @ApiProperty()
+  @IsString()
   @IsOptional()
-  me?: User;
+  status?: string;
 
   @ApiProperty()
   @IsString()
   @IsOptional()
-  userId?: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  workspaceId?: string;
+  search?: string;
 }

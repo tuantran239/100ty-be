@@ -15,7 +15,7 @@ export const dataBaseSourceOptions: DataSourceOptions = {
   extra: {
     poolSize: 20,
     connectionTimeoutMillis: 5000,
-    query_timeout: 2000,
+    query_timeout: 5000,
     statement_timeout: 2000,
   },
   ssl: process.env.SSL ? {
@@ -36,7 +36,7 @@ export const dataSourceOptions: DataSourceOptions = {
   extra: {
     poolSize: 20,
     connectionTimeoutMillis: 5000,
-    query_timeout: 2000,
+    query_timeout: 5000,
     statement_timeout: 2000,
   },
   ssl: process.env.SSL ? {
