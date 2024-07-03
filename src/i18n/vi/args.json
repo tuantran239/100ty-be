@@ -2,7 +2,7 @@
   "entity": {
     "user": "Người dùng",
     "role": "Vai trò",
-    "permission": "Quyền"
+    "store": "Cửa hàng"
   },
   "field": {
     "email": "Email",
@@ -13,6 +13,8 @@
     "action_type": "Dạng hành động",
     "subject_type": "Dạng đối tượng",
     "phone_number": "SĐT",
-    "role_id": "Mã vai trò"
+    "role_id": "Mã vai trò",
+    "status": "Tình trạng",
+    "id": "Id"
   }
 }

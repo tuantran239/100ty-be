@@ -8,6 +8,15 @@ export class Store extends SoftDeletableEntity {
   name: string;
 
   @Column()
+  code: string;
+
+  @Column()
+  address: string;
+
+  @Column()
+  phoneNumber: string;
+
+  @Column()
   status: string;
 
   @BeforeInsert()

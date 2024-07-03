@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
+import { BaseUpdateDto } from 'src/common/dto/base-update.dto';
 
-export class UpdateUserDto {
+export class UpdateUserDto extends BaseUpdateDto {
   @ApiProperty()
   @IsString()
   @IsOptional()

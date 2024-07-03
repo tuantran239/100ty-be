@@ -20,7 +20,7 @@ export type I18nTranslations = {
         "entity": {
             "user": string;
             "role": string;
-            "permission": string;
+            "store": string;
         };
         "field": {
             "email": string;
@@ -32,6 +32,8 @@ export type I18nTranslations = {
             "subject_type": string;
             "phone_number": string;
             "role_id": string;
+            "status": string;
+            "id": string;
         };
     };
 };

@@ -2,7 +2,7 @@
   "entity": {
     "user": "User",
     "role": "Role",
-    "permission": "Permission"
+    "store": "Store"
   },
   "field": {
     "email": "Email",
@@ -13,6 +13,8 @@
     "action_type": "Action type",
     "subject_type": "Subject type",
     "phone_number": "Phone number",
-    "role_id": "Role id"
+    "role_id": "Role id",
+    "status": "Status",
+    "id": "Id"
   }
 }

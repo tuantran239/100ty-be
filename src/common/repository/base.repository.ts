@@ -12,11 +12,12 @@ import { User } from 'src/user/user.entity';
 import { RoleId } from 'src/role/role.type';
 
 export interface CreateAndSaveCheckValid<E> {
-  type: 'unique' | 'enum_type';
+  type: 'unique' | 'enum_type' | 'not_found';
   message: string;
   options:
     | FindOneOptions<E>
     | { enumType: Record<string, string>; inputs: string[] };
+  field: keyof E;
 }
 
 export interface CheckValid<E> {
@@ -40,7 +41,7 @@ export abstract class BaseRepository<
     protected repository: Repository<E>,
     private relations: string[],
     public i18n: I18nCustomService,
-    public entity: E
+    public entity: E,
   ) {
     super(repository.target, repository.manager, repository.queryRunner);
   }
@@ -61,18 +62,26 @@ export abstract class BaseRepository<
     return (await this.save(newRecord)) as any;
   }
 
-  async updateAndSave(payload: U & { id: string }): Promise<E> {
-    const { id } = payload;
+  async updateAndSave(
+    payload: U,
+    checkValid?: Array<CreateAndSaveCheckValid<E>>,
+  ): Promise<E> {
+    const { id } = payload as any;
 
-    const record = await this.findOrThrowError(
-      {
-        message: this.i18n.getMessage('errors.common.not_found', {
-          entity: 'args.entity.user',
-        }),
-        checkExist: false,
-      },
-      { where: { id } } as any,
-    );
+    const updateSaveCheckValid =
+      checkValid ?? this.setCheckValid(payload).updateAndSave;
+
+    if (updateSaveCheckValid) {
+      const notFound = updateSaveCheckValid.find(
+        (valid) => valid.type === 'not_found',
+      );
+
+      if (notFound) {
+        await this.checkValidMethod([{ ...notFound }]);
+      }
+    }
+
+    const record = await this.findOne({ where: { id } } as any);
 
     const keysPayload = Object.keys(payload);
 
@@ -84,6 +93,15 @@ export abstract class BaseRepository<
       const recordValue = record[key];
 
       if (recordValue !== undefined && recordValue !== payloadValue) {
+        if (updateSaveCheckValid) {
+          const validField = updateSaveCheckValid.find(
+            (valid) => valid.field === key,
+          );
+          if (validField) {
+            await this.checkValidMethod([{ ...validField }]);
+          }
+        }
+
         record[key] = payloadValue;
       }
     }
@@ -165,6 +183,7 @@ export abstract class BaseRepository<
             valid.options as FindOneOptions<E>,
           );
         }
+
         if (valid.type === 'enum_type') {
           const optionsValid = valid.options as {
             enumType: Record<string, string>;
@@ -174,6 +193,16 @@ export abstract class BaseRepository<
             optionsValid.enumType,
             optionsValid.inputs,
             valid.message,
+          );
+        }
+
+        if (valid.type === 'not_found') {
+          await this.findOrThrowError(
+            {
+              message: valid.message,
+              checkExist: false,
+            },
+            valid.options as FindOneOptions<E>,
           );
         }
       }

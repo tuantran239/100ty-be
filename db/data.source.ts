@@ -11,7 +11,7 @@ export const dataBaseSourceOptions: DataSourceOptions = {
   password: process.env.DATABASE_PASSWORD ?? 'password',
   synchronize: false,
   migrations: ['dist/db/migrations/*{.ts,.js}'],
-  entities: ['dist/src/common/database/base.entity.js'],
+  entities: ['dist/src/common/entity/base.entity.js'],
   extra: {
     poolSize: 20,
     connectionTimeoutMillis: 5000,

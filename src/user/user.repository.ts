@@ -31,49 +31,80 @@ export class UserRepository extends BaseRepository<
   }
 
   setCheckValid(payload: CreateUserDto | UpdateUserDto): CheckValid<User> {
+    const phoneNumberUnique: CreateAndSaveCheckValid<User> = {
+      type: 'unique',
+      message: this.i18n.getMessage('errors.common.existed', {
+        field: this.i18n.getMessage('args.field.phone_number'),
+        entity: this.i18n.getMessage('args.entity.user'),
+        value: payload.phoneNumber,
+      }),
+      options: {
+        where: {
+          phoneNumber: payload.phoneNumber,
+        },
+      },
+      field: 'phoneNumber',
+    };
+
+    const usernameUnique: CreateAndSaveCheckValid<User> = {
+      type: 'unique',
+      message: this.i18n.getMessage('errors.common.existed', {
+        field: this.i18n.getMessage('args.field.username'),
+        entity: this.i18n.getMessage('args.entity.user'),
+        value: payload.username,
+      }),
+      options: {
+        where: {
+          username: payload.username,
+        },
+      },
+      field: 'username',
+    };
+
+    const roleEnumType: CreateAndSaveCheckValid<User> = {
+      type: 'enum_type',
+      message: this.i18n.getMessage('errors.common.not_valid', {
+        field: this.i18n.getMessage('args.field.role_id'),
+      }),
+      options: {
+        enumType: RoleId,
+        inputs: [payload.role_id],
+      },
+      field: 'roleId',
+    };
+
+    const userNotFound: CreateAndSaveCheckValid<User> = {
+      type: 'not_found',
+      message: this.i18n.getMessage('errors.common.not_found', {
+        field: this.i18n.getMessage('args.field.id'),
+        entity: this.i18n.getMessage('args.entity.store'),
+        value: (payload as UpdateUserDto).id,
+      }),
+      options: {
+        where: {
+          id: (payload as UpdateUserDto).id,
+        },
+      },
+      field: 'id',
+    };
+
     const createAndSave: CreateAndSaveCheckValid<User>[] = [
-      {
-        type: 'unique',
-        message: this.i18n.getMessage('errors.common.existed', {
-          field: this.i18n.getMessage('args.field.phone_number'),
-          entity: this.i18n.getMessage('args.entity.user'),
-          value: payload.phoneNumber,
-        }),
-        options: {
-          where: {
-            phoneNumber: payload.phoneNumber,
-          },
-        },
-      },
-      {
-        type: 'unique',
-        message: this.i18n.getMessage('errors.common.existed', {
-          field: this.i18n.getMessage('args.field.username'),
-          entity: this.i18n.getMessage('args.entity.user'),
-          value: payload.username,
-        }),
-        options: {
-          where: {
-            username: payload.username,
-          },
-        },
-      },
+      phoneNumberUnique,
+      usernameUnique,
+    ];
+
+    const updateAndSave: CreateAndSaveCheckValid<User>[] = [
+      phoneNumberUnique,
+      usernameUnique,
+      userNotFound,
+      roleEnumType,
     ];
 
     if (payload.role_id) {
-      createAndSave.push({
-        type: 'enum_type',
-        message: this.i18n.getMessage('errors.common.not_valid', {
-          field: this.i18n.getMessage('args.field.role_id'),
-        }),
-        options: {
-          enumType: RoleId,
-          inputs: [payload.role_id],
-        },
-      });
+      createAndSave.push(roleEnumType);
     }
 
-    return { createAndSave };
+    return { createAndSave, updateAndSave };
   }
 
   mapResponse(payload: User): UserResponseDto {

@@ -40,4 +40,9 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   role_id?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  storeId?: string;
 }
