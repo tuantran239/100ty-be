@@ -22,7 +22,7 @@ import { ResponseData } from '../types';
 import { checkBodyValid, checkRoleValid } from '../utils/validate';
 import { ICheckRole } from '../decorator/roles.decorator';
 import { DataSource } from 'typeorm';
-import { SoftDeletableEntity } from '../database/soft-deletable.entity';
+import { SoftDeletableEntity } from '../entity/soft-deletable.entity';
 import { NewBaseService } from '../service/new-base.service';
 
 @Controller()
@@ -112,7 +112,7 @@ export class BaseAuthController<
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(BaseRouterUrl.LIST)
+  @Post(BaseRouterUrl.LIST)
   async list(@Req() req: Request, @Res() res: Response) {
     try {
       const me = req.user as UserResponseDto;
@@ -121,7 +121,7 @@ export class BaseAuthController<
 
       await checkBodyValid(this.dto.QueryDto, req.query as Q, this._i18n);
 
-      const query = req.query as Q;
+      const query = req.body as Q;
 
       const data = await this.service.listByQuery({ ...query, me });
 

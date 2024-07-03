@@ -1,4 +1,4 @@
-import { SoftDeletableEntity } from 'src/common/database/soft-deletable.entity';
+import { SoftDeletableEntity } from 'src/common/entity/soft-deletable.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { User } from 'src/user/user.entity';
 import { BeforeInsert, Column, Entity, ManyToMany } from 'typeorm';

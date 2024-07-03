@@ -1,5 +1,5 @@
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
-import { SoftDeletableEntity } from 'src/common/database/soft-deletable.entity';
+import { BaseStoreEntity } from 'src/common/entity/base-store.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Pawn } from 'src/pawn/pawn.entity';
 import { PaymentHistory } from 'src/payment-history/payment-history.entity';
@@ -14,7 +14,7 @@ import {
 } from 'typeorm';
 
 @Entity('transaction_history')
-export class TransactionHistory extends SoftDeletableEntity {
+export class TransactionHistory extends BaseStoreEntity {
   @Column()
   batHoId: string;
 

@@ -15,10 +15,12 @@ import { User } from 'src/user/user.entity';
 import { Role } from 'src/role/entities/role.entity';
 import { Customer } from 'src/customer/customer.entity';
 import { I18nCustomModule } from 'src/i18n-custom/i18n-custom.module';
+import { StoreRepository } from 'src/store/store.repository';
+import { Store } from 'src/store/store.entity';
 
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Role, Customer]), I18nCustomModule],
+  imports: [TypeOrmModule.forFeature([User, Role, Customer, Store]), I18nCustomModule],
   providers: [
     DatabaseService,
     CustomerRepositoryProvider,
@@ -29,7 +31,8 @@ import { I18nCustomModule } from 'src/i18n-custom/i18n-custom.module';
     PawnRepositoryProvider,
     WarehouseRepositoryProvider,
     AssetRepositoryProvider,
-    UserRepository
+    UserRepository,
+    StoreRepository
   ],
   exports: [DatabaseService],
   controllers: [DatabaseController],

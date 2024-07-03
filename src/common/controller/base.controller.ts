@@ -19,7 +19,7 @@ import { BaseRepository } from '../repository/base.repository';
 import { NewBaseService } from '../service/new-base.service';
 import { ResponseData } from '../types';
 import { checkBodyValid } from '../utils/validate';
-import { SoftDeletableEntity } from '../database/soft-deletable.entity';
+import { SoftDeletableEntity } from '../entity/soft-deletable.entity';
 
 @Controller()
 export class BaseController<
@@ -40,9 +40,7 @@ export class BaseController<
       UpdateDto: U;
       QueryDto: Q;
     },
-    private isDeleteDatabase: boolean = false,
   ) {
-    this.isDeleteDatabase = isDeleteDatabase;
   }
 
   @Post(BaseRouterUrl.CREATE)
@@ -159,9 +157,6 @@ export class BaseController<
   @Delete(BaseRouterUrl.DELETE)
   async delete(@Req() req: Request, @Res() res: Response) {
     try {
-      if (!this.isDeleteDatabase) {
-        throw new Error('Method not supported');
-      }
 
       const { id } = req.params;
 

@@ -30,6 +30,7 @@ import { WarehouseRepository } from 'src/warehouse/warehouse.repository';
 import { DataSource, Repository } from 'typeorm';
 import { DeleteDataDto } from './dto/delete-data.dto';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
+import { StoreRepository } from 'src/store/store.repository';
 
 export interface DataSourceRepository {
   batHoRepository: BatHoRepository;
@@ -50,6 +51,7 @@ export interface DataSourceRepository {
   warehouseRepository: WarehouseRepository;
   assetRepository: AssetRepository;
   userRoleRepository: Repository<UserRole>;
+  storeRepository: StoreRepository;
 }
 
 @Injectable()
@@ -75,6 +77,7 @@ export class DatabaseService {
     @InjectRepository(Asset)
     private readonly assetRepository: AssetRepository,
     private readonly userRepository: UserRepository,
+    private readonly storeRepository: StoreRepository,
     private readonly i18n: I18nCustomService,
   ) {
     this.repositories = {
@@ -99,6 +102,7 @@ export class DatabaseService {
       warehouseRepository: this.warehouseRepository,
       assetRepository: this.assetRepository,
       userRoleRepository: this.dataSource.manager.getRepository(UserRole),
+      storeRepository: this.storeRepository,
     };
   }
 
@@ -147,11 +151,6 @@ export class DatabaseService {
       transactionHistoryRepository: queryRunner.manager
         .getRepository(TransactionHistory)
         .extend(this.transactionHistoryRepository),
-      userRepository: queryRunner.manager
-        .getRepository(this.userRepository.target)
-        .extend({
-          ...this.getExtendRepository(this.userRepository),
-        }) as UserRepository,
       groupCashRepository: queryRunner.manager.getRepository(GroupCash),
       pawnRepository: queryRunner.manager
         .getRepository(Pawn)
@@ -169,6 +168,16 @@ export class DatabaseService {
         .getRepository(Asset)
         .extend(this.assetRepository),
       userRoleRepository: queryRunner.manager.getRepository(UserRole),
+      userRepository: queryRunner.manager
+        .getRepository(this.userRepository.target)
+        .extend({
+          ...this.getExtendRepository(this.userRepository),
+        }) as UserRepository,
+      storeRepository: queryRunner.manager
+        .getRepository(this.storeRepository.target)
+        .extend({
+          ...this.getExtendRepository(this.storeRepository),
+        }) as StoreRepository,
     };
 
     try {

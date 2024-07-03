@@ -1,21 +1,19 @@
+import { BatHo } from 'src/bat-ho/bat-ho.entity';
+import { BaseStoreEntity } from 'src/common/entity/base-store.entity';
+import { Pawn } from 'src/pawn/pawn.entity';
+import { Role } from 'src/role/entities/role.entity';
 import {
   BeforeInsert,
   Column,
   Entity,
   JoinColumn,
-  JoinTable,
-  ManyToMany,
   OneToMany,
-  OneToOne,
+  OneToOne
 } from 'typeorm';
-import { SoftDeletableEntity } from '../common/database/soft-deletable.entity';
 import { generateEntityId } from '../common/utils/generated-id';
-import { Role } from 'src/role/entities/role.entity';
-import { BatHo } from 'src/bat-ho/bat-ho.entity';
-import { Pawn } from 'src/pawn/pawn.entity';
 
 @Entity('user')
-export class User extends SoftDeletableEntity {
+export class User extends BaseStoreEntity {
   @Column()
   phoneNumber?: string;
 

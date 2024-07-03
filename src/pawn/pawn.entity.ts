@@ -1,5 +1,5 @@
 import { AssetType } from 'src/asset-type/entities/asset-type.entity';
-import { SoftDeletableEntity } from 'src/common/database/soft-deletable.entity';
+import { BaseStoreEntity } from 'src/common/entity/base-store.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Customer } from 'src/customer/customer.entity';
 import { ExtendedPeriodHistory } from 'src/extended-period-history/extended-period-history.entity';
@@ -9,7 +9,7 @@ import { User } from 'src/user/user.entity';
 import { BeforeInsert, Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 
 @Entity('pawn')
-export class Pawn extends SoftDeletableEntity {
+export class Pawn extends BaseStoreEntity {
   @Column()
   customerId: string;
 
