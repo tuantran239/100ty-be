@@ -34,7 +34,7 @@ export class WarehouseService extends BaseService<
     super();
   }
 
-  async createInit() {
+  async createInit(workspaceId: string, storeId: string) {
     let total = InitWarehouseData.length;
     let updated = 0;
     let created = 0;
@@ -50,7 +50,11 @@ export class WarehouseService extends BaseService<
         });
 
         if (!wareHouse) {
-          await warehouseRepository.createWarehouse({ ...initData });
+          await warehouseRepository.createWarehouse({
+            ...initData,
+            workspaceId,
+            storeId,
+          });
           created++;
         } else {
           updated++;

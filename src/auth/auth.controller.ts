@@ -70,6 +70,7 @@ export class AuthController {
             this.configService.get<JWTConfig>('jwtConfig').secret ?? 'secret',
         },
       );
+      
       this.logger.log(
         { customerMessage: 'Login', serverType: 'request' },
         { msg: `Gen token: ${JSON.stringify(token)}` },
@@ -85,6 +86,7 @@ export class AuthController {
         action: LogActionType.LOGIN,
         agent: { agent: req.get('user-agent') },
         data: { token },
+        workspaceId: user.workspaceId
       });
 
       const responseData: ResponseData = {

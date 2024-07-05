@@ -1,4 +1,4 @@
-import { SoftDeletableEntity } from 'src/common/entity/soft-deletable.entity';
+import { BaseStoreEntity } from 'src/common/entity/base-store.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Customer } from 'src/customer/customer.entity';
 import { Pawn } from 'src/pawn/pawn.entity';
@@ -6,7 +6,7 @@ import { Warehouse } from 'src/warehouse/warehouse.entity';
 import { BeforeInsert, Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 
 @Entity('asset')
-export class Asset extends SoftDeletableEntity {
+export class Asset extends BaseStoreEntity {
   @Column()
   assetCode: string;
 

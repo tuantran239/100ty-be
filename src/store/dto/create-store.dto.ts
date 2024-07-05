@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { BaseCreateDto } from 'src/common/dto/base-create.dto';
 
-export class CreateStoreDto {
+export class CreateStoreDto extends BaseCreateDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -21,7 +22,6 @@ export class CreateStoreDto {
   @IsString()
   @IsNotEmpty()
   phoneNumber: string;
-
 
   @ApiProperty()
   @IsString()

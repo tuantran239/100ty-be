@@ -6,7 +6,7 @@ import {
   MapPayload,
 } from 'src/common/repository/base.repository';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { StoreResponseDto } from './dto/store-response.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
@@ -26,7 +26,7 @@ export class StoreRepository extends BaseRepository<
     protected repository: Repository<Store>,
     public i18n: I18nCustomService,
   ) {
-    super(repository, STORE_RELATIONS, i18n, new Store());
+    super(repository, STORE_RELATIONS, i18n, repository.target, 'store');
   }
 
   setCheckValid(payload: CreateStoreDto | UpdateStoreDto): CheckValid<Store> {
@@ -43,6 +43,7 @@ export class StoreRepository extends BaseRepository<
         },
       },
       field: 'code',
+      payload,
     };
 
     const statusEnumType: CreateAndSaveCheckValid<Store> = {
@@ -70,6 +71,7 @@ export class StoreRepository extends BaseRepository<
         },
       },
       field: 'id',
+      payload,
     };
 
     const createAndSave: CreateAndSaveCheckValid<Store>[] = [codeUnique];
@@ -85,6 +87,14 @@ export class StoreRepository extends BaseRepository<
     }
 
     return { createAndSave, updateAndSave };
+  }
+
+  setQueryDefault(
+    payload?: Record<string, any> | CreateStoreDto | UpdateStoreDto,
+  ): FindOptionsWhere<Store> {
+    return {
+      workspaceId: payload?.workspaceId,
+    };
   }
 
   mapResponse(payload: Store): StoreResponseDto {

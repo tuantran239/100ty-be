@@ -13,16 +13,16 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import { LoggerServerService } from 'src/logger/logger-server.service';
+import { RoleId } from 'src/role/role.type';
 import { DeviceRouter } from './device.router';
 import { DeviceService } from './device.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
-import { CheckRoles } from 'src/common/decorator/roles.decorator';
-import { RoleId } from 'src/role/role.type';
-import { Device } from './device.entity';
+import { RolesGuard } from 'src/common/guard/roles.guard';
 
 const ENTITY_LOG = 'Device';
 
@@ -42,7 +42,7 @@ export class DeviceController {
       id: RoleId.ADMIN,
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(DeviceRouter.CREATE)
   async createDevice(
     @Body(new BodyValidationPipe()) payload: CreateDeviceDto,
@@ -78,13 +78,9 @@ export class DeviceController {
     },
     {
       id: RoleId.ADMIN,
-      entity: new Device(),
-      conditions: {
-        createdBy: true
-      }
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(DeviceRouter.UPDATE)
   async updateDevice(
     @Body(new BodyValidationPipe()) payload: UpdateDeviceDto,
@@ -123,13 +119,12 @@ export class DeviceController {
     },
     {
       id: RoleId.ADMIN,
-      entity: new Device(),
-      conditions: {
-        createdBy: true
-      }
+    },
+    {
+      id: RoleId.USER,
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(DeviceRouter.LIST)
   async listDevice(@Res() res: Response, @Req() req: Request) {
     try {
@@ -163,13 +158,9 @@ export class DeviceController {
     },
     {
       id: RoleId.ADMIN,
-      entity: new Device(),
-      conditions: {
-        createdBy: true
-      }
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(DeviceRouter.RETRIEVE)
   async getDevice(@Res() res: Response, @Req() req: Request) {
     try {
@@ -200,13 +191,9 @@ export class DeviceController {
     },
     {
       id: RoleId.ADMIN,
-      entity: new Device(),
-      conditions: {
-        createdBy: true
-      }
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(DeviceRouter.DELETE)
   async deleteDevice(@Res() res: Response, @Req() req: Request) {
     try {

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { ResponseData } from '../types';
+import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -25,7 +26,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const responseBody: ResponseData = {
       data: null,
       message: 'error',
-      error: exception?.response?.message ?? 'Internal Server Error',
+      error:
+        exception?.response?.message ?? 'Internal server error',
       statusCode: httpStatus,
     };
 

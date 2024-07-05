@@ -13,16 +13,16 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import { LoggerServerService } from 'src/logger/logger-server.service';
+import { RoleId } from 'src/role/role.type';
 import { CreateHostServerDto } from './dto/create-host-server.dto';
 import { UpdateHostServerDto } from './dto/update-host-server.dto';
 import { HostServerRouter } from './host-server.router';
 import { HostServerService } from './host-server.service';
-import { CheckRoles } from 'src/common/decorator/roles.decorator';
-import { RoleId } from 'src/role/role.type';
-import { HostServer } from './host-server.entity';
+import { RolesGuard } from 'src/common/guard/roles.guard';
 
 const ENTITY_LOG = 'HostServer';
 
@@ -42,7 +42,7 @@ export class HostServerController {
       id: RoleId.ADMIN,
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(HostServerRouter.CREATE)
   async createHostServer(
     @Body(new BodyValidationPipe()) payload: CreateHostServerDto,
@@ -78,13 +78,9 @@ export class HostServerController {
     },
     {
       id: RoleId.ADMIN,
-      entity: new HostServer(),
-      conditions: {
-        createdBy: true
-      }
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(HostServerRouter.UPDATE)
   async updateDevice(
     @Body(new BodyValidationPipe()) payload: UpdateHostServerDto,
@@ -123,13 +119,12 @@ export class HostServerController {
     },
     {
       id: RoleId.ADMIN,
-      entity: new HostServer(),
-      conditions: {
-        createdBy: true
-      }
+    },
+    {
+      id: RoleId.USER,
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(HostServerRouter.LIST)
   async listDevice(@Res() res: Response, @Req() req: Request) {
     try {
@@ -163,13 +158,9 @@ export class HostServerController {
     },
     {
       id: RoleId.ADMIN,
-      entity: new HostServer(),
-      conditions: {
-        createdBy: true
-      }
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(HostServerRouter.RETRIEVE)
   async getDevice(@Res() res: Response, @Req() req: Request) {
     try {
@@ -200,13 +191,9 @@ export class HostServerController {
     },
     {
       id: RoleId.ADMIN,
-      entity: new HostServer(),
-      conditions: {
-        createdBy: true
-      }
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(HostServerRouter.DELETE)
   async deleteDevice(@Res() res: Response, @Req() req: Request) {
     try {

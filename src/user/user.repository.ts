@@ -9,7 +9,7 @@ import { hashPassword } from 'src/common/utils/hash';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { RoleId } from 'src/role/role.type';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Repository } from 'typeorm';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
 import { User } from './user.entity';
@@ -27,10 +27,12 @@ export class UserRepository extends BaseRepository<
     protected repository: Repository<User>,
     public i18n: I18nCustomService,
   ) {
-    super(repository, USER_RELATIONS, i18n, new User());
+    super(repository, USER_RELATIONS, i18n, repository.target, 'user');
   }
 
   setCheckValid(payload: CreateUserDto | UpdateUserDto): CheckValid<User> {
+    console.log(payload);
+
     const phoneNumberUnique: CreateAndSaveCheckValid<User> = {
       type: 'unique',
       message: this.i18n.getMessage('errors.common.existed', {
@@ -86,6 +88,7 @@ export class UserRepository extends BaseRepository<
         },
       },
       field: 'id',
+      payload,
     };
 
     const createAndSave: CreateAndSaveCheckValid<User>[] = [
@@ -105,6 +108,14 @@ export class UserRepository extends BaseRepository<
     }
 
     return { createAndSave, updateAndSave };
+  }
+
+  setQueryDefault(
+    payload?: Record<string, any> | CreateUserDto | UpdateUserDto,
+  ): FindOptionsWhere<User> {
+    return {
+      workspaceId: payload?.workspaceId,
+    };
   }
 
   mapResponse(payload: User): UserResponseDto {

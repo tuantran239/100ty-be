@@ -1,9 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { AssetTypeService } from 'src/asset-type/asset-type.service';
+import { DatabaseService } from 'src/database/database.service';
 import { GroupCashService } from 'src/group-cash/group-cash.service';
 import { RoleService } from 'src/role/role.service';
+import { RoleId } from 'src/role/role.type';
 import { UserService } from 'src/user/user.service';
 import { WarehouseService } from 'src/warehouse/warehouse.service';
+import { Workspace } from 'src/workspace/workspace.entity';
+import { WorkspaceService } from 'src/workspace/workspace.service';
+import { InitNewWorkspaceDto } from './dto/init-new-workspace.dto';
 
 @Injectable()
 export class InitService {
@@ -12,7 +17,9 @@ export class InitService {
     private roleService: RoleService,
     private warehouseService: WarehouseService,
     private groupCashService: GroupCashService,
-    private userService: UserService
+    private userService: UserService,
+    private workspaceService: WorkspaceService,
+    private databaseService: DatabaseService,
   ) {
     const assetTypeServiceInit = this.assetTypeService;
     const roleServiceInit = this.roleService;
@@ -21,19 +28,52 @@ export class InitService {
     const userServiceInit = this.userService;
 
     async function init() {
-      await assetTypeServiceInit.createInit();
+      // await assetTypeServiceInit.createInit();
 
       await roleServiceInit.createInit();
 
-      await warehouseServiceInit.createInit();
+      // await warehouseServiceInit.createInit();
 
-      await groupCashServiceInit.createInit();
+      // await groupCashServiceInit.createInit();
 
       await groupCashServiceInit.convertGroupCashContract();
 
-      await userServiceInit.convertUserRole()
+      await userServiceInit.convertUserRole();
     }
 
     init();
+  }
+
+  async InitNewWorkspace(payload: InitNewWorkspaceDto): Promise<Workspace> {
+    const newWorkspace = await this.databaseService.runTransaction(
+      async (repositories) => {
+        const { userRepository, storeRepository, workspaceRepository } =
+          repositories;
+
+        const workspace = await workspaceRepository.createAndSave(
+          payload.workspace,
+        );
+
+        const store = await storeRepository.createAndSave({
+          ...payload.store,
+          workspaceId: workspace.id,
+        });
+
+        await userRepository.createAndSave({
+          ...payload.user,
+          workspaceId: workspace.id,
+          storeId: store.id,
+          role_id: RoleId.SUPER_ADMIN,
+        });
+
+        return workspace;
+      },
+    );
+
+    return newWorkspace;
+  }
+
+  async InitWorkspace100tyAndUpdate() {
+    return await this.workspaceService.createInitAndUpdate();
   }
 }

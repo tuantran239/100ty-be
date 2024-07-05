@@ -96,6 +96,7 @@ export class AssetTypeService extends BaseService<
             const newAssetProperty = await assetPropertyRepository.create({
               assetTypeId: newAssetType.id,
               propertyName: property,
+              workspaceId: payload.workspaceId,
             });
             await assetPropertyRepository.save(newAssetProperty);
           }),
@@ -129,6 +130,7 @@ export class AssetTypeService extends BaseService<
               const newAssetProperty = await assetPropertyRepository.create({
                 assetTypeId: assetType.id,
                 propertyName: property,
+                workspaceId: payload.workspaceId,
               });
               await assetPropertyRepository.save(newAssetProperty);
             }),

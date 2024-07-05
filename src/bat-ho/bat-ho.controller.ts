@@ -89,6 +89,7 @@ export class BatHoController {
         agent: { agent: req.get('user-agent') },
         data: { ...batHo },
         payload: { ...payload },
+        workspaceId: payload.workspaceId,
       });
 
       const responseData: ResponseData = {
@@ -116,15 +117,15 @@ export class BatHoController {
       id: RoleId.ADMIN,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
     {
       id: RoleId.USER,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -168,15 +169,15 @@ export class BatHoController {
       id: RoleId.ADMIN,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
     {
       id: RoleId.USER,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -232,18 +233,18 @@ export class BatHoController {
       id: RoleId.ADMIN,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
     {
       id: RoleId.USER,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(BatHoRouter.DELETE)
   async deleteBatHo(@Res() res: Response, @Req() req: Request) {
     try {
@@ -276,15 +277,15 @@ export class BatHoController {
       id: RoleId.ADMIN,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
     {
       id: RoleId.USER,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -404,18 +405,18 @@ export class BatHoController {
       id: RoleId.ADMIN,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
     {
       id: RoleId.USER,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(BatHoRouter.SETTLEMENT)
   async settlementBatHo(
     @Body(new BodyValidationPipe()) payload: SettlementBatHoDto,
@@ -452,15 +453,15 @@ export class BatHoController {
       id: RoleId.ADMIN,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
     {
       id: RoleId.USER,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -530,18 +531,18 @@ export class BatHoController {
       id: RoleId.ADMIN,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
     {
       id: RoleId.USER,
       entity: new BatHo(),
       conditions: {
-        createdBy: true
-      }
+        createdBy: true,
+      },
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('/check-contract-receipt')
   async checkContractReceipt(@Res() res: Response) {
     try {

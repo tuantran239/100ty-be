@@ -287,6 +287,8 @@ export const PawnRepositoryCustomRepository: Pick<PawnRepository, any> = {
           payNeed: loanAmount,
           type: PaymentHistoryType.ROOT_MONEY,
           rowId: index + 1,
+          workspaceId: pawn.workspaceId,
+          storeId: pawn.storeId
         });
 
         paymentHistories.push({
@@ -294,6 +296,8 @@ export const PawnRepositoryCustomRepository: Pick<PawnRepository, any> = {
           payNeed: interestMoneyEachPeriod,
           type: PaymentHistoryType.INTEREST_MONEY,
           rowId: index,
+          workspaceId: pawn.workspaceId,
+          storeId: pawn.storeId
         });
       } else {
         paymentHistories.push({
@@ -301,6 +305,8 @@ export const PawnRepositoryCustomRepository: Pick<PawnRepository, any> = {
           payNeed: interestMoneyEachPeriod,
           type: PaymentHistoryType.INTEREST_MONEY,
           rowId: index + 1,
+          workspaceId: pawn.workspaceId,
+          storeId: pawn.storeId
         });
       }
 

@@ -5,6 +5,7 @@ import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { DataSource } from 'typeorm';
 import { ICheckRole, ROLES_KEY } from '../decorator/roles.decorator';
 import { checkRoleValid } from '../utils/validate';
+import { convertUrlToSubject } from '../utils/convert';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -22,7 +23,9 @@ export class RolesGuard implements CanActivate {
 
     const req = context.switchToHttp().getRequest() as Request;
 
-    await checkRoleValid(req, requiredRoles, this.i18n, this.dataSource);
+    const entity = convertUrlToSubject(req.url as string);
+
+    await checkRoleValid(req, requiredRoles, this.i18n, this.dataSource, entity);
 
     return true;
   }

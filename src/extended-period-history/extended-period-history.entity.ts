@@ -1,10 +1,10 @@
-import { SoftDeletableEntity } from 'src/common/entity/soft-deletable.entity';
+import { BaseWorkspaceEntity } from 'src/common/entity/base-workspace.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Pawn } from 'src/pawn/pawn.entity';
 import { BeforeInsert, Column, Entity, ManyToOne } from 'typeorm';
 
 @Entity('extended_period_history')
-export class ExtendedPeriodHistory extends SoftDeletableEntity {
+export class ExtendedPeriodHistory extends BaseWorkspaceEntity {
   @Column()
   periodNumber: number;
 

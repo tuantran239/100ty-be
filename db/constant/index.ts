@@ -1,0 +1,18 @@
+export const TablesInWorkspace = [
+  'asset',
+  'asset_property',
+  'asset_type',
+  'bat_ho',
+  'cash',
+  'device',
+  'extended_period_history',
+  'group_cash',
+  'host_server',
+  'log_action',
+  'pawn',
+  'payment_history',
+  'store',
+  'transaction_history',
+  'user',
+  'warehouse',
+];

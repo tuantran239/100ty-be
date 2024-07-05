@@ -3,21 +3,31 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FindOneOptions, FindOptionsWhere, Repository } from 'typeorm';
-import { SoftDeletableEntity } from '../entity/soft-deletable.entity';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
-import { checkEnumTypeValid } from '../utils/validate';
+import { RoleId } from 'src/role/role.type';
 import { UserResponseDto } from 'src/user/dto/user-response.dto';
 import { User } from 'src/user/user.entity';
-import { RoleId } from 'src/role/role.type';
+import {
+  EntityTarget,
+  FindManyOptions,
+  FindOneOptions,
+  FindOptionsWhere,
+  Repository,
+} from 'typeorm';
+import { BaseCreateDto } from '../dto/base-create.dto';
+import { BaseUpdateDto } from '../dto/base-update.dto';
+import { BaseStoreEntity } from '../entity/base-store.entity';
+import { BaseWorkspaceEntity } from '../entity/base-workspace.entity';
+import { checkEnumTypeValid } from '../utils/validate';
 
 export interface CreateAndSaveCheckValid<E> {
-  type: 'unique' | 'enum_type' | 'not_found';
+  type: 'unique' | 'enum_type' | 'not_found' | 'status';
   message: string;
   options:
     | FindOneOptions<E>
     | { enumType: Record<string, string>; inputs: string[] };
   field: keyof E;
+  payload?: Record<string, any>;
 }
 
 export interface CheckValid<E> {
@@ -32,16 +42,17 @@ export interface MapPayload<C, U> {
 
 @Injectable()
 export abstract class BaseRepository<
-  E extends SoftDeletableEntity | Record<string, any>,
-  C,
-  U,
+  E extends Record<string, any> | BaseWorkspaceEntity | BaseStoreEntity,
+  C extends Record<string, any> | BaseCreateDto,
+  U extends Record<string, any> | BaseUpdateDto,
   R,
 > extends Repository<E> {
   constructor(
     protected repository: Repository<E>,
     private relations: string[],
     public i18n: I18nCustomService,
-    public entity: E,
+    public entityTarget: EntityTarget<E>,
+    public entity: string,
   ) {
     super(repository.target, repository.manager, repository.queryRunner);
   }
@@ -111,7 +122,7 @@ export abstract class BaseRepository<
     return record;
   }
 
-  async deleteSoft(options: FindOneOptions<E>): Promise<E> {
+  async deleteSoft(options?: FindOneOptions<E>): Promise<E> {
     const record = await this.findOrThrowError(
       {
         message: this.i18n.getMessage('errors.common.not_found', {
@@ -129,7 +140,7 @@ export abstract class BaseRepository<
     return record;
   }
 
-  async deleteData(options: FindOneOptions<E>): Promise<E> {
+  async deleteData(options?: FindOneOptions<E>): Promise<E> {
     const record = await this.findOrThrowError(
       {
         message: this.i18n.getMessage('errors.common.not_found', {
@@ -169,54 +180,6 @@ export abstract class BaseRepository<
     return record;
   }
 
-  async checkValidMethod(validArr?: Array<CreateAndSaveCheckValid<E>>) {
-    if (validArr) {
-      for (let i = 0; i < validArr.length; i++) {
-        const valid = validArr[i];
-
-        if (valid.type === 'unique') {
-          await this.findOrThrowError(
-            {
-              message: valid.message,
-              checkExist: true,
-            },
-            valid.options as FindOneOptions<E>,
-          );
-        }
-
-        if (valid.type === 'enum_type') {
-          const optionsValid = valid.options as {
-            enumType: Record<string, string>;
-            inputs: string[];
-          };
-          checkEnumTypeValid(
-            optionsValid.enumType,
-            optionsValid.inputs,
-            valid.message,
-          );
-        }
-
-        if (valid.type === 'not_found') {
-          await this.findOrThrowError(
-            {
-              message: valid.message,
-              checkExist: false,
-            },
-            valid.options as FindOneOptions<E>,
-          );
-        }
-      }
-    }
-  }
-
-  async checkValidWithAction(action: 'create' | 'update', payload: C | U) {
-    if (action === 'create') {
-      await this.checkValidMethod(this.setCheckValid(payload).createAndSave);
-    } else if (action === 'update') {
-      await this.checkValidMethod(this.setCheckValid(payload).updateAndSave);
-    }
-  }
-
   filterRole(me: UserResponseDto | any) {
     const role = me.role;
 
@@ -231,9 +194,113 @@ export abstract class BaseRepository<
     return user;
   }
 
+  convertDefaultOptions(
+    options: FindOneOptions<E> | FindManyOptions<E>,
+    payloadQueryDefault?: FindOptionsWhere<E>,
+    payload?: C | U | Record<string, any>,
+  ): FindOneOptions<E> | FindManyOptions<E> {
+    let where = options.where ?? [];
+
+    let queryDefault: any =
+      payloadQueryDefault ?? this.setQueryDefault(payload) ?? {};
+
+    if (Array.isArray(where)) {
+      if (where.length === 0) {
+        where.push(queryDefault);
+      }
+
+      for (let i = 0; i < where.length; i++) {
+        const whereQuery = where[i];
+        where[i] = { ...whereQuery, ...queryDefault };
+      }
+    } else {
+      where = { ...where, ...queryDefault };
+    }
+
+    return { ...options, where };
+  }
+
+  async checkValidMethod(validArr?: Array<CreateAndSaveCheckValid<E>>) {
+    if (validArr) {
+      for (let i = 0; i < validArr.length; i++) {
+        const valid = validArr[i];
+
+        if (valid.type === 'unique') {
+          const optionsUnique = (await this.convertDefaultOptions(
+            valid.options as FindOneOptions<E>,
+            null,
+            valid.payload,
+          )) as FindOneOptions<E>;
+
+          await this.findOrThrowError(
+            {
+              message: valid.message,
+              checkExist: true,
+            },
+            optionsUnique,
+          );
+        }
+
+        if (valid.type === 'enum_type') {
+          const optionsValid = valid.options as {
+            enumType: Record<string, string>;
+            inputs: string[];
+          };
+
+          checkEnumTypeValid(
+            optionsValid.enumType,
+            optionsValid.inputs,
+            valid.message,
+          );
+        }
+
+        if (valid.type === 'not_found') {
+          const optionsNotFound = this.convertDefaultOptions(
+            valid.options as FindOneOptions<E>,
+            null,
+            valid.payload,
+          ) as FindOneOptions<E>;
+
+          await this.findOrThrowError(
+            {
+              message: valid.message,
+              checkExist: false,
+            },
+            optionsNotFound,
+          );
+        }
+
+        if (valid.type === 'status') {
+          await this.findOrThrowError(
+            {
+              message: valid.message,
+              checkExist: true,
+            },
+            { ...valid.options } as FindOneOptions<E>,
+          );
+        }
+      }
+    }
+  }
+
+  async checkValidWithAction(
+    action: 'create' | 'update',
+    payload: C | U | Record<string, any>,
+  ) {
+    if (action === 'create') {
+      await this.checkValidMethod(this.setCheckValid(payload).createAndSave);
+    } else if (action === 'update') {
+      await this.checkValidMethod(this.setCheckValid(payload).updateAndSave);
+    }
+  }
+
   abstract mapResponse(payload: E): R;
 
   abstract mapPayload(data: MapPayload<C, U>): Promise<any>;
 
-  abstract setCheckValid(payload: C | U): CheckValid<E>;
+  abstract setCheckValid(payload: C | U | Record<string, any>): CheckValid<E>;
+
+  abstract setQueryDefault(
+    payload?: C | U | Record<string, any>,
+  ): FindOptionsWhere<E> | undefined;
 }

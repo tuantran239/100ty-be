@@ -2,7 +2,8 @@
   "entity": {
     "user": "User",
     "role": "Role",
-    "store": "Store"
+    "store": "Store",
+    "workspace": "Business workspace"
   },
   "field": {
     "email": "Email",

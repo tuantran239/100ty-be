@@ -14,6 +14,9 @@ export type I18nTranslations = {
             "not_match": string;
             "access_denied": string;
             "access_denied_permission": string;
+            "method_not_allowed": string;
+            "internal_server": string;
+            "status_off": string;
         };
     };
     "args": {
@@ -21,6 +24,7 @@ export type I18nTranslations = {
             "user": string;
             "role": string;
             "store": string;
+            "workspace": string;
         };
         "field": {
             "email": string;

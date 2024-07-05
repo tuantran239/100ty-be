@@ -9,6 +9,7 @@ import { AllExceptionsFilter } from './common/exception-filter/all-exception-fil
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 import * as cookieParser from 'cookie-parser';
+import { MapBodyRequestInterceptor } from './common/interceptor/map-body-request.interceptor';
 
 const PORT = parseInt(process.env.PORT, 10) || 9000;
 
@@ -23,7 +24,7 @@ async function bootstrap() {
     'https://100ty.net',
     'https://dev.100ty.net',
     'https://development.100ty.net',
-    'https://production.100ty.net'
+    'https://production.100ty.net',
   ];
 
   app.enableCors({
@@ -37,7 +38,11 @@ async function bootstrap() {
 
   app.useGlobalPipes(new BodyValidationPipe());
 
-  app.useGlobalFilters(new AllExceptionsFilter(httpAdapter));
+  app.useGlobalFilters(
+    new AllExceptionsFilter(httpAdapter),
+  );
+
+  app.useGlobalInterceptors(new MapBodyRequestInterceptor())
 
   const config = new DocumentBuilder()
     .setTitle('100ty example')

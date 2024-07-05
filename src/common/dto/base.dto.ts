@@ -11,4 +11,9 @@ export class BaseDto {
   @IsString()
   @IsOptional()
   userId?: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsOptional()
+  workspaceId?: string;
 }

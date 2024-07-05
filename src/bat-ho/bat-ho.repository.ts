@@ -387,6 +387,8 @@ export const BatHoCustomRepository: Pick<BatHoRepository, any> = {
         payNeed: revenueReceived,
         paymentStatus: null,
         contractType: ContractType.BAT_HO,
+        workspaceId: batHo.workspaceId,
+        storeId: batHo.storeId,
       });
       return paymentHistories;
     }
@@ -424,6 +426,8 @@ export const BatHoCustomRepository: Pick<BatHoRepository, any> = {
         paymentStatus: null,
         contractType: ContractType.BAT_HO,
         type: PaymentHistoryType.INTEREST_MONEY,
+        workspaceId: batHo.workspaceId,
+        storeId: batHo.storeId,
       });
 
       index++;

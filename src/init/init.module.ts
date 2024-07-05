@@ -6,15 +6,19 @@ import { GroupCashModule } from 'src/group-cash/group-cash.module';
 import { RoleModule } from 'src/role/role.module';
 import { UserModule } from 'src/user/user.module';
 import { WarehouseModule } from 'src/warehouse/warehouse.module';
+import { InitController } from './init.controller';
+import { WorkspaceModule } from 'src/workspace/workspace.module';
 
 @Module({
-  providers: [InitService],
   imports: [
     AssetTypeModule,
     RoleModule,
     WarehouseModule,
     GroupCashModule,
     UserModule,
+    WorkspaceModule,
   ],
+  providers: [InitService],
+  controllers: [InitController],
 })
 export class InitModule {}

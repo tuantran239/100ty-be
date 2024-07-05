@@ -15,21 +15,23 @@ import { Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { UserResponseDto } from 'src/user/dto/user-response.dto';
+import { DataSource } from 'typeorm';
 import { BaseRouterUrl } from '../constant/router';
+import { ICheckRole } from '../decorator/roles.decorator';
 import { BaseRepository } from '../repository/base.repository';
-import { BaseService } from '../service/base.service';
+import { NewBaseService } from '../service/new-base.service';
 import { ResponseData } from '../types';
 import { checkBodyValid, checkRoleValid } from '../utils/validate';
-import { ICheckRole } from '../decorator/roles.decorator';
-import { DataSource } from 'typeorm';
-import { SoftDeletableEntity } from '../entity/soft-deletable.entity';
-import { NewBaseService } from '../service/new-base.service';
+import { BaseWorkspaceEntity } from '../entity/base-workspace.entity';
+import { BaseStoreEntity } from '../entity/base-store.entity';
+import { BaseCreateDto } from '../dto/base-create.dto';
+import { BaseUpdateDto } from '../dto/base-update.dto';
 
 @Controller()
 export class BaseAuthController<
-  E extends SoftDeletableEntity,
-  C,
-  U,
+  E extends Record<string, any> | BaseWorkspaceEntity | BaseStoreEntity,
+  C extends Record<string, any> | BaseCreateDto,
+  U extends Record<string, any> | BaseUpdateDto,
   Q,
   R,
   CR extends BaseRepository<E, C, U, R>,
@@ -65,7 +67,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.create, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.create,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       await checkBodyValid(this.dto.CreateDto, payload, this._i18n);
 
@@ -90,7 +98,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.update, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.update,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       await checkBodyValid(this.dto.UpdateDto, payload, this._i18n);
 
@@ -117,7 +131,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.list, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.list,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       await checkBodyValid(this.dto.QueryDto, req.query as Q, this._i18n);
 
@@ -144,7 +164,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.retrieve, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.retrieve,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       const { id } = req.params;
 
@@ -171,7 +197,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.remove, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.remove,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       const { id } = req.params;
 
@@ -196,7 +228,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.delete, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.delete,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       const { id } = req.params;
 

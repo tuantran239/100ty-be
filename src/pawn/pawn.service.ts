@@ -105,7 +105,7 @@ export class PawnService extends BaseService<
             { message: 'Không tìm thấy khách hàng.' },
           );
 
-          payload.customer = findCustomer;
+          payload.customer = { ...findCustomer, storeId: payload.storeId };
         } else {
           const newCustomer = await customerRepository.createCustomer({
             ...payload.customer,
@@ -729,6 +729,8 @@ export class PawnService extends BaseService<
         paymentMethod: pawn.paymentPeriodType,
         contractId: pawn.contractId,
         userId: pawn.userId,
+        workspaceId: payload.workspaceId,
+        storeId: pawn.storeId
       });
 
       await paymentHistoryRepository.sortRowId({ pawnId: pawn.id });
@@ -911,6 +913,8 @@ export class PawnService extends BaseService<
         paymentMethod: pawn.paymentPeriodType,
         contractId: pawn.contractId,
         userId: pawn.userId,
+        workspaceId: payload.workspaceId,
+        storeId: pawn.storeId
       });
 
       if (payload.otherMoney) {
@@ -927,6 +931,8 @@ export class PawnService extends BaseService<
           paymentMethod: pawn.paymentPeriodType,
           contractId: pawn.contractId,
           userId: pawn.userId,
+          workspaceId: payload.workspaceId,
+          storeId: pawn.storeId
         });
       }
 
@@ -1132,6 +1138,8 @@ export class PawnService extends BaseService<
           paymentMethod: pawn.paymentPeriodType,
           contractId: pawn.contractId,
           userId: pawn.userId,
+          workspaceId: pawn.workspaceId,
+          storeId: pawn.storeId
         });
       }
 
@@ -1299,6 +1307,7 @@ export class PawnService extends BaseService<
         periodNumber: payload.periodNumber,
         extendedDate: convertPostgresDate(payload.extendedDate),
         reason: payload.reason,
+        workspaceId: payload.workspaceId,
       });
 
       await extendedPeriodHistory.save(newExtendedPeriod);
@@ -1352,9 +1361,14 @@ export class PawnService extends BaseService<
       null,
     );
 
+    let total = 0;
+    let updated = 0;
+
     const pawns = await this.list({
       where: { debitStatus: Not(DebitStatus.COMPLETED) },
     });
+
+    total = pawns.length;
 
     Promise.allSettled(
       pawns.map(async (pawn) => {
@@ -1362,7 +1376,15 @@ export class PawnService extends BaseService<
         await this.contractService.updateBadDebitStatusCustomer(
           pawn.customerId,
         );
+        updated++;
       }),
+    );
+
+    this.logger.log(
+      {
+        customerMessage: `Pawn updated: ${updated}/${total}`,
+      },
+      null,
     );
   }
 }

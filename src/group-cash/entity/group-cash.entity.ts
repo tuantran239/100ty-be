@@ -1,9 +1,9 @@
-import { SoftDeletableEntity } from 'src/common/entity/soft-deletable.entity';
+import { BaseWorkspaceEntity } from 'src/common/entity/base-workspace.entity';
 import { User } from 'src/user/user.entity';
 import { Column, Entity, JoinColumn, OneToOne } from 'typeorm';
 
 @Entity('group_cash')
-export class GroupCash extends SoftDeletableEntity {
+export class GroupCash extends BaseWorkspaceEntity {
   @Column()
   groupName: string;
 

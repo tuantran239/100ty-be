@@ -12,6 +12,7 @@ import 'dotenv/config';
 import IConfig, { JWTConfig } from 'src/common/config/config.interface';
 import { LoggerServerModule } from 'src/logger/logger-server.module';
 import { RoleModule } from 'src/role/role.module';
+import { WorkspaceModule } from 'src/workspace/workspace.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { RoleModule } from 'src/role/role.module';
     ConfigModule,
     RoleModule,
     LoggerServerModule,
+    WorkspaceModule,
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],

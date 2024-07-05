@@ -1,12 +1,12 @@
 import { BatHo } from 'src/bat-ho/bat-ho.entity';
-import { SoftDeletableEntity } from 'src/common/entity/soft-deletable.entity';
+import { BaseStoreEntity } from 'src/common/entity/base-store.entity';
 import { generateEntityId } from 'src/common/utils/generated-id';
 import { Pawn } from 'src/pawn/pawn.entity';
 import { User } from 'src/user/user.entity';
 import { BeforeInsert, Column, Entity, JoinColumn, OneToMany, OneToOne } from 'typeorm';
 
 @Entity('customer')
-export class Customer extends SoftDeletableEntity {
+export class Customer extends BaseStoreEntity {
   @Column()
   userId?: string;
 

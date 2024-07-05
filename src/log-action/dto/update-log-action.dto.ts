@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
+import { BaseUpdateDto } from 'src/common/dto/base-update.dto';
 
-export class UpdateLogActionDto {
+export class UpdateLogActionDto extends BaseUpdateDto {
   @ApiProperty()
   @IsString()
   @IsOptional()

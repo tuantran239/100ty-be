@@ -86,6 +86,7 @@ export class PawnController {
         agent: { agent: req.get('user-agent') },
         data: { ...pawn },
         payload: { ...payload },
+        workspaceId: payload.workspaceId
       });
 
       const responseData: ResponseData = {
