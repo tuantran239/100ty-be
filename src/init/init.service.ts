@@ -3,11 +3,12 @@ import { AssetTypeService } from 'src/asset-type/asset-type.service';
 import { DatabaseService } from 'src/database/database.service';
 import { GroupCashService } from 'src/group-cash/group-cash.service';
 import { RoleService } from 'src/role/role.service';
+import { RoleId } from 'src/role/role.type';
 import { UserService } from 'src/user/user.service';
 import { WarehouseService } from 'src/warehouse/warehouse.service';
 import { Workspace } from 'src/workspace/workspace.entity';
+import { WorkspaceService } from 'src/workspace/workspace.service';
 import { InitNewWorkspaceDto } from './dto/init-new-workspace.dto';
-import { RoleId } from 'src/role/role.type';
 
 @Injectable()
 export class InitService {
@@ -17,6 +18,7 @@ export class InitService {
     private warehouseService: WarehouseService,
     private groupCashService: GroupCashService,
     private userService: UserService,
+    private workspaceService: WorkspaceService,
     private databaseService: DatabaseService,
   ) {
     const assetTypeServiceInit = this.assetTypeService;
@@ -26,13 +28,13 @@ export class InitService {
     const userServiceInit = this.userService;
 
     async function init() {
-      await assetTypeServiceInit.createInit();
+      // await assetTypeServiceInit.createInit();
 
       await roleServiceInit.createInit();
 
-      await warehouseServiceInit.createInit();
+      // await warehouseServiceInit.createInit();
 
-      await groupCashServiceInit.createInit();
+      // await groupCashServiceInit.createInit();
 
       await groupCashServiceInit.convertGroupCashContract();
 
@@ -69,5 +71,9 @@ export class InitService {
     );
 
     return newWorkspace;
+  }
+
+  async InitWorkspace100tyAndUpdate() {
+    return await this.workspaceService.createInitAndUpdate();
   }
 }

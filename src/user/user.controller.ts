@@ -94,7 +94,7 @@ export class UserController {
       entity: new User(),
       conditions: {
         levelRole: true,
-        createdBy: true
+        createdBy: true,
       },
     },
   )
@@ -132,7 +132,7 @@ export class UserController {
       entity: new User(),
       conditions: {
         levelRole: true,
-        createdBy: true
+        createdBy: true,
       },
     },
   )
@@ -141,7 +141,7 @@ export class UserController {
     try {
       const { page, pageSize, search } = req.body as UserQuery;
 
-      const me = req?.user as UserResponseDto
+      const me = req?.user as UserResponseDto;
 
       const searchType = parseInt((search as string) ?? '');
 
@@ -192,7 +192,7 @@ export class UserController {
       entity: new User(),
       conditions: {
         levelRole: true,
-        createdBy: true
+        createdBy: true,
       },
     },
   )
@@ -267,7 +267,7 @@ export class UserController {
       entity: new User(),
       conditions: {
         levelRole: true,
-        createdBy: true
+        createdBy: true,
       },
     },
   )

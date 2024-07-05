@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsOptional, IsString } from 'class-validator';
+import { BaseDto } from 'src/common/dto/base.dto';
 
-export class PayMoneyDto {
+export class PayMoneyDto extends BaseDto {
   @ApiProperty()
   @IsNumber()
   @IsOptional()

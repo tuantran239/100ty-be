@@ -148,6 +148,8 @@ export const TransactionHistoryRepository: Pick<
       moneyType: SUB_TYPE.includes(type)
         ? TransactionHistoryMoneyType.SUB
         : TransactionHistoryMoneyType.ADD,
+      workspaceId: pawn?.workspaceId ?? icloud?.workspaceId,
+      storeId: pawn?.storeId ?? icloud?.storeId,
     });
   },
 

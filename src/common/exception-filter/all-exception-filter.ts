@@ -11,10 +11,7 @@ import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  constructor(
-    private readonly httpAdapterHost: HttpAdapterHost,
-    private i18n: I18nCustomService,
-  ) {}
+  constructor(private readonly httpAdapterHost: HttpAdapterHost) {}
 
   catch(exception: any, host: ArgumentsHost): void {
     const { httpAdapter } = this.httpAdapterHost;
@@ -30,8 +27,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       data: null,
       message: 'error',
       error:
-        exception?.response?.message ??
-        this.i18n.getMessage('errors.common.internal_server'),
+        exception?.response?.message ?? 'Internal server error',
       statusCode: httpStatus,
     };
 

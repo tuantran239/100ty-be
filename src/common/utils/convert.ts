@@ -7,6 +7,12 @@ export const convertUrlToSubject = (url: string) => {
 
   subject = subject.split('-').join('_');
 
+  if (subject === 'users') {
+    return 'user';
+  } else if (subject === 'customers') {
+    return 'customer';
+  }
+
   return subject;
 };
 

@@ -79,7 +79,7 @@ export class BatHoService extends BaseService<
             { message: 'Không tìm thấy khách hàng.' },
           );
 
-          payload.customer = findCustomer;
+          payload.customer = { ...findCustomer, storeId: payload.storeId };
         } else {
           const newCustomer = await customerRepository.createCustomer({
             ...payload.customer,
@@ -659,9 +659,14 @@ export class BatHoService extends BaseService<
       null,
     );
 
+    let total = 0;
+    let updated = 0;
+
     const batHos = await this.list({
       where: { debitStatus: Not(DebitStatus.COMPLETED) },
     });
+
+    total = batHos.length;
 
     Promise.allSettled(
       batHos.map(async (batHo) => {
@@ -669,7 +674,15 @@ export class BatHoService extends BaseService<
         await this.contractService.updateBadDebitStatusCustomer(
           batHo.customerId,
         );
+        updated++;
       }),
+    );
+
+    this.logger.log(
+      {
+        customerMessage: `Icloud updated: ${updated}/${total}`,
+      },
+      null,
     );
   }
 }

@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ServiceFee } from 'src/bat-ho/bat-ho.type';
+import { BaseDto } from 'src/common/dto/base.dto';
 
-export class SettlementPawnDto {
+export class SettlementPawnDto extends BaseDto {
   @ApiProperty()
   @IsNumber()
   @IsNotEmpty()

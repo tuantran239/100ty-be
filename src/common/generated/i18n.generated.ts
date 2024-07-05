@@ -16,6 +16,7 @@ export type I18nTranslations = {
             "access_denied_permission": string;
             "method_not_allowed": string;
             "internal_server": string;
+            "status_off": string;
         };
     };
     "args": {

@@ -34,6 +34,7 @@ import { PaymentHistoryService } from './payment-history.service';
 import { PaymentHistoryType } from './payment-history.type';
 import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { PaymentHistory } from './payment-history.entity';
+import { RolesGuard } from 'src/common/guard/roles.guard';
 
 const ENTITY_LOG = 'PaymentHistory';
 
@@ -65,7 +66,7 @@ export class PaymentHistoryController {
       }
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(PaymentHistoryRouter.RETRIEVE)
   async getCustomer(@Res() res: Response, @Req() req: Request) {
     try {
@@ -115,7 +116,7 @@ export class PaymentHistoryController {
       }
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(PaymentHistoryRouter.LIST)
   async listCustomer(@Res() res: Response, @Req() req: Request) {
     try {
@@ -172,7 +173,7 @@ export class PaymentHistoryController {
       }
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(PaymentHistoryRouter.UPDATE)
   async payLoanMoney(
     @Body(new BodyValidationPipe()) payload: PayMoneyDto,
@@ -199,6 +200,7 @@ export class PaymentHistoryController {
         agent: { agent: req.get('user-agent') },
         data: { ...paymentHistory },
         payload: { ...payload },
+        workspaceId: payload.workspaceId
       });
 
       const responseData: ResponseData = {
@@ -218,7 +220,7 @@ export class PaymentHistoryController {
     }
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post('/check-total')
   async checkTotal(@Res() res: Response) {
     try {
@@ -260,7 +262,7 @@ export class PaymentHistoryController {
       }
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(PaymentHistoryRouter.LIST_FINISH_TODAY)
   async listPaymentHistoryFinish(@Res() res: Response, @Req() req) {
     try {
@@ -372,7 +374,7 @@ export class PaymentHistoryController {
       }
     },
   )
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(PaymentHistoryRouter.CONVERT_TYPE)
   async convertType(@Res() res: Response) {
     try {

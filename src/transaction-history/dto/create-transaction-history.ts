@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { BaseStoreCreateDto } from 'src/common/dto/base-store-create.dto';
 
-export class CreateTransactionHistoryDto {
+export class CreateTransactionHistoryDto extends BaseStoreCreateDto {
   @ApiProperty()
   @IsString()
   @IsOptional()

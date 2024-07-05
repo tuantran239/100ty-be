@@ -1,9 +1,11 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import IConfig, { JWTConfig } from 'src/common/config/config.interface';
 import { UserService } from 'src/user/user.service';
+import { WorkspaceService } from 'src/workspace/workspace.service';
+import { ActiveStatus } from 'src/common/types/status';
 
 import 'dotenv/config';
 
@@ -12,6 +14,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly configService: ConfigService<IConfig>,
     private userService: UserService,
+    private workspaceService: WorkspaceService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -27,11 +30,38 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user) {
-      throw new InternalServerErrorException(
+      throw new NotFoundException(
         this.userService.repository.i18n.getMessage('errors.common.not_found', {
           entity:
             this.userService.repository.i18n.getMessage('args.entity.user'),
         }),
+      );
+    }
+
+    const workspace = await this.workspaceService.repository.findOne({
+      where: { id: user.workspaceId ?? '' },
+    });
+
+    if (!workspace) {
+      throw new NotFoundException(
+        this.userService.repository.i18n.getMessage('errors.common.not_found', {
+          entity: this.userService.repository.i18n.getMessage(
+            'args.entity.workspace',
+          ),
+        }),
+      );
+    }
+
+    if (workspace.status === ActiveStatus.OFF) {
+      throw new NotFoundException(
+        this.userService.repository.i18n.getMessage(
+          'errors.common.status_off',
+          {
+            entity: this.userService.repository.i18n.getMessage(
+              'args.entity.workspace',
+            ),
+          },
+        ),
       );
     }
 

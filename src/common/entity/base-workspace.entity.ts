@@ -4,9 +4,9 @@ import { Workspace } from 'src/workspace/workspace.entity';
 
 export class BaseWorkspaceEntity extends SoftDeletableEntity {
   @Column()
-  workspaceId?: string;
+  workspaceId: string;
 
   @OneToOne(() => Workspace)
   @JoinColumn()
-  workspace?: Workspace;
+  workspace: Workspace;
 }

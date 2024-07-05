@@ -27,7 +27,7 @@ import { TransactionHistoryRepository } from 'src/transaction-history/transactio
 import { UserRepository } from 'src/user/user.repository';
 import { Warehouse } from 'src/warehouse/warehouse.entity';
 import { WarehouseRepository } from 'src/warehouse/warehouse.repository';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { DeleteDataDto } from './dto/delete-data.dto';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { StoreRepository } from 'src/store/store.repository';
@@ -133,7 +133,7 @@ export class DatabaseService {
   }
 
   async runTransaction(
-    callback: (repositories: DataSourceRepository) => Promise<any>,
+    callback: (repositories: DataSourceRepository, queryRunner: QueryRunner) => Promise<any>,
   ) {
     const queryRunner = await this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -193,7 +193,7 @@ export class DatabaseService {
     };
 
     try {
-      const result = await callback(repositories);
+      const result = await callback(repositories, queryRunner);
       await queryRunner.commitTransaction();
       return result;
     } catch (error) {

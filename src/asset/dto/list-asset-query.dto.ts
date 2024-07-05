@@ -1,6 +1,6 @@
-export class ListAssetQueryDto {
+import { BaseStoreQueryDto } from "src/common/dto/base-store-query.dto";
+
+export class ListAssetQueryDto extends BaseStoreQueryDto {
   search?: string;
-  page?: number;
-  pageSize?: number;
   status?: string;
 }

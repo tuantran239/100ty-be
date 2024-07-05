@@ -69,6 +69,8 @@ const createCashContractPayload = (
     amount: contract.amount,
     createAt: convertPostgresDate(contract.date),
     contractId: contract.contractId,
+    workspaceId: user.workspaceId,
+    storeId: contract.storeId,
   };
 
   if (contract.contractType === ContractType.BAT_HO) {
@@ -262,6 +264,7 @@ export const CashCustomRepository: Pick<CashRepository, any> = {
         : formatDate(icloud?.loanDate),
       amount: data.amount,
       contractId: pawn?.contractId ?? icloud?.contractId,
+      storeId: pawn?.storeId ?? icloud?.storeId,
     };
 
     const payload = createCashContractPayload(

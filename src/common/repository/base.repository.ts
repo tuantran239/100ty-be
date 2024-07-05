@@ -8,6 +8,7 @@ import { RoleId } from 'src/role/role.type';
 import { UserResponseDto } from 'src/user/dto/user-response.dto';
 import { User } from 'src/user/user.entity';
 import {
+  EntityTarget,
   FindManyOptions,
   FindOneOptions,
   FindOptionsWhere,
@@ -18,10 +19,9 @@ import { BaseUpdateDto } from '../dto/base-update.dto';
 import { BaseStoreEntity } from '../entity/base-store.entity';
 import { BaseWorkspaceEntity } from '../entity/base-workspace.entity';
 import { checkEnumTypeValid } from '../utils/validate';
-import { BaseDto } from '../dto/base.dto';
 
 export interface CreateAndSaveCheckValid<E> {
-  type: 'unique' | 'enum_type' | 'not_found';
+  type: 'unique' | 'enum_type' | 'not_found' | 'status';
   message: string;
   options:
     | FindOneOptions<E>
@@ -51,7 +51,8 @@ export abstract class BaseRepository<
     protected repository: Repository<E>,
     private relations: string[],
     public i18n: I18nCustomService,
-    public entity: E,
+    public entityTarget: EntityTarget<E>,
+    public entity: string,
   ) {
     super(repository.target, repository.manager, repository.queryRunner);
   }
@@ -268,11 +269,24 @@ export abstract class BaseRepository<
             optionsNotFound,
           );
         }
+
+        if (valid.type === 'status') {
+          await this.findOrThrowError(
+            {
+              message: valid.message,
+              checkExist: true,
+            },
+            { ...valid.options } as FindOneOptions<E>,
+          );
+        }
       }
     }
   }
 
-  async checkValidWithAction(action: 'create' | 'update', payload: C | U) {
+  async checkValidWithAction(
+    action: 'create' | 'update',
+    payload: C | U | Record<string, any>,
+  ) {
     if (action === 'create') {
       await this.checkValidMethod(this.setCheckValid(payload).createAndSave);
     } else if (action === 'update') {
@@ -284,7 +298,7 @@ export abstract class BaseRepository<
 
   abstract mapPayload(data: MapPayload<C, U>): Promise<any>;
 
-  abstract setCheckValid(payload: C | U): CheckValid<E>;
+  abstract setCheckValid(payload: C | U | Record<string, any>): CheckValid<E>;
 
   abstract setQueryDefault(
     payload?: C | U | Record<string, any>,

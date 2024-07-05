@@ -26,7 +26,7 @@ export class StoreRepository extends BaseRepository<
     protected repository: Repository<Store>,
     public i18n: I18nCustomService,
   ) {
-    super(repository, STORE_RELATIONS, i18n, new Store());
+    super(repository, STORE_RELATIONS, i18n, repository.target, 'store');
   }
 
   setCheckValid(payload: CreateStoreDto | UpdateStoreDto): CheckValid<Store> {
@@ -93,7 +93,7 @@ export class StoreRepository extends BaseRepository<
     payload?: Record<string, any> | CreateStoreDto | UpdateStoreDto,
   ): FindOptionsWhere<Store> {
     return {
-      workspaceId: payload.workspaceId,
+      workspaceId: payload?.workspaceId,
     };
   }
 

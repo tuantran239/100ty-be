@@ -7,9 +7,9 @@ import {
 } from 'class-validator';
 
 import { ApiProperty } from '@nestjs/swagger';
-import { BaseCreateDto } from 'src/common/dto/base-create.dto';
+import { BaseStoreCreateDto } from 'src/common/dto/base-store-create.dto';
 
-export class CreateUserDto extends BaseCreateDto {
+export class CreateUserDto extends BaseStoreCreateDto {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -41,9 +41,4 @@ export class CreateUserDto extends BaseCreateDto {
   @IsString()
   @IsOptional()
   role_id?: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsOptional()
-  storeId?: string;
 }

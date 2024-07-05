@@ -1,7 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { BaseDto } from 'src/common/dto/base.dto';
 
-export class ExtendedPeriodConfirmDto {
+export class ExtendedPeriodConfirmDto extends BaseDto {
   @ApiProperty()
   @IsNumber()
   @IsNotEmpty()

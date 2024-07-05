@@ -26,7 +26,7 @@ export class WorkspaceRepository extends BaseRepository<
     protected repository: Repository<Workspace>,
     public i18n: I18nCustomService,
   ) {
-    super(repository, STORE_RELATIONS, i18n, new Workspace());
+    super(repository, STORE_RELATIONS, i18n, repository.target, 'workspace');
   }
 
   setCheckValid(

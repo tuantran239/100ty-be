@@ -4,15 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { validate } from 'class-validator';
+import { Request } from 'express';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
+import { InitRoleData } from 'src/role/role.data';
+import { RoleId } from 'src/role/role.type';
 import { UserResponseDto } from 'src/user/dto/user-response.dto';
+import { User } from 'src/user/user.entity';
+import { DataSource } from 'typeorm';
 import { ICheckRole } from '../decorator/roles.decorator';
 import { convertConstraintsToErrorMessage } from './convert';
-import { DataSource } from 'typeorm';
-import { Request } from 'express';
-import { User } from 'src/user/user.entity';
-import { RoleId } from 'src/role/role.type';
-import { InitRoleData } from 'src/role/role.data';
 
 export const checkEnumTypeValid = (
   enumType: Record<string, string>,
@@ -60,6 +60,7 @@ export const checkRoleValid = async (
   requiredRoles: ICheckRole[],
   i18n: I18nCustomService,
   dataSource: DataSource,
+  entity: string,
 ) => {
   if (!requiredRoles) {
     return true;
@@ -69,7 +70,7 @@ export const checkRoleValid = async (
 
   const id = req.params.id as string;
 
-  const requiredRoleMe = requiredRoles.find((role) => role.id === me.role.id);
+  const requiredRoleMe = requiredRoles.find((role) => role.id === me?.role?.id);
 
   if (!requiredRoleMe) {
     throw new ForbiddenException(
@@ -98,15 +99,18 @@ export const checkRoleValid = async (
   }
 
   if (id && requiredRoleMe.conditions) {
-    const entityRecord = (await dataSource.manager.findOneBy(
-      requiredRoleMe.entity,
-      {
-        id,
-      },
-    )) as any;
+    const entityRecord = (
+      await dataSource.manager.query(
+        `SELECT * from public.${entity} WHERE id = '${id}'`,
+      )
+    )[0] as any;
 
     if (!entityRecord) {
-      throw new NotFoundException(i18n.getMessage('errors.common.not_found'));
+      throw new NotFoundException(
+        i18n.getMessage('errors.common.not_found', {
+          entity: 'record',
+        }),
+      );
     }
 
     const userId = entityRecord.userId ?? entityRecord.managerId;

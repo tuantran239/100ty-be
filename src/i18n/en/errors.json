@@ -8,6 +8,7 @@
     "access_denied": "Access denied",
     "access_denied_permission": "Access denied, you not enough permission",
     "method_not_allowed": "System not allow this method",
-    "internal_server": "Internal server error"
+    "internal_server": "Internal server error",
+    "status_off": "{entity} stopped active"
   }
 }

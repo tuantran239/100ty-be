@@ -27,10 +27,12 @@ export class UserRepository extends BaseRepository<
     protected repository: Repository<User>,
     public i18n: I18nCustomService,
   ) {
-    super(repository, USER_RELATIONS, i18n, new User());
+    super(repository, USER_RELATIONS, i18n, repository.target, 'user');
   }
 
   setCheckValid(payload: CreateUserDto | UpdateUserDto): CheckValid<User> {
+    console.log(payload);
+
     const phoneNumberUnique: CreateAndSaveCheckValid<User> = {
       type: 'unique',
       message: this.i18n.getMessage('errors.common.existed', {
@@ -44,7 +46,6 @@ export class UserRepository extends BaseRepository<
         },
       },
       field: 'phoneNumber',
-      payload,
     };
 
     const usernameUnique: CreateAndSaveCheckValid<User> = {
@@ -60,7 +61,6 @@ export class UserRepository extends BaseRepository<
         },
       },
       field: 'username',
-      payload,
     };
 
     const roleEnumType: CreateAndSaveCheckValid<User> = {
@@ -114,7 +114,7 @@ export class UserRepository extends BaseRepository<
     payload?: Record<string, any> | CreateUserDto | UpdateUserDto,
   ): FindOptionsWhere<User> {
     return {
-      workspaceId: payload.workspaceId,
+      workspaceId: payload?.workspaceId,
     };
   }
 

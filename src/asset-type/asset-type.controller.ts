@@ -17,7 +17,7 @@ import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
 import { GroupCashQuery } from 'src/common/types/query';
-import { RoleId, RoleName } from 'src/role/role.type';
+import { RoleId } from 'src/role/role.type';
 import { AssetTypeRouter } from './asset-type.router';
 import { AssetTypeService } from './asset-type.service';
 import { CreateAssetTypeDto } from './dto/create-asset-type.dto';

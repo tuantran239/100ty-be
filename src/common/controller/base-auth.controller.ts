@@ -67,7 +67,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.create, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.create,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       await checkBodyValid(this.dto.CreateDto, payload, this._i18n);
 
@@ -92,7 +98,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.update, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.update,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       await checkBodyValid(this.dto.UpdateDto, payload, this._i18n);
 
@@ -119,7 +131,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.list, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.list,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       await checkBodyValid(this.dto.QueryDto, req.query as Q, this._i18n);
 
@@ -146,7 +164,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.retrieve, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.retrieve,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       const { id } = req.params;
 
@@ -173,7 +197,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.remove, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.remove,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       const { id } = req.params;
 
@@ -198,7 +228,13 @@ export class BaseAuthController<
     try {
       const me = req.user as UserResponseDto;
 
-      checkRoleValid(req, this.roles.delete, this._i18n, this.dataSource);
+      checkRoleValid(
+        req,
+        this.roles.delete,
+        this._i18n,
+        this.dataSource,
+        this.repository.entity,
+      );
 
       const { id } = req.params;
 

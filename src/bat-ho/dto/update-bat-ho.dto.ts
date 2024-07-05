@@ -1,8 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNumber, IsOptional, IsString } from 'class-validator';
 import { ServiceFee } from 'src/bat-ho/bat-ho.type';
+import { BaseStoreUpdateDto } from 'src/common/dto/base-store-update.dto';
 
-export class UpdateBatHoDto {
+export class UpdateBatHoDto extends BaseStoreUpdateDto {
   @ApiProperty()
   @IsString()
   @IsOptional()

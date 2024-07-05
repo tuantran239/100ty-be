@@ -38,7 +38,8 @@ export interface ContractCash {
   id: string;
   date: string;
   amount: number;
-  contractId: string;
+  contractId: string; 
+  storeId: string;
 }
 
 export enum CashFilterType {

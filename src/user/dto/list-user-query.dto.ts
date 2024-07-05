@@ -1,3 +1,3 @@
-import { BaseQueryDto } from 'src/common/dto/base-query.dto';
+import { BaseStoreQueryDto } from 'src/common/dto/base-store-query.dto';
 
-export class ListUserQueryDto extends BaseQueryDto {}
+export class ListUserQueryDto extends BaseStoreQueryDto {}

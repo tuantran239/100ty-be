@@ -6,8 +6,9 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { BaseStoreCreateDto } from 'src/common/dto/base-store-create.dto';
 
-export class CreatePaymentHistoryDto {
+export class CreatePaymentHistoryDto extends BaseStoreCreateDto {
   @ApiProperty()
   @IsNumber()
   @IsNotEmpty()

@@ -77,6 +77,7 @@ export class CashController {
         agent: { agent: req.get('user-agent') },
         data: { ...cash },
         payload: { ...payload },
+        workspaceId: payload.workspaceId
       });
 
       const responseData: ResponseData = {
@@ -131,6 +132,7 @@ export class CashController {
         agent: { agent: req.get('user-agent') },
         data: { ...cash },
         payload: { ...payload },
+        workspaceId: payload.workspaceId
       });
 
       const responseData: ResponseData = {
@@ -257,6 +259,7 @@ export class CashController {
         agent: { agent: req.get('user-agent') },
         data: { ...cash },
         payload: { id },
+        workspaceId: me.workspaceId
       });
 
       const responseData: ResponseData = {

@@ -96,6 +96,8 @@ export const AssetCustomRepository: Pick<AssetRepository, any> = {
       pawnId: payload.pawn.id,
       customerId: payload.pawn.customerId,
       warehouseId: payload.warehouseId,
+      workspaceId: payload.pawn.workspaceId,
+      storeId: payload.pawn.storeId,
     });
 
     return newAsset;
