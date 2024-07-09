@@ -1,6 +1,5 @@
 import { Controller } from '@nestjs/common';
 import { StoreRouter } from './store.router';
-import { BaseController } from 'src/common/controller/base.controller';
 import { Store } from './store.entity';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
@@ -12,6 +11,7 @@ import { DataSource } from 'typeorm';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { BaseAuthController } from 'src/common/controller/base-auth.controller';
 import { RoleId } from 'src/role/role.type';
+import { DatabaseService } from 'src/database/database.service';
 
 @Controller(StoreRouter.ROOT)
 export class StoreController extends BaseAuthController<
@@ -28,11 +28,13 @@ export class StoreController extends BaseAuthController<
     private storeRepository: StoreRepository,
     protected dataSource: DataSource,
     private i18n: I18nCustomService,
+    protected databaseService: DatabaseService
   ) {
     super(
       storeService,
       storeRepository,
       dataSource,
+      databaseService,
       i18n,
       {
         CreateDto: new CreateStoreDto(),

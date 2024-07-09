@@ -12,7 +12,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { ApiTags } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import IConfig, { JWTConfig } from 'src/common/config/config.interface';
 import { LogActionType } from 'src/common/constant/log';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
@@ -44,7 +45,7 @@ export class AuthController {
   async login(
     @Body(new BodyValidationPipe()) payload: LoginDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       this.logger.log(

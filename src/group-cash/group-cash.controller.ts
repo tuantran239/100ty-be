@@ -10,7 +10,8 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
@@ -35,18 +36,16 @@ export class GroupCashController {
     private databaseService: DatabaseService,
   ) {}
 
-  @CheckRoles(
-    {
-      id: RoleId.SUPER_ADMIN,
-      entity: new GroupCash(),
-    }
-  )
+  @CheckRoles({
+    id: RoleId.SUPER_ADMIN,
+    entity: new GroupCash(),
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(GroupCashRouter.CREATE)
   async create(
     @Body(new BodyValidationPipe()) payload: CreateGroupCashDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const me = req?.user as User;
@@ -70,18 +69,16 @@ export class GroupCashController {
     }
   }
 
-  @CheckRoles(
-    {
-      id: RoleId.SUPER_ADMIN,
-      entity: new GroupCash(),
-    }
-  )
+  @CheckRoles({
+    id: RoleId.SUPER_ADMIN,
+    entity: new GroupCash(),
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(GroupCashRouter.UPDATE)
   async update(
     @Body(new BodyValidationPipe()) payload: UpdateGroupCashDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const { id } = req.params;
@@ -101,15 +98,13 @@ export class GroupCashController {
     }
   }
 
-  @CheckRoles(
-    {
-      id: RoleId.SUPER_ADMIN,
-      entity: new GroupCash(),
-    }
-  )
+  @CheckRoles({
+    id: RoleId.SUPER_ADMIN,
+    entity: new GroupCash(),
+  })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(GroupCashRouter.DELETE)
-  async delete(@Res() res: Response, @Req() req: Request) {
+  async delete(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { id } = req.params;
 
@@ -136,23 +131,21 @@ export class GroupCashController {
     {
       id: RoleId.ADMIN,
       entity: new GroupCash(),
-    }
+    },
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(GroupCashRouter.LIST)
-  async list(@Res() res: Response, @Req() req: Request) {
+  async list(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { userRepository } = this.databaseService.getRepositories();
 
-      const me = req?.user as User;
-
       const { page, pageSize, status } = req.body as GroupCashQuery;
 
-      const user = userRepository.filterRole(me);
+      const defaultQuery = userRepository.filterQuery(req.defaultQuery);
 
       const query: FindOptionsWhere<GroupCash> = {
         type: Not(Equal(GroupCashType.CONTRACT)),
-        user,
+        ...defaultQuery,
       };
 
       const where = [];
@@ -193,11 +186,11 @@ export class GroupCashController {
     {
       id: RoleId.ADMIN,
       entity: new GroupCash(),
-    }
+    },
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(GroupCashRouter.RETRIEVE)
-  async getById(@Res() res: Response, @Req() req: Request) {
+  async getById(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { id } = req.params;
 

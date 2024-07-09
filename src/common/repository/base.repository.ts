@@ -5,8 +5,6 @@ import {
 } from '@nestjs/common';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { RoleId } from 'src/role/role.type';
-import { UserResponseDto } from 'src/user/dto/user-response.dto';
-import { User } from 'src/user/user.entity';
 import {
   EntityTarget,
   FindManyOptions,
@@ -15,13 +13,17 @@ import {
   Repository,
 } from 'typeorm';
 import { BaseCreateDto } from '../dto/base-create.dto';
+import { BaseStoreUpdateDto } from '../dto/base-store-update.dto';
 import { BaseUpdateDto } from '../dto/base-update.dto';
 import { BaseStoreEntity } from '../entity/base-store.entity';
 import { BaseWorkspaceEntity } from '../entity/base-workspace.entity';
 import { checkEnumTypeValid } from '../utils/validate';
+import { DefaultQuery } from '../types/http';
+
+export type CheckValidType = 'unique' | 'enum_type' | 'not_found' | 'status';
 
 export interface CreateAndSaveCheckValid<E> {
-  type: 'unique' | 'enum_type' | 'not_found' | 'status';
+  type: CheckValidType;
   message: string;
   options:
     | FindOneOptions<E>
@@ -47,6 +49,8 @@ export abstract class BaseRepository<
   U extends Record<string, any> | BaseUpdateDto,
   R,
 > extends Repository<E> {
+  // public checkValidValues: CreateAndSaveCheckValid<E>[] = [];
+
   constructor(
     protected repository: Repository<E>,
     private relations: string[],
@@ -123,10 +127,12 @@ export abstract class BaseRepository<
   }
 
   async deleteSoft(options?: FindOneOptions<E>): Promise<E> {
+    const entityStr = `args.entity.${this.entity}`;
+
     const record = await this.findOrThrowError(
       {
         message: this.i18n.getMessage('errors.common.not_found', {
-          entity: 'args.entity.user',
+          entity: entityStr,
         }),
         checkExist: false,
       },
@@ -141,10 +147,12 @@ export abstract class BaseRepository<
   }
 
   async deleteData(options?: FindOneOptions<E>): Promise<E> {
+    const entityStr = `args.entity.${this.entity}`;
+
     const record = await this.findOrThrowError(
       {
         message: this.i18n.getMessage('errors.common.not_found', {
-          entity: 'args.entity.user',
+          entity: entityStr,
         }),
         checkExist: false,
       },
@@ -180,18 +188,29 @@ export abstract class BaseRepository<
     return record;
   }
 
-  filterRole(me: UserResponseDto | any) {
+  filterQuery<E>(
+    query: DefaultQuery,
+    options?: {
+      createdBy?: boolean;
+    },
+  ) {
+    const { userId, workspaceId, storeId, me } = query;
+
     const role = me.role;
 
-    let user: FindOptionsWhere<User>[] | undefined = undefined;
+    let defaultQuery: any = { workspaceId };
 
-    if (role.id === RoleId.ADMIN) {
-      user = [{ id: me.id }, { managerId: me.id }];
-    } else if (role.id === RoleId.USER) {
-      user = [{ id: me.id }];
+    if (role.id === RoleId.ADMIN || role.id === RoleId.USER) {
+      defaultQuery = { ...defaultQuery, storeId };
     }
 
-    return user;
+    if (options) {
+      if (options.createdBy && role.id === RoleId.USER) {
+        defaultQuery = { ...defaultQuery, storeId, user: { id: userId } };
+      }
+    }
+
+    return defaultQuery;
   }
 
   convertDefaultOptions(
@@ -292,6 +311,40 @@ export abstract class BaseRepository<
     } else if (action === 'update') {
       await this.checkValidMethod(this.setCheckValid(payload).updateAndSave);
     }
+  }
+
+  async findAndCheckValid(payload: {
+    type: CheckValidType;
+    field: keyof E;
+    data: Record<string, any>;
+  }) {
+    const checkValid = this.setCheckValid(payload.data);
+
+    const checkValidValues: CreateAndSaveCheckValid<E>[] = Object.keys(
+      checkValid,
+    ).reduce((values, key) => {
+      const value = checkValid[key];
+      values = [...values, ...value];
+      return values;
+    }, []);
+
+    const checkValidValue = checkValidValues.find(
+      (value) => value.type === payload.type && value.field === payload.field,
+    );
+
+    if (checkValidValue) {
+      await this.checkValidMethod([{ ...checkValidValue }]);
+    } else {
+      throw new NotFoundException(
+        this.i18n.getMessage('errors.common.not_found', {
+          entity: this.i18n.getMessage('args.entity.data'),
+        }),
+      );
+    }
+
+    return (await this.repository.findOne(
+      checkValidValue.options as FindOneOptions,
+    )) as E;
   }
 
   abstract mapResponse(payload: E): R;

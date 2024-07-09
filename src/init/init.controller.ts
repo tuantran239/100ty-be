@@ -6,7 +6,8 @@ import {
   Res,
 } from '@nestjs/common';
 import { InitRouter } from './init.router';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { ResponseData } from 'src/common/types';
 import { InitService } from './init.service';
 import { InitNewWorkspaceDto } from './dto/init-new-workspace.dto';
@@ -16,7 +17,7 @@ export class InitController {
   constructor(private initService: InitService) {}
 
   @Post(InitRouter.NEW_WORKSPACE)
-  async initNewWorkspace(@Req() req: Request, @Res() res: Response) {
+  async initNewWorkspace(@Req() req: RequestCustom, @Res() res: Response) {
     try {
       const workspace = await this.initService.InitNewWorkspace(
         req.body as InitNewWorkspaceDto,
@@ -36,7 +37,7 @@ export class InitController {
   }
 
   @Post(InitRouter.WORKSPACE_100TY_UPDATE)
-  async initWorkspace100tyAndUpdate(@Req() req: Request, @Res() res: Response) {
+  async initWorkspace100tyAndUpdate(@Req() req: RequestCustom, @Res() res: Response) {
     try {
       const data = await this.initService.InitWorkspace100tyAndUpdate();
 

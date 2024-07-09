@@ -9,12 +9,12 @@ import { BatHoRepository } from 'src/bat-ho/bat-ho.repository';
 import { Cash } from 'src/cash/cash.entity';
 import { CashRepository } from 'src/cash/cash.repository';
 import { BaseRepository } from 'src/common/repository/base.repository';
-import { Customer } from 'src/customer/customer.entity';
 import { CustomerRepository } from 'src/customer/customer.repository';
 import { Device } from 'src/device/device.entity';
 import { ExtendedPeriodHistory } from 'src/extended-period-history/extended-period-history.entity';
 import { GroupCash } from 'src/group-cash/entity/group-cash.entity';
 import { HostServer } from 'src/host-server/host-server.entity';
+import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { LogAction } from 'src/log-action/log-action.entity';
 import { Pawn } from 'src/pawn/pawn.entity';
 import { PawnRepository } from 'src/pawn/pawn.repository';
@@ -22,16 +22,16 @@ import { PaymentHistory } from 'src/payment-history/payment-history.entity';
 import { PaymentHistoryRepository } from 'src/payment-history/payment-history.repository';
 import { Role } from 'src/role/entities/role.entity';
 import { UserRole } from 'src/role/entities/user-role.entity';
+import { StoreRepository } from 'src/store/store.repository';
 import { TransactionHistory } from 'src/transaction-history/transaction-history.entity';
 import { TransactionHistoryRepository } from 'src/transaction-history/transaction-history.repository';
 import { UserRepository } from 'src/user/user.repository';
 import { Warehouse } from 'src/warehouse/warehouse.entity';
 import { WarehouseRepository } from 'src/warehouse/warehouse.repository';
+import { WorkspaceRepository } from 'src/workspace/workspace.repository';
 import { DataSource, QueryRunner, Repository } from 'typeorm';
 import { DeleteDataDto } from './dto/delete-data.dto';
-import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
-import { StoreRepository } from 'src/store/store.repository';
-import { WorkspaceRepository } from 'src/workspace/workspace.repository';
+import { QueryDatabase } from './query';
 
 export interface DataSourceRepository {
   batHoRepository: BatHoRepository;
@@ -62,7 +62,6 @@ export class DatabaseService {
 
   constructor(
     private dataSource: DataSource,
-    @InjectRepository(Customer)
     private readonly customerRepository: CustomerRepository,
     @InjectRepository(BatHo)
     private readonly batHoRepository: BatHoRepository,
@@ -82,6 +81,7 @@ export class DatabaseService {
     private readonly storeRepository: StoreRepository,
     private readonly workspaceRepository: WorkspaceRepository,
     private readonly i18n: I18nCustomService,
+    public query: QueryDatabase,
   ) {
     this.repositories = {
       batHoRepository: this.batHoRepository,
@@ -115,25 +115,29 @@ export class DatabaseService {
   ) {
     return {
       createAndSave: customRepository.createAndSave,
+      convertDefaultOptions: customRepository.convertDefaultOptions,
       updateAndSave: customRepository.updateAndSave,
       getRelations: customRepository.getRelations,
       deleteSoft: customRepository.deleteSoft,
       deleteData: customRepository.deleteData,
-      findOrThrowError: customRepository.findOrThrowError,
       checkValidMethod: customRepository.checkValidMethod,
       checkValidWithAction: customRepository.checkValidWithAction,
       mapResponse: customRepository.mapResponse,
       mapPayload: customRepository.mapPayload,
       setCheckValid: customRepository.setCheckValid,
-      filterRole: customRepository.filterRole,
-      convertDefaultOptions: customRepository.convertDefaultOptions,
+      filterQuery: customRepository.filterQuery,
+      findAndCheckValid: customRepository.findAndCheckValid,
+      findOrThrowError: customRepository.findOrThrowError,
       setQueryDefault: customRepository.setQueryDefault,
       i18n: customRepository.i18n,
     } as CR;
   }
 
   async runTransaction(
-    callback: (repositories: DataSourceRepository, queryRunner: QueryRunner) => Promise<any>,
+    callback: (
+      repositories: DataSourceRepository,
+      queryRunner: QueryRunner,
+    ) => Promise<any>,
   ) {
     const queryRunner = await this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -146,9 +150,6 @@ export class DatabaseService {
       cashRepository: queryRunner.manager
         .getRepository(Cash)
         .extend(this.cashRepository),
-      customerRepository: queryRunner.manager
-        .getRepository(Customer)
-        .extend(this.customerRepository),
       deviceRepository: queryRunner.manager.getRepository(Device),
       hostServerRepository: queryRunner.manager.getRepository(HostServer),
       roleRepository: queryRunner.manager.getRepository(Role),
@@ -190,6 +191,11 @@ export class DatabaseService {
         .extend({
           ...this.getExtendRepository(this.workspaceRepository),
         }) as WorkspaceRepository,
+      customerRepository: queryRunner.manager
+        .getRepository(this.customerRepository.target)
+        .extend({
+          ...this.getExtendRepository(this.customerRepository),
+        }) as CustomerRepository,
     };
 
     try {

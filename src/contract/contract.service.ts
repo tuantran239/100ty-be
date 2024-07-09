@@ -681,7 +681,7 @@ export class ContractService {
     const { customerRepository } = this.databaseService.getRepositories();
     const { total } = await this.listBadDebitContractCustomer(customerId);
 
-    return await customerRepository.updateCustomer({
+    return await customerRepository.updateAndSave({
       id: customerId,
       debtMoney: total,
       isDebt: total > 0,

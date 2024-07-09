@@ -3,7 +3,9 @@
     "user": "Người dùng",
     "role": "Vai trò",
     "store": "Cửa hàng",
-    "workspace": "Không gian làm việc"
+    "workspace": "Không gian làm việc",
+    "customer": "Khách hàng",
+    "data": "Dữ liệu"
   },
   "field": {
     "email": "Email",
@@ -16,6 +18,7 @@
     "phone_number": "SĐT",
     "role_id": "Mã vai trò",
     "status": "Tình trạng",
-    "id": "Id"
+    "id": "Id",
+    "personal_id": "CMND/CCCD"
   }
 }

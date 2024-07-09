@@ -14,7 +14,8 @@ import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
 import { ResponseData } from 'src/common/types';
-import { RoleId, RoleName } from 'src/role/role.type';
+import { RequestCustom } from 'src/common/types/http';
+import { RoleId } from 'src/role/role.type';
 import { User } from 'src/user/user.entity';
 import { StatisticsContractQueryDto } from './dto/statistics-contract-query.dto';
 import { StatisticsProfitQueryDto } from './dto/statistics-profit-query.dto';
@@ -35,11 +36,11 @@ export class StatisticsController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(StatisticsRouter.HOME_PREVIEW)
-  async homePreview(@Res() res: Response, @Req() req) {
+  async homePreview(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const user = req?.user as User;
 
-      const data = await this.statisticsService.homePreview(user);
+      const data = await this.statisticsService.homePreview(req.defaultQuery);
 
       const responseData: ResponseData = {
         message: 'success',
@@ -64,11 +65,13 @@ export class StatisticsController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(StatisticsRouter.NEW_HOME_PREVIEW)
-  async newHomePreview(@Res() res: Response, @Req() req) {
+  async newHomePreview(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const user = req?.user as User;
 
-      const data = await this.statisticsService.statisticNewHomePreview(user);
+      const data = await this.statisticsService.statisticNewHomePreview(
+        req.defaultQuery,
+      );
 
       const responseData: ResponseData = {
         message: 'success',
@@ -96,14 +99,14 @@ export class StatisticsController {
   async statisticsProfit(
     @Body(new BodyValidationPipe()) payload: StatisticsProfitQueryDto,
     @Res() res: Response,
-    @Req() req,
+    @Req() req: RequestCustom,
   ) {
     try {
       const me = req?.user as User;
 
       const data = await this.statisticsService.statisticsProfit({
         ...payload,
-        me,
+        defaultQuery: req.defaultQuery,
       });
 
       const responseData: ResponseData = {
@@ -129,11 +132,13 @@ export class StatisticsController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(StatisticsRouter.OVERVIEW)
-  async statisticsOverview(@Res() res: Response, @Req() req) {
+  async statisticsOverview(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const me = req?.user as User;
 
-      const data = await this.statisticsService.statisticsOverview(me);
+      const data = await this.statisticsService.statisticsOverview(
+        req.defaultQuery,
+      );
 
       const responseData: ResponseData = {
         message: 'success',
@@ -161,14 +166,12 @@ export class StatisticsController {
   async statisticsExpectedReceipt(
     @Body(new BodyValidationPipe()) payload: StatisticsContractQueryDto,
     @Res() res: Response,
-    @Req() req,
+    @Req() req: RequestCustom,
   ) {
     try {
-      const me = req?.user as User;
-
       const data = await this.statisticsService.statisticsExpectedReceipt(
         payload,
-        me,
+        req.defaultQuery,
       );
 
       const responseData: ResponseData = {

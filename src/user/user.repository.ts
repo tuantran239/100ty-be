@@ -30,9 +30,9 @@ export class UserRepository extends BaseRepository<
     super(repository, USER_RELATIONS, i18n, repository.target, 'user');
   }
 
-  setCheckValid(payload: CreateUserDto | UpdateUserDto): CheckValid<User> {
-    console.log(payload);
-
+  setCheckValid(
+    payload: CreateUserDto | UpdateUserDto | Record<string, any>,
+  ): CheckValid<User> {
     const phoneNumberUnique: CreateAndSaveCheckValid<User> = {
       type: 'unique',
       message: this.i18n.getMessage('errors.common.existed', {
@@ -75,7 +75,7 @@ export class UserRepository extends BaseRepository<
       field: 'roleId',
     };
 
-    const userNotFound: CreateAndSaveCheckValid<User> = {
+    const notFound: CreateAndSaveCheckValid<User> = {
       type: 'not_found',
       message: this.i18n.getMessage('errors.common.not_found', {
         field: this.i18n.getMessage('args.field.id'),
@@ -99,7 +99,7 @@ export class UserRepository extends BaseRepository<
     const updateAndSave: CreateAndSaveCheckValid<User>[] = [
       phoneNumberUnique,
       usernameUnique,
-      userNotFound,
+      notFound,
       roleEnumType,
     ];
 

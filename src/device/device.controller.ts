@@ -11,7 +11,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
@@ -85,7 +86,7 @@ export class DeviceController {
   async updateDevice(
     @Body(new BodyValidationPipe()) payload: UpdateDeviceDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       this.logger.log(
@@ -126,7 +127,7 @@ export class DeviceController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(DeviceRouter.LIST)
-  async listDevice(@Res() res: Response, @Req() req: Request) {
+  async listDevice(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { page, pageSize } = req.body;
 
@@ -162,7 +163,7 @@ export class DeviceController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(DeviceRouter.RETRIEVE)
-  async getDevice(@Res() res: Response, @Req() req: Request) {
+  async getDevice(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -195,7 +196,7 @@ export class DeviceController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(DeviceRouter.DELETE)
-  async deleteDevice(@Res() res: Response, @Req() req: Request) {
+  async deleteDevice(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 

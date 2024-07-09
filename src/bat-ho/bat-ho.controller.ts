@@ -13,7 +13,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CashFilterType } from 'src/cash/cash.type';
 import { LogActionType } from 'src/common/constant/log';
@@ -133,7 +134,7 @@ export class BatHoController {
   async updateBatHo(
     @Body(new BodyValidationPipe()) payload: UpdateBatHoDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       this.logger.log(
@@ -188,7 +189,7 @@ export class BatHoController {
     @Req() req,
   ) {
     try {
-      const me = req.user as User;
+      const me = req.user;
 
       const listIcloudPagination = await this.batHoService.listBatHo(
         payload,
@@ -246,7 +247,7 @@ export class BatHoController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(BatHoRouter.DELETE)
-  async deleteBatHo(@Res() res: Response, @Req() req: Request) {
+  async deleteBatHo(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -290,7 +291,7 @@ export class BatHoController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(BatHoRouter.INFO)
-  async getBatHoInfo(@Res() res: Response, @Req() req: Request) {
+  async getBatHoInfo(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -421,7 +422,7 @@ export class BatHoController {
   async settlementBatHo(
     @Body(new BodyValidationPipe()) payload: SettlementBatHoDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const { id } = req.params;

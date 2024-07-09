@@ -34,6 +34,7 @@ import {
   PaymentStatusHistory,
 } from 'src/payment-history/payment-history.type';
 import { CashFilterType } from 'src/cash/cash.type';
+import { UserResponseDto } from 'src/user/dto/user-response.dto';
 
 @Injectable()
 export class BatHoService extends BaseService<
@@ -74,14 +75,15 @@ export class BatHoService extends BaseService<
         };
 
         if (customerId) {
-          const findCustomer = await customerRepository.checkCustomerExist(
-            { where: { id: customerId } },
-            { message: 'Không tìm thấy khách hàng.' },
-          );
+          const findCustomer = await customerRepository.findAndCheckValid({
+            data: { id: customerId },
+            type: 'not_found',
+            field: 'id',
+          });
 
           payload.customer = { ...findCustomer, storeId: payload.storeId };
         } else {
-          const newCustomer = await customerRepository.createCustomer({
+          const newCustomer = await customerRepository.createAndSave({
             ...payload.customer,
             userId: payload.userId,
           });
@@ -367,11 +369,19 @@ export class BatHoService extends BaseService<
     });
   }
 
-  async listBatHo(queryData: ListBatHoQueryDto, me: User) {
+  async listBatHo(queryData: ListBatHoQueryDto, me: UserResponseDto) {
     const { userRepository, batHoRepository } =
       this.databaseService.getRepositories();
 
-    const user = userRepository.filterRole(me);
+    const queryDefault = userRepository.filterQuery(
+      {
+        userId: me.id,
+        me,
+        workspaceId: queryData.workspaceId,
+        storeId: queryData.storeId,
+      },
+      { createdBy: true },
+    );
 
     const {
       search,
@@ -408,8 +418,8 @@ export class BatHoService extends BaseService<
       debitStatus: receiptToday
         ? And(Not(DebitStatus.COMPLETED), Not(DebitStatus.DELETED))
         : Not(DebitStatus.DELETED),
-      user,
       paymentHistories,
+      ...queryDefault,
     };
 
     if (

@@ -9,7 +9,8 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
@@ -66,7 +67,7 @@ export class WarehouseController {
   async update(
     @Body(new BodyValidationPipe()) payload: UpdateWareHouseDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const { id } = req.params;

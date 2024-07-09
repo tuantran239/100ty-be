@@ -11,7 +11,8 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { UserResponseDto } from 'src/user/dto/user-response.dto';
@@ -26,6 +27,7 @@ import { BaseWorkspaceEntity } from '../entity/base-workspace.entity';
 import { BaseStoreEntity } from '../entity/base-store.entity';
 import { BaseCreateDto } from '../dto/base-create.dto';
 import { BaseUpdateDto } from '../dto/base-update.dto';
+import { DatabaseService } from 'src/database/database.service';
 
 @Controller()
 export class BaseAuthController<
@@ -41,6 +43,7 @@ export class BaseAuthController<
     private readonly service: S,
     private readonly repository: CR,
     protected dataSource: DataSource,
+    protected databaseService: DatabaseService,
     private readonly _i18n: I18nCustomService,
     private readonly dto: {
       CreateDto: C;
@@ -61,7 +64,7 @@ export class BaseAuthController<
   @Post(BaseRouterUrl.CREATE)
   public async create(
     @Body() payload: C,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
     @Res() res: Response,
   ) {
     try {
@@ -71,7 +74,7 @@ export class BaseAuthController<
         req,
         this.roles.create,
         this._i18n,
-        this.dataSource,
+        this.databaseService,
         this.repository.entity,
       );
 
@@ -94,7 +97,7 @@ export class BaseAuthController<
 
   @UseGuards(JwtAuthGuard)
   @Put(BaseRouterUrl.UPDATE)
-  async update(@Body() payload: U, @Req() req: Request, @Res() res: Response) {
+  async update(@Body() payload: U, @Req() req: RequestCustom, @Res() res: Response) {
     try {
       const me = req.user as UserResponseDto;
 
@@ -102,7 +105,7 @@ export class BaseAuthController<
         req,
         this.roles.update,
         this._i18n,
-        this.dataSource,
+        this.databaseService,
         this.repository.entity,
       );
 
@@ -127,7 +130,7 @@ export class BaseAuthController<
 
   @UseGuards(JwtAuthGuard)
   @Post(BaseRouterUrl.LIST)
-  async list(@Req() req: Request, @Res() res: Response) {
+  async list(@Req() req: RequestCustom, @Res() res: Response) {
     try {
       const me = req.user as UserResponseDto;
 
@@ -135,7 +138,7 @@ export class BaseAuthController<
         req,
         this.roles.list,
         this._i18n,
-        this.dataSource,
+        this.databaseService,
         this.repository.entity,
       );
 
@@ -160,15 +163,13 @@ export class BaseAuthController<
 
   @UseGuards(JwtAuthGuard)
   @Get(BaseRouterUrl.RETRIEVE)
-  async retrieveById(@Req() req: Request, @Res() res: Response) {
+  async retrieveById(@Req() req: RequestCustom, @Res() res: Response) {
     try {
-      const me = req.user as UserResponseDto;
-
       checkRoleValid(
         req,
         this.roles.retrieve,
         this._i18n,
-        this.dataSource,
+        this.databaseService,
         this.repository.entity,
       );
 
@@ -193,15 +194,13 @@ export class BaseAuthController<
 
   @UseGuards(JwtAuthGuard)
   @Put(BaseRouterUrl.REMOVE)
-  async remove(@Req() req: Request, @Res() res: Response) {
+  async remove(@Req() req: RequestCustom, @Res() res: Response) {
     try {
-      const me = req.user as UserResponseDto;
-
       checkRoleValid(
         req,
         this.roles.remove,
         this._i18n,
-        this.dataSource,
+        this.databaseService,
         this.repository.entity,
       );
 
@@ -224,15 +223,13 @@ export class BaseAuthController<
 
   @UseGuards(JwtAuthGuard)
   @Delete(BaseRouterUrl.DELETE)
-  async delete(@Req() req: Request, @Res() res: Response) {
+  async delete(@Req() req: RequestCustom, @Res() res: Response) {
     try {
-      const me = req.user as UserResponseDto;
-
       checkRoleValid(
         req,
         this.roles.delete,
         this._i18n,
-        this.dataSource,
+        this.databaseService,
         this.repository.entity,
       );
 

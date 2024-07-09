@@ -4,16 +4,16 @@ import {
   Injectable,
   NestInterceptor,
 } from '@nestjs/common';
-import { Request } from 'express';
 import { Observable, tap } from 'rxjs';
 import { UserResponseDto } from 'src/user/dto/user-response.dto';
-import { convertUrlToSubject } from '../utils/convert';
 import { EntitiesInWorkspace } from 'src/workspace/workspace.data';
+import { RequestCustom } from '../types/http';
+import { convertUrlToSubject } from '../utils/convert';
 
 @Injectable()
 export class MapBodyRequestInterceptor implements NestInterceptor {
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
-    const req = context.switchToHttp().getRequest() as Request;
+    const req = context.switchToHttp().getRequest() as RequestCustom;
 
     const user = req.user as UserResponseDto;
 
@@ -22,7 +22,12 @@ export class MapBodyRequestInterceptor implements NestInterceptor {
     req.body = {
       ...req.body,
       userId: user?.id,
-      me: { ...user },
+      user: { ...user },
+    };
+
+    req.defaultQuery = {
+      userId: user?.id,
+      me: { ...user } as any,
     };
 
     if (EntitiesInWorkspace.find((ew) => ew.key === entity)) {
@@ -30,11 +35,22 @@ export class MapBodyRequestInterceptor implements NestInterceptor {
         ...req.body,
         workspaceId: user?.workspaceId,
       };
+
+      req.defaultQuery = {
+        ...req.defaultQuery,
+        workspaceId: user?.workspaceId,
+      };
     }
 
     if (EntitiesInWorkspace.find((ew) => ew.key === entity)) {
       req.body = {
         ...req.body,
+        workspaceId: user?.workspaceId,
+        storeId: user?.storeId,
+      };
+
+      req.defaultQuery = {
+        ...req.defaultQuery,
         workspaceId: user?.workspaceId,
         storeId: user?.storeId,
       };

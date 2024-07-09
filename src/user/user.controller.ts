@@ -14,7 +14,8 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { I18nContext, I18nService } from 'nestjs-i18n';
 import { RegisterDto } from 'src/auth/dto/register.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -99,7 +100,7 @@ export class UserController {
     },
   )
   @Get(UserRouter.RETRIEVE)
-  async retrieveUser(@Res() res: Response, @Req() req: Request) {
+  async retrieveUser(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -137,7 +138,7 @@ export class UserController {
     },
   )
   @Post(UserRouter.LIST)
-  async listUser(@Res() res: Response, @Req() req: Request) {
+  async listUser(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { page, pageSize, search } = req.body as UserQuery;
 
@@ -200,7 +201,7 @@ export class UserController {
   async updateUser(
     @Body(new BodyValidationPipe()) payload: UpdateUserDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const id = req.params.id;
@@ -272,7 +273,7 @@ export class UserController {
     },
   )
   @Delete(UserRouter.DELETE)
-  async deleteUser(@Res() res: Response, @Req() req: Request) {
+  async deleteUser(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 

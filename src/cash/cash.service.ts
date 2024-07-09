@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BaseService } from 'src/common/service/base.service';
+import { convertPostgresDate, formatDate } from 'src/common/utils/time';
+import { DatabaseService } from 'src/database/database.service';
+import { GroupCashStatus } from 'src/group-cash/group-cash.type';
+import { UserResponseDto } from 'src/user/dto/user-response.dto';
 import {
   Between,
   DataSource,
@@ -14,14 +18,10 @@ import {
 } from 'typeorm';
 import { Cash } from './cash.entity';
 import { CashRepository } from './cash.repository';
-import { CreateCashDto } from './dto/create-cash.dto';
-import { UpdateCashDto } from './dto/update-cash.dto';
-import { ListCashQueryDto } from './dto/list-cash-query.dto';
-import { User } from 'src/user/user.entity';
-import { DatabaseService } from 'src/database/database.service';
 import { CashFilterType, CashType } from './cash.type';
-import { convertPostgresDate, formatDate } from 'src/common/utils/time';
-import { GroupCashStatus } from 'src/group-cash/group-cash.type';
+import { CreateCashDto } from './dto/create-cash.dto';
+import { ListCashQueryDto } from './dto/list-cash-query.dto';
+import { UpdateCashDto } from './dto/update-cash.dto';
 
 @Injectable()
 export class CashService extends BaseService<
@@ -77,11 +77,16 @@ export class CashService extends BaseService<
     return this.cashRepository.findOne(options);
   }
 
-  async listCash(queryDto: ListCashQueryDto, me: User) {
+  async listCash(queryDto: ListCashQueryDto, me: UserResponseDto) {
     const { userRepository, cashRepository } =
       this.databaseService.getRepositories();
 
-    const user = userRepository.filterRole(me);
+    const user = userRepository.filterQuery({
+      workspaceId: queryDto.workspaceId,
+      userId: me.id,
+      me,
+      storeId: queryDto.storeId,
+    });
 
     const {
       traders,

@@ -55,6 +55,7 @@ import {
 } from 'src/payment-history/payment-history.type';
 import { InitWarehouseData } from 'src/warehouse/warehouse.data';
 import { CashFilterType } from 'src/cash/cash.type';
+import { UserResponseDto } from 'src/user/dto/user-response.dto';
 
 @Injectable()
 export class PawnService extends BaseService<
@@ -100,14 +101,15 @@ export class PawnService extends BaseService<
         };
 
         if (customerId) {
-          const findCustomer = await customerRepository.checkCustomerExist(
-            { where: { id: customerId } },
-            { message: 'Không tìm thấy khách hàng.' },
-          );
+          const findCustomer = await customerRepository.findAndCheckValid({
+            data: { id: customerId },
+            type: 'not_found',
+            field: 'id',
+          });
 
           payload.customer = { ...findCustomer, storeId: payload.storeId };
         } else {
-          const newCustomer = await customerRepository.createCustomer({
+          const newCustomer = await customerRepository.createAndSave({
             ...payload.customer,
             userId,
           });
@@ -374,7 +376,7 @@ export class PawnService extends BaseService<
     });
   }
 
-  async listPawn(queryData: ListPawnQueryDto, me: User) {
+  async listPawn(queryData: ListPawnQueryDto, me: UserResponseDto) {
     const { userRepository, pawnRepository } =
       this.databaseService.getRepositories();
 
@@ -388,7 +390,12 @@ export class PawnService extends BaseService<
       receiptToday,
     } = queryData;
 
-    const user = userRepository.filterRole(me);
+    const user = userRepository.filterQuery({
+      me,
+      userId: me.id,
+      workspaceId: queryData.workspaceId,
+      storeId: queryData.storeId,
+    });
 
     const where = [];
     const from = fromDate ? fromDate : formatDate(new Date());
@@ -730,7 +737,7 @@ export class PawnService extends BaseService<
         contractId: pawn.contractId,
         userId: pawn.userId,
         workspaceId: payload.workspaceId,
-        storeId: pawn.storeId
+        storeId: pawn.storeId,
       });
 
       await paymentHistoryRepository.sortRowId({ pawnId: pawn.id });
@@ -914,7 +921,7 @@ export class PawnService extends BaseService<
         contractId: pawn.contractId,
         userId: pawn.userId,
         workspaceId: payload.workspaceId,
-        storeId: pawn.storeId
+        storeId: pawn.storeId,
       });
 
       if (payload.otherMoney) {
@@ -932,7 +939,7 @@ export class PawnService extends BaseService<
           contractId: pawn.contractId,
           userId: pawn.userId,
           workspaceId: payload.workspaceId,
-          storeId: pawn.storeId
+          storeId: pawn.storeId,
         });
       }
 
@@ -1139,7 +1146,7 @@ export class PawnService extends BaseService<
           contractId: pawn.contractId,
           userId: pawn.userId,
           workspaceId: pawn.workspaceId,
-          storeId: pawn.storeId
+          storeId: pawn.storeId,
         });
       }
 

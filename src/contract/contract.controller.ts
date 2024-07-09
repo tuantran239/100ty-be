@@ -6,7 +6,8 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ContractService } from './contract.service';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { ResponseData } from 'src/common/types';
 import { ContractRouter } from './contract.router';
 
@@ -15,7 +16,7 @@ export class ContractController {
   constructor(private contractService: ContractService) {}
 
   @Post(ContractRouter.UPDATE_STATUS)
-  async updateStatus(@Res() res: Response, @Req() req: Request) {
+  async updateStatus(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { contractType } = req.body;
 
