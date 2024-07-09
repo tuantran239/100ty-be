@@ -25,6 +25,8 @@ export type I18nTranslations = {
             "role": string;
             "store": string;
             "workspace": string;
+            "customer": string;
+            "data": string;
         };
         "field": {
             "email": string;
@@ -38,6 +40,7 @@ export type I18nTranslations = {
             "role_id": string;
             "status": string;
             "id": string;
+            "personal_id": string;
         };
     };
 };

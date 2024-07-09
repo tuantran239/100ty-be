@@ -12,6 +12,7 @@ import { ResponseData } from 'src/common/types';
 import { LogActionQuery } from 'src/common/types/query';
 import { LogActionRouter } from './log-action.router';
 import { LogActionService } from './log-action.service';
+import { RequestCustom } from 'src/common/types/http';
 
 @Controller(LogActionRouter.ROOT)
 export class LogActionController {
@@ -19,7 +20,7 @@ export class LogActionController {
 
   @UseGuards(JwtAuthGuard)
   @Post(LogActionRouter.LIST)
-  async listDevice(@Res() res: Response, @Req() req: Request) {
+  async listDevice(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { page, pageSize, type } = req.body as LogActionQuery;
 

@@ -12,7 +12,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LogActionType } from 'src/common/constant/log';
 import { CheckRoles } from 'src/common/decorator/roles.decorator';
@@ -130,7 +131,7 @@ export class PawnController {
   async updateCash(
     @Body(new BodyValidationPipe()) payload: UpdatePawnDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       this.logger.log(
@@ -185,7 +186,7 @@ export class PawnController {
     @Req() req,
   ) {
     try {
-      const me = req.user as User;
+      const me = req.user;
 
       const listPawnPagination = await this.pawnService.listPawn(payload, me);
 
@@ -240,7 +241,7 @@ export class PawnController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(PawnRouter.INFO)
-  async getBatHoInfo(@Res() res: Response, @Req() req: Request) {
+  async getBatHoInfo(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -369,7 +370,7 @@ export class PawnController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(PawnRouter.DELETE)
-  async deleteBatHo(@Res() res: Response, @Req() req: Request) {
+  async deleteBatHo(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -413,7 +414,7 @@ export class PawnController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(PawnRouter.REMOVE)
-  async removeBatHo(@Res() res: Response, @Req() req: Request) {
+  async removeBatHo(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -497,7 +498,7 @@ export class PawnController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(PawnRouter.SETTLEMENT_REQUEST)
-  async settlementRequest(@Res() res: Response, @Req() req: Request) {
+  async settlementRequest(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -541,7 +542,7 @@ export class PawnController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Put(PawnRouter.SETTLEMENT_CHANGE)
-  async settlementChange(@Res() res: Response, @Req() req: Request) {
+  async settlementChange(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -590,7 +591,7 @@ export class PawnController {
   async settlementConfirm(
     @Body(new BodyValidationPipe()) payload: SettlementPawnDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const id = req.params.id;
@@ -635,7 +636,7 @@ export class PawnController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(PawnRouter.PAYMENT_DOWN_REQUEST)
-  async paymentDownRootMoneyRequest(@Res() res: Response, @Req() req: Request) {
+  async paymentDownRootMoneyRequest(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -682,7 +683,7 @@ export class PawnController {
   async paymentDownRootMoneyConfirm(
     @Body(new BodyValidationPipe()) payload: PaymentDownRootMoneyDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const id = req.params.id;
@@ -730,7 +731,7 @@ export class PawnController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(PawnRouter.LOAN_MORE_REQUEST)
-  async loanMoreMoneyRequest(@Res() res: Response, @Req() req: Request) {
+  async loanMoreMoneyRequest(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -777,7 +778,7 @@ export class PawnController {
   async loanMoreMoneyConfirm(
     @Body(new BodyValidationPipe()) payload: LoanMoreMoneyDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const id = req.params.id;
@@ -822,7 +823,7 @@ export class PawnController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(PawnRouter.EXTENDED_PERIOD_REQUEST)
-  async extendedPeriodRequest(@Res() res: Response, @Req() req: Request) {
+  async extendedPeriodRequest(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -869,7 +870,7 @@ export class PawnController {
   async extendedPeriodConfirm(
     @Body(new BodyValidationPipe()) payload: ExtendedPeriodConfirmDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const id = req.params.id;

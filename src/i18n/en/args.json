@@ -3,7 +3,9 @@
     "user": "User",
     "role": "Role",
     "store": "Store",
-    "workspace": "Business workspace"
+    "workspace": "Business workspace",
+    "customer": "Customer",
+    "data": "Data"
   },
   "field": {
     "email": "Email",
@@ -16,6 +18,7 @@
     "phone_number": "Phone number",
     "role_id": "Role id",
     "status": "Status",
-    "id": "Id"
+    "id": "Id",
+    "personal_id": "Personal ID"
   }
 }

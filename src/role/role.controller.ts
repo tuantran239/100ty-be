@@ -8,7 +8,8 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CacheService } from 'src/cache/cache.service';
 import { CheckRoles } from 'src/common/decorator/roles.decorator';
@@ -39,7 +40,7 @@ export class RoleController {
   )
   @UseGuards(JwtAuthGuard)
   @Get(RoleRouter.LIST)
-  async listCustomer(@Res() res: Response, @Req() req: Request) {
+  async listCustomer(@Res() res: Response, @Req() req: RequestCustom) {
     try {
 
       const me = req.user as UserResponseDto;
@@ -75,7 +76,7 @@ export class RoleController {
   async updateRole(
     @Body(new BodyValidationPipe()) payload: UpdateRoleDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const id = req.params.id;

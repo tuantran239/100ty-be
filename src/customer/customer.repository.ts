@@ -1,134 +1,127 @@
-import { getDataSourceToken, getRepositoryToken } from '@nestjs/typeorm';
-import { convertPostgresDate } from 'src/common/utils/time';
-import { DataSource, FindOneOptions, Repository } from 'typeorm';
+import {
+  BaseRepository,
+  CheckValid,
+  CreateAndSaveCheckValid,
+  MapPayload,
+} from 'src/common/repository/base.repository';
 import { Customer } from './customer.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
+import { CustomerResponseDto } from './dto/customer-response.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { FindOptionsWhere, Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
+import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
+import { convertPostgresDate } from 'src/common/utils/time';
 
-export interface CustomerRepository extends Repository<Customer> {
-  this: CustomerRepository;
+const CUSTOMER_RELATIONS = ['store', 'user', 'pawns', 'batHos'];
 
-  checkCustomerExist(
-    options: FindOneOptions<Customer>,
-    throwError?: { message?: string },
-    exist?: boolean,
-  ): Promise<Customer>;
-
-  createCustomer(payload: CreateCustomerDto): Promise<Customer>;
-
-  updateCustomer(
-    payload: UpdateCustomerDto & { id: string },
-  ): Promise<Customer>;
-
-  calculateTotal(options): Promise<{ totalBadDebit: number }>;
-}
-
-export const CustomerRepositoryProvider = {
-  provide: getRepositoryToken(Customer),
-  inject: [getDataSourceToken()],
-  useFactory(dataSource: DataSource) {
-    return dataSource.getRepository(Customer).extend(customerCustomRepository);
-  },
-};
-
-export const customerCustomRepository: Pick<CustomerRepository, any> = {
-  async checkCustomerExist(
-    this: CustomerRepository,
-    options: FindOneOptions<Customer>,
-    throwError?: { message?: string },
-    exist?: boolean,
+export class CustomerRepository extends BaseRepository<
+  Customer,
+  CreateCustomerDto,
+  UpdateCustomerDto,
+  CustomerResponseDto
+> {
+  constructor(
+    @InjectRepository(Customer)
+    protected repository: Repository<Customer>,
+    public i18n: I18nCustomService,
   ) {
-    const customer = await this.findOne(options);
+    super(repository, CUSTOMER_RELATIONS, i18n, repository.target, 'customer');
+  }
 
-    if (throwError) {
-      if (exist && customer) {
-        throw new Error(throwError.message ?? 'Customer exist');
-      } else if (!exist && !customer) {
-        throw new Error(
-          throwError.message ?? 'Customer not found or not exist',
-        );
-      }
+  setCheckValid(
+    payload: CreateCustomerDto | UpdateCustomerDto | Record<string, any>,
+  ): CheckValid<Customer> {
+    const personalIDUnique: CreateAndSaveCheckValid<Customer> = {
+      type: 'unique',
+      message: this.i18n.getMessage('errors.common.existed', {
+        field: this.i18n.getMessage('args.field.personal_id'),
+        entity: this.i18n.getMessage('args.entity.customer'),
+        value: payload.personalID,
+      }),
+      options: {
+        where: {
+          phoneNumber: payload.personalID,
+        },
+      },
+      field: 'personalID',
+      payload,
+    };
+
+    const phoneNumberUnique: CreateAndSaveCheckValid<Customer> = {
+      type: 'unique',
+      message: this.i18n.getMessage('errors.common.existed', {
+        field: this.i18n.getMessage('args.field.phone_number'),
+        entity: this.i18n.getMessage('args.entity.customer'),
+        value: payload.phoneNumber,
+      }),
+      options: {
+        where: {
+          phoneNumber: payload.phoneNumber,
+        },
+      }, 
+      field: 'phoneNumber',
+      payload,
+    };
+
+    const notFound: CreateAndSaveCheckValid<Customer> = {
+      type: 'not_found',
+      message: this.i18n.getMessage('errors.common.not_found', {
+        field: this.i18n.getMessage('args.field.id'),
+        entity: this.i18n.getMessage('args.entity.customer'),
+        value: (payload as UpdateCustomerDto).id,
+      }),
+      options: {
+        where: {
+          id: (payload as UpdateCustomerDto).id,
+        },
+      },
+      field: 'id',
+      payload,
+    };
+
+    const createAndSave: CreateAndSaveCheckValid<Customer>[] = [
+      personalIDUnique,
+      phoneNumberUnique,
+    ];
+
+    const updateAndSave: CreateAndSaveCheckValid<Customer>[] = [
+      personalIDUnique,
+      phoneNumberUnique,
+      notFound,
+    ];
+
+    return { createAndSave, updateAndSave };
+  }
+
+  setQueryDefault(
+    payload?: CreateCustomerDto | UpdateCustomerDto | Record<string, any>,
+  ): FindOptionsWhere<Customer> {
+    return {
+      workspaceId: payload.workspaceId,
+      storeId: payload.storeId,
+    };
+  }
+
+  mapResponse(payload: Customer): CustomerResponseDto {
+    return payload;
+  }
+
+  async mapPayload(
+    data: MapPayload<CreateCustomerDto, UpdateCustomerDto>,
+  ): Promise<any> {
+    const { type, payload } = data;
+
+    if (type === 'create') {
+      return {
+        ...payload,
+        images: payload.images ?? [],
+        dateOfBirth: convertPostgresDate(payload.dateOfBirth),
+      };
+    } else if (type === 'update') {
+      return payload;
     }
-
-    return customer;
-  },
-
-  async createCustomer(
-    this: CustomerRepository,
-    payload: CreateCustomerDto,
-  ): Promise<Customer> {
-    await this.checkCustomerExist(
-      { where: { personalID: payload.personalID } },
-      { message: 'Số CMND/CCCD đã tồn tại.' },
-      true,
-    );
-
-    await this.checkCustomerExist(
-      { where: { phoneNumber: payload.phoneNumber } },
-      { message: 'Số điện thoại đã tồn tại.' },
-      true,
-    );
-
-    let newCustomer = await this.create({
-      ...payload,
-      images: payload.images ?? [],
-      dateOfBirth: convertPostgresDate(payload.dateOfBirth),
-    });
-
-    newCustomer = await this.save(newCustomer);
-
-    return newCustomer;
-  },
-
-  async updateCustomer(
-    this: CustomerRepository,
-    payload: UpdateCustomerDto & { id: string },
-  ): Promise<Customer> {
-    const { id } = payload;
-
-    const customer = await this.checkCustomerExist({ where: { id } }, {});
-
-    if (payload.phoneNumber && customer.phoneNumber !== payload.phoneNumber) {
-      await this.checkCustomerExist(
-        { where: { phoneNumber: payload.phoneNumber } },
-        { message: 'Số điện thoại đã tồn tại.' },
-        true,
-      );
-    }
-
-    if (payload.personalID && customer.personalID !== payload.personalID) {
-      await this.checkCustomerExist(
-        { where: { personalID: payload.personalID } },
-        { message: 'Số CMND/CCCD đã tồn tại.' },
-        true,
-      );
-    }
-
-    const keysPayload = Object.keys(payload);
-
-    for (let i = 0; i < keysPayload.length; i++) {
-      const key = keysPayload[i];
-
-      const payloadValue = payload[key];
-
-      const customerValue = customer[key];
-
-      if (customerValue !== undefined && customerValue !== payloadValue) {
-        customer[key] = payloadValue;
-      }
-    }
-
-    customer.updated_at = new Date();
-
-    await this.save({
-      ...customer,
-      dateOfBirth: payload.dateOfBirth
-        ? convertPostgresDate(payload.dateOfBirth)
-        : customer.dateOfBirth,
-    });
-
-    return customer;
-  },
+  }
 
   async calculateTotal(
     this: CustomerRepository,
@@ -142,5 +135,5 @@ export const customerCustomRepository: Pick<CustomerRepository, any> = {
     );
 
     return { totalBadDebit };
-  },
-};
+  }
+}

@@ -11,7 +11,8 @@ import {
   Res,
   UsePipes,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { BaseRouterUrl } from '../constant/router';
 import { BodyValidationPipe } from '../pipe/body-validation.pipe';
@@ -67,7 +68,7 @@ export class BaseController<
   @Put(BaseRouterUrl.UPDATE)
   async update(
     @Body(BodyValidationPipe) payload: U,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
     @Res() res: Response,
   ) {
     try {
@@ -91,7 +92,7 @@ export class BaseController<
   }
 
   @Get(BaseRouterUrl.LIST)
-  async list(@Req() req: Request, @Res() res: Response) {
+  async list(@Req() req: RequestCustom, @Res() res: Response) {
     try {
       await checkBodyValid(this.dto.QueryDto, req.query as Q, this._i18n);
 
@@ -113,7 +114,7 @@ export class BaseController<
   }
 
   @Get(BaseRouterUrl.RETRIEVE)
-  async retrieveById(@Req() req: Request, @Res() res: Response) {
+  async retrieveById(@Req() req: RequestCustom, @Res() res: Response) {
     try {
       const { id } = req.params;
 
@@ -135,7 +136,7 @@ export class BaseController<
   }
 
   @Put(BaseRouterUrl.REMOVE)
-  async remove(@Req() req: Request, @Res() res: Response) {
+  async remove(@Req() req: RequestCustom, @Res() res: Response) {
     try {
       const { id } = req.params;
 
@@ -155,7 +156,7 @@ export class BaseController<
   }
 
   @Delete(BaseRouterUrl.DELETE)
-  async delete(@Req() req: Request, @Res() res: Response) {
+  async delete(@Req() req: RequestCustom, @Res() res: Response) {
     try {
       const { id } = req.params;
 

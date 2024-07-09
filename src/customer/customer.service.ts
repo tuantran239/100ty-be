@@ -1,9 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { ContractResponse } from 'src/common/types';
 import { BaseService } from 'src/common/service/base.service';
+import { ContractResponse } from 'src/common/types';
+import { DefaultQuery } from 'src/common/types/http';
+import { formatDate } from 'src/common/utils/time';
 import { ContractService } from 'src/contract/contract.service';
 import { DatabaseService } from 'src/database/database.service';
+import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import {
   DataSource,
   DeleteResult,
@@ -16,8 +18,6 @@ import { Customer } from './customer.entity';
 import { CustomerRepository } from './customer.repository';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
-import { formatDate } from 'src/common/utils/time';
-import { User } from 'src/user/user.entity';
 
 @Injectable()
 export class CustomerService extends BaseService<
@@ -31,49 +31,23 @@ export class CustomerService extends BaseService<
     private dataSource: DataSource,
     private databaseService: DatabaseService,
     private contractService: ContractService,
-    @InjectRepository(Customer)
     private readonly customerRepository: CustomerRepository,
+    private i18n: I18nCustomService,
   ) {
     super();
     this.manager = this.dataSource.manager;
   }
 
-  async convertCustomerUser() {
-    let updated = 0;
-    let total = 0;
-
-    this.databaseService.runTransaction(async (repositories) => {
-      const { customerRepository } = repositories;
-
-      const customers = await this.customerRepository.find({
-        where: { userId: IsNull() }
-      });
-
-      total = customers.length;
-
-      await Promise.all(customers.map(async (customer) => {
-
-      }))
-    });
-
-
-  }
-
   async create(payload: CreateCustomerDto): Promise<Customer> {
-    return await this.customerRepository.createCustomer(payload);
+    return await this.customerRepository.createAndSave(payload);
   }
 
   async update(id: string, payload: UpdateCustomerDto): Promise<any> {
-    return await this.customerRepository.updateCustomer({ ...payload, id });
+    return await this.customerRepository.updateAndSave({ ...payload, id });
   }
 
   async delete(id: string): Promise<DeleteResult> {
-    await this.customerRepository.checkCustomerExist(
-      { where: { id } },
-      { message: `Không tìm thấy khách hàng` },
-    );
-
-    return await this.customerRepository.delete({ id });
+    return (await this.customerRepository.deleteData({ where: { id } })) as any;
   }
 
   async list(options: FindManyOptions<Customer>): Promise<Customer[]> {
@@ -94,14 +68,21 @@ export class CustomerService extends BaseService<
     return this.customerRepository.findOne(options);
   }
 
-  async getTransactionHistory(id: string, me: User, contractType?: string) {
-    const user = this.databaseService
-      .getRepositories()
-      .userRepository.filterRole(me);
+  async getTransactionHistory(
+    id: string,
+    queryDefault: DefaultQuery,
+    contractType?: string,
+  ) {
+    const query = this.customerRepository.filterQuery({ ...queryDefault });
 
-    const customer = await this.customerRepository.checkCustomerExist(
-      { where: { id, user } },
-      { message: 'Không tìm thấy khách hàng' },
+    const customer = await this.customerRepository.findOrThrowError(
+      {
+        message: this.i18n.getMessage('errors.common.not_found', {
+          entity: 'args.entity.customer',
+        }),
+        checkExist: false,
+      },
+      { where: { id, ...query } },
     );
 
     const contracts = await this.contractService.listContract(contractType, {

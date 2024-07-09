@@ -12,7 +12,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LogActionType } from 'src/common/constant/log';
 import { CheckRoles } from 'src/common/decorator/roles.decorator';
@@ -59,7 +60,7 @@ export class CashController {
     @Req() req,
   ) {
     try {
-      const me = req.user as User;
+      const me = req.user;
 
       this.logger.log(
         { loggerType: 'create', entity: ENTITY_LOG, serverType: 'request' },
@@ -113,10 +114,10 @@ export class CashController {
   async updateCash(
     @Body(new BodyValidationPipe()) payload: UpdateCashDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
-      const me = req.user as User;
+      const me = req.user;
 
       this.logger.log(
         { loggerType: 'update', entity: ENTITY_LOG, serverType: 'request' },
@@ -169,11 +170,11 @@ export class CashController {
   async listCash(
     @Body(new BodyValidationPipe()) payload: ListCashQueryDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
 
-      const me = req.user as User;
+      const me = req.user;
 
       const data = await this.cashService.listCash(payload, me)
 
@@ -208,7 +209,7 @@ export class CashController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(CashRouter.RETRIEVE)
-  async getCash(@Res() res: Response, @Req() req: Request) {
+  async getCash(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const id = req.params.id;
 
@@ -245,9 +246,9 @@ export class CashController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(CashRouter.DELETE)
-  async deleteCash(@Res() res: Response, @Req() req: Request) {
+  async deleteCash(@Res() res: Response, @Req() req: RequestCustom) {
     try {
-      const me = req.user as User;
+      const me = req.user;
 
       const id = req.params.id;
 

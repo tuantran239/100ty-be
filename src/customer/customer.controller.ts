@@ -11,7 +11,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
@@ -47,31 +48,31 @@ export class CustomerController {
   @CheckRoles(
     {
       id: RoleId.SUPER_ADMIN,
-      entity: new Customer()
+      entity: new Customer(),
     },
     {
       id: RoleId.ADMIN,
       entity: new Customer(),
       conditions: {
-        createdBy: true
+        createdBy: true,
       },
     },
     {
       id: RoleId.USER,
       entity: new Customer(),
       conditions: {
-        createdBy: true
+        createdBy: true,
       },
-    }
+    },
   )
   @Post(CustomerRouter.CREATE)
   async createCustomer(
     @Body(new BodyValidationPipe()) payload: CreateCustomerDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
-      const me = req.user as User;
+      const me = req.user;
 
       const customer = await this.customerService.create({
         ...payload,
@@ -94,39 +95,41 @@ export class CustomerController {
   @CheckRoles(
     {
       id: RoleId.SUPER_ADMIN,
-      entity: new Customer()
+      entity: new Customer(),
     },
     {
       id: RoleId.ADMIN,
       entity: new Customer(),
       conditions: {
-        createdBy: true
+        createdBy: true,
       },
     },
     {
       id: RoleId.USER,
       entity: new Customer(),
       conditions: {
-        createdBy: true
+        createdBy: true,
       },
-    }
+    },
   )
   @Get(CustomerRouter.RETRIEVE)
-  async getCustomer(@Res() res: Response, @Req() req: Request) {
+  async getCustomer(@Res() res: Response, @Req() req: RequestCustom) {
     try {
-      const me = req.user as User;
+      const me = req.user;
 
-      const user = this.databaseService
+      const defaultQuery = this.databaseService
         .getRepositories()
-        .userRepository.filterRole(me);
+        .userRepository.filterQuery({
+          ...req.defaultQuery,
+        });
 
       const { id } = req.params;
 
       const customer = await this.customerService.retrieveOne({
         where: [
-          { id, user },
-          { personalID: id, user },
-          { phoneNumber: id, user },
+          { id, ...defaultQuery },
+          { personalID: id, ...defaultQuery },
+          { phoneNumber: id, ...defaultQuery },
         ],
         relations: ['batHos'],
       });
@@ -152,7 +155,7 @@ export class CustomerController {
   @CheckRoles(
     {
       id: RoleId.SUPER_ADMIN,
-      entity: new Customer()
+      entity: new Customer(),
     },
     {
       id: RoleId.ADMIN,
@@ -161,16 +164,18 @@ export class CustomerController {
     {
       id: RoleId.USER,
       entity: new Customer(),
-    }
+    },
   )
   @Post(CustomerRouter.LIST)
-  async listCustomer(@Res() res: Response, @Req() req: Request) {
+  async listCustomer(@Res() res: Response, @Req() req: RequestCustom) {
     try {
-      const me = req.user as User;
+      const me = req.user;
 
-      const user = this.databaseService
+      const defaultQuery = this.databaseService
         .getRepositories()
-        .userRepository.filterRole(me);
+        .userRepository.filterQuery({
+          ...req.defaultQuery,
+        });
 
       const { search, page, pageSize, isDebt } = req.body as CustomerQuery;
 
@@ -178,7 +183,7 @@ export class CustomerController {
 
       const where = [];
 
-      const query = { isDebt: isDebt, user };
+      const query = { isDebt: isDebt, ...defaultQuery };
 
       if (!Number.isNaN(searchType)) {
         where.push({ ...query, personalID: getSearch(search, 'both') });
@@ -228,7 +233,7 @@ export class CustomerController {
         data[0].map(async (customer) => {
           const contracts = await this.contractService.listContract(null, {
             where: {
-              user,
+              ...defaultQuery,
               deleted_at: IsNull(),
               customer: {
                 id: customer.id,
@@ -257,28 +262,28 @@ export class CustomerController {
   @CheckRoles(
     {
       id: RoleId.SUPER_ADMIN,
-      entity: new Customer()
+      entity: new Customer(),
     },
     {
       id: RoleId.ADMIN,
       entity: new Customer(),
       conditions: {
-        createdBy: true
+        createdBy: true,
       },
     },
     {
       id: RoleId.USER,
       entity: new Customer(),
       conditions: {
-        createdBy: true
+        createdBy: true,
       },
-    }
+    },
   )
   @Post(CustomerRouter.UPDATE)
   async updateCustomer(
     @Body(new BodyValidationPipe()) payload: UpdateCustomerDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const { id } = req.params;
@@ -302,35 +307,33 @@ export class CustomerController {
   @CheckRoles(
     {
       id: RoleId.SUPER_ADMIN,
-      entity: new Customer()
+      entity: new Customer(),
     },
     {
       id: RoleId.ADMIN,
       entity: new Customer(),
       conditions: {
-        createdBy: true
+        createdBy: true,
       },
     },
     {
       id: RoleId.USER,
       entity: new Customer(),
       conditions: {
-        createdBy: true
+        createdBy: true,
       },
-    }
+    },
   )
   @Get(CustomerRouter.TRANSACTION_HISTORY)
-  async getTransactionHistory(@Res() res: Response, @Req() req: Request) {
+  async getTransactionHistory(@Res() res: Response, @Req() req: RequestCustom) {
     try {
-      const me = req.user as User;
-
       const { id } = req.params;
 
       const { contractType } = req.query;
 
       const list_contract = await this.customerService.getTransactionHistory(
         id,
-        me,
+        req.defaultQuery,
         contractType as string,
       );
 

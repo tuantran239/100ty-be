@@ -10,7 +10,8 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { CheckRoles } from 'src/common/decorator/roles.decorator';
 import { RolesGuard } from 'src/common/guard/roles.guard';
@@ -63,7 +64,7 @@ export class AssetTypeController {
   async update(
     @Body(new BodyValidationPipe()) payload: UpdateAssetTypeDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @Req() req: RequestCustom,
   ) {
     try {
       const { id } = req.params;
@@ -89,7 +90,7 @@ export class AssetTypeController {
   })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Delete(AssetTypeRouter.DELETE)
-  async delete(@Res() res: Response, @Req() req: Request) {
+  async delete(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { id } = req.params;
 
@@ -124,7 +125,7 @@ export class AssetTypeController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(AssetTypeRouter.LIST)
-  async list(@Res() res: Response, @Req() req: Request) {
+  async list(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { page, pageSize, status } = req.body as GroupCashQuery;
 
@@ -173,7 +174,7 @@ export class AssetTypeController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(AssetTypeRouter.RETRIEVE)
-  async getById(@Res() res: Response, @Req() req: Request) {
+  async getById(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { id } = req.params;
 

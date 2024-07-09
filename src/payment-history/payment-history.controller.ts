@@ -10,7 +10,8 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import {  Response } from 'express';
+import { RequestCustom } from 'src/common/types/http';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { LogActionType } from 'src/common/constant/log';
 import { BodyValidationPipe } from 'src/common/pipe/body-validation.pipe';
@@ -68,7 +69,7 @@ export class PaymentHistoryController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Get(PaymentHistoryRouter.RETRIEVE)
-  async getCustomer(@Res() res: Response, @Req() req: Request) {
+  async getCustomer(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { id } = req.params;
 
@@ -118,7 +119,7 @@ export class PaymentHistoryController {
   )
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Post(PaymentHistoryRouter.LIST)
-  async listCustomer(@Res() res: Response, @Req() req: Request) {
+  async listCustomer(@Res() res: Response, @Req() req: RequestCustom) {
     try {
       const { contractId, pageSize, page } = req.body as PaymentHistoryQuery;
 
@@ -266,7 +267,7 @@ export class PaymentHistoryController {
   @Post(PaymentHistoryRouter.LIST_FINISH_TODAY)
   async listPaymentHistoryFinish(@Res() res: Response, @Req() req) {
     try {
-      const me = req.user as User;
+      const me = req.user;
 
       const role = me.role;
 

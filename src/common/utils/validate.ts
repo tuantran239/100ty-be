@@ -4,15 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { validate } from 'class-validator';
-import { Request } from 'express';
+import { DatabaseService } from 'src/database/database.service';
 import { I18nCustomService } from 'src/i18n-custom/i18n-custom.service';
 import { InitRoleData } from 'src/role/role.data';
 import { RoleId } from 'src/role/role.type';
 import { UserResponseDto } from 'src/user/dto/user-response.dto';
-import { User } from 'src/user/user.entity';
-import { DataSource } from 'typeorm';
 import { ICheckRole } from '../decorator/roles.decorator';
 import { convertConstraintsToErrorMessage } from './convert';
+import { RequestCustom } from '../types/http';
 
 export const checkEnumTypeValid = (
   enumType: Record<string, string>,
@@ -56,10 +55,10 @@ export const checkBodyValid = async (
 };
 
 export const checkRoleValid = async (
-  req: Request,
+  req: RequestCustom,
   requiredRoles: ICheckRole[],
   i18n: I18nCustomService,
-  dataSource: DataSource,
+  databaseService: DatabaseService,
   entity: string,
 ) => {
   if (!requiredRoles) {
@@ -100,9 +99,7 @@ export const checkRoleValid = async (
 
   if (id && requiredRoleMe.conditions) {
     const entityRecord = (
-      await dataSource.manager.query(
-        `SELECT * from public.${entity} WHERE id = '${id}'`,
-      )
+      await databaseService.query.selectById(entity, id)
     )[0] as any;
 
     if (!entityRecord) {
@@ -119,7 +116,9 @@ export const checkRoleValid = async (
       return true;
     }
 
-    const user = await dataSource.manager.findOne(User, {
+    const { userRepository } = databaseService.getRepositories();
+
+    const user = await userRepository.findOne({
       where: { id: userId },
       relations: ['role'],
     });

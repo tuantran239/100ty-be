@@ -2,7 +2,6 @@ import { Global, Module } from '@nestjs/common';
 import { DatabaseService } from './database.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseController } from './database.controller';
-import { CustomerRepositoryProvider } from 'src/customer/customer.repository';
 import { BatHoRepositoryProvider } from 'src/bat-ho/bat-ho.repository';
 import { CashRepositoryProvider } from 'src/cash/cash.repository';
 import { PaymentHistoryRepositoryProvider } from 'src/payment-history/payment-history.repository';
@@ -19,16 +18,17 @@ import { StoreRepository } from 'src/store/store.repository';
 import { Store } from 'src/store/store.entity';
 import { WorkspaceRepository } from 'src/workspace/workspace.repository';
 import { Workspace } from 'src/workspace/workspace.entity';
+import { QueryDatabase } from './query';
+import { CustomerRepository } from 'src/customer/customer.repository';
 
 @Global()
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Role, Customer, Store, Workspace]),
+    TypeOrmModule.forFeature([User, Role, Customer, Store, Workspace, Customer]),
     I18nCustomModule,
   ],
   providers: [
     DatabaseService,
-    CustomerRepositoryProvider,
     BatHoRepositoryProvider,
     CashRepositoryProvider,
     PaymentHistoryRepositoryProvider,
@@ -39,6 +39,8 @@ import { Workspace } from 'src/workspace/workspace.entity';
     UserRepository,
     StoreRepository,
     WorkspaceRepository,
+    CustomerRepository,
+    QueryDatabase
   ],
   exports: [DatabaseService],
   controllers: [DatabaseController],

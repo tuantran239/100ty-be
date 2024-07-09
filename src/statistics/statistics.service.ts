@@ -39,6 +39,8 @@ import { User } from 'src/user/user.entity';
 import { UserRepository } from 'src/user/user.repository';
 import { Between, DataSource, IsNull } from 'typeorm';
 import { StatisticsContractQueryDto } from './dto/statistics-contract-query.dto';
+import { UserResponseDto } from 'src/user/dto/user-response.dto';
+import { DefaultQuery } from 'src/common/types/http';
 
 @Injectable()
 export class StatisticsService {
@@ -153,8 +155,10 @@ export class StatisticsService {
     };
   }
 
-  async homePreview(me: User): Promise<HomePreview> {
-    const user = this.userRepository.filterRole(me);
+  async homePreview(defaultQuery: DefaultQuery): Promise<HomePreview> {
+    const { me } = defaultQuery;
+
+    const user = this.userRepository.filterQuery({ ...defaultQuery });
 
     const contractResponses = await this.getHomePreviewContractResponse(user);
 
@@ -309,8 +313,10 @@ export class StatisticsService {
     };
   }
 
-  async statisticsOverview(me: User): Promise<StatisticsOverview[]> {
-    const user = this.userRepository.filterRole(me);
+  async statisticsOverview(
+    defaultQuery: DefaultQuery,
+  ): Promise<StatisticsOverview[]> {
+    const user = this.userRepository.filterQuery({ ...defaultQuery });
 
     const { icloud: icloudContract, pawn: pawnContract } =
       await this.getHomePreviewContractResponse(user);
@@ -542,13 +548,15 @@ export class StatisticsService {
   async statisticsProfit({
     year,
     month,
-    me,
+    defaultQuery,
   }: {
     year: number;
     month?: number;
-    me: User;
+    defaultQuery: DefaultQuery;
   }): Promise<ProfitStatistics> {
-    const user = this.userRepository.filterRole(me);
+    const { me } = defaultQuery;
+
+    const user = this.userRepository.filterQuery({ ...defaultQuery });
 
     const { paymentHistoryRepository, cashRepository } =
       this.databaseService.getRepositories();
@@ -588,12 +596,17 @@ export class StatisticsService {
     return { overview, chartDetail };
   }
 
-  async statisticsExpectedReceipt(query: StatisticsContractQueryDto, me: User) {
+  async statisticsExpectedReceipt(
+    query: StatisticsContractQueryDto,
+    defaultQuery: DefaultQuery,
+  ) {
     let customer = undefined;
     let endDate = undefined;
     let startDate = undefined;
 
-    const user = this.userRepository.filterRole(me);
+    const { me } = defaultQuery;
+
+    const user = this.userRepository.filterQuery({ ...defaultQuery });
 
     const { paymentHistoryRepository } = this.databaseService.getRepositories();
 
@@ -735,8 +748,12 @@ export class StatisticsService {
     };
   }
 
-  async statisticNewHomePreview(me: User): Promise<StatisticNewHomePreview> {
-    const user = this.userRepository.filterRole(me);
+  async statisticNewHomePreview(
+    defaultQuery: DefaultQuery,
+  ): Promise<StatisticNewHomePreview> {
+    const { me } = defaultQuery;
+
+    const user = this.userRepository.filterQuery(defaultQuery);
 
     const { transactionHistoryRepository, cashRepository } =
       this.databaseService.getRepositories();
