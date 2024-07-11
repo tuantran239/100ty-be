@@ -1,4 +1,4 @@
-export enum StoreStatusDB {
-  ACTIVE = 'main',
+export enum StatusDB {
+  ACTIVE = 'active',
   OFF = 'off',
 }

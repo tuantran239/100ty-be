@@ -1,4 +1,4 @@
-import { StoreStatusDB } from 'db/type';
+import { StatusDB } from 'db/type';
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
 export class CreateTableStore1719904171935 implements MigrationInterface {
@@ -18,7 +18,7 @@ export class CreateTableStore1719904171935 implements MigrationInterface {
             name: 'status',
             type: 'varchar',
             isNullable: false,
-            default: `'${StoreStatusDB.ACTIVE}'`,
+            default: `'${StatusDB.ACTIVE}'`,
           },
           {
             name: 'name',
